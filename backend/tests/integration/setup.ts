@@ -183,14 +183,29 @@ export async function seedFixtures(client: PoolClient): Promise<void> {
     ],
   );
 
-  // Patients
+  // Patients — data is pgp_sym_encrypt-encrypted (matches PhiEncryptionService format)
+  // Uses PHI_ENCRYPTION_KEY from env (test value: 64 zeros)
+  const phiKey = process.env.PHI_ENCRYPTION_KEY ?? "0".repeat(64);
+  const patientAlphaJson = JSON.stringify({
+    identifier: [], name: [{ family: "Alpha", given: ["Patient"] }],
+    birthDate: "1950-01-01", hospiceLocationId: TEST_IDS.locationA,
+  });
+  const patientBetaJson = JSON.stringify({
+    identifier: [], name: [{ family: "Beta", given: ["Patient"] }],
+    birthDate: "1950-01-01", hospiceLocationId: TEST_IDS.locationB,
+  });
   await client.query(
     `INSERT INTO patients (id, location_id, data)
      VALUES
-       ($1, $3, '{"resourceType":"Patient","name":[{"text":"Patient Alpha"}]}'),
-       ($2, $4, '{"resourceType":"Patient","name":[{"text":"Patient Beta"}]}')
+       ($1, $3, to_jsonb(encode(pgp_sym_encrypt($5::text, $7), 'base64'))),
+       ($2, $4, to_jsonb(encode(pgp_sym_encrypt($6::text, $7), 'base64')))
      ON CONFLICT (id) DO NOTHING`,
-    [TEST_IDS.patientA, TEST_IDS.patientB, TEST_IDS.locationA, TEST_IDS.locationB],
+    [
+      TEST_IDS.patientA, TEST_IDS.patientB,
+      TEST_IDS.locationA, TEST_IDS.locationB,
+      patientAlphaJson, patientBetaJson,
+      phiKey,
+    ],
   );
 
   // Pain assessment (locationA, assessed by userA)
@@ -221,6 +236,11 @@ export async function cleanupFixtures(client: PoolClient): Promise<void> {
   await client.query(
     `DELETE FROM patients WHERE id IN ($1, $2)`,
     [TEST_IDS.patientA, TEST_IDS.patientB],
+  );
+  // Delete audit_logs before users — audit_logs.user_id FK references users
+  await client.query(
+    `DELETE FROM audit_logs WHERE location_id IN ($1, $2)`,
+    [TEST_IDS.locationA, TEST_IDS.locationB],
   );
   await client.query(
     `DELETE FROM users WHERE id IN ($1, $2, $3, $4, $5, $6)`,

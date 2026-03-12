@@ -79,14 +79,14 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | T1-7 | HOPE + cap BullMQ queues | ✅ | MEDIUM |
 | T1-8 | Socket.IO server | ✅ | MEDIUM |
 | T1-9 | Integration tests + RLS suite | ✅ | MEDIUM |
-| T1-10 | CI/CD pipeline | ⬜ | LOW |
-| T1-11 | Valkey password + pool hardening | ⬜ | LOW |
+| T1-10 | CI/CD pipeline | ✅ | LOW |
+| T1-11 | Valkey password + pool hardening | ✅ | LOW |
 
 ### Tier 2 — Clinical Core _(needs: T0 + T1; run Phase 1 exit gate first)_
 
 | ID | Task | Status | Size |
 |----|------|--------|------|
-| T2-1 | Patient CRUD — backend | ⬜ | MEDIUM |
+| T2-1 | Patient CRUD — backend | ✅ | MEDIUM |
 | T2-2 | Patient list + detail — frontend | ⬜ | MEDIUM |
 | T2-3 | Pain assessments + decline trajectory | ⬜ | MEDIUM |
 | T2-4 | IDG meeting recording + enforcement | ⬜ | MEDIUM |
@@ -204,6 +204,9 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | 2026-03-12 | T1-7 HOPE + cap queues | Added 5 queues: `hope-submission` (removeOnFail:false, 3 retries, exp backoff 2s), `hope-submission-dlq`, `hope-deadline-check` (daily), `hqrp-period-close` (quarterly 0 6 15 2,5,8,11 *), `cap-recalculation` (0 6 2 11 * — Nov 2 annually). 4 workers: `hope-submission` (DLQ promotion + P1 log on exhausted retries), `hope-deadline-check`, `hqrp-period-close` (getClosingQuarter), `cap-recalculation` (getCapYear + calculateCapLiability). `iqiesApiUrl` in env. All wired in server.ts. 0 TS errors, 52/52 tests. | T1-8 |
 | 2026-03-12 | T1-8 Socket.IO server | `socket.plugin.ts`: fp-wrapped Server on `fastify.server`, Better Auth auth guard (TOTP check), location rooms (`location:{id}`), `session:expiring` at 25 min (5 min warning timer). `compliance-events.ts`: typed `ComplianceEventBus extends EventEmitter` bridging workers→Socket.IO. `shared-types/socket.ts`: added `break:glass:access` event. Wired `noe:deadline:warning` + `aide:supervision:overdue` emits in workers. `fastify.io` decorated. 0 TS errors, 62/62 tests. | T1-9 |
 | 2026-03-12 | T1-9 Integration tests + RLS suite | Phase 1 exit gate. `tests/integration/setup.ts`: migrations runner, `hospici_app` non-superuser role creation, fixtures (2 locations, 6 users, 2 patients, 1 pain assessment), `withRlsContext()` (SET LOCAL ROLE + SET LOCAL app.*). 28 RLS tests across 3 files: user-isolation (9), role-access (11), super-admin (8). `tests/integration/noe-deadline.test.ts` (9): Friday/Monday deadline edge cases + DB round-trip + worker query logic. `.env.test` added. `pnpm test:rls` command confirmed (requires test DB). 0 TS errors, 9/9 unit tests. | T1-10 |
+| 2026-03-12 | T1-10 CI/CD pipeline | `.github/workflows/ci.yml`: single job — pnpm 9 + Node 22 + postgres:17 + valkey:8 services, pgcrypto enabled, migrations run, then: typecheck → biome lint → AOT violation check → unit tests → integration tests → RLS suite → frontend contract tests. Env vars injected via `env:` (no secrets in source). | T1-11 |
+| 2026-03-12 | T1-11 Valkey password + pool hardening | `valkey.conf`: uncommented `requirepass hospici_dev_valkey`. `docker-compose.yml`: healthcheck updated with `-a hospici_dev_valkey --no-auth-warning`. `db/client.ts`: `statement_timeout: 30s`, `idle_in_transaction_session_timeout: 10s`, `acquire` event warns when active > 15. `valkey.plugin.ts` already reads `VALKEY_PASSWORD`. 0 TS errors. | T2-1 |
+| 2026-03-12 | T2-1 Patient CRUD backend | Migration 0005 (care_model enum+column). `CreatePatientBody/PatchPatientBody/PatientListQuery/PatientResponse/PatientListResponse` schemas. `PatientService` (list/getById/create/patch) — full PHI encrypt/decrypt + RLS-in-transaction pattern + AuditService.log(). 4 routes. 3 new validators in typebox-compiler. `AuditService` gains optional `tx` param for atomicity. `setup.ts`: FormatRegistry (uuid/date/date-time), encrypted fixture patients, audit_logs cleaned before users in cleanupFixtures. 18 schema unit tests + 14 integration tests. 0 TS errors, 131/131 tests. | T2-2 |
 
 ---
 

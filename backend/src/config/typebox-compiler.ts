@@ -19,7 +19,13 @@ import {
   HOPETreatmentPreferencesMeasureSchema,
 } from "@/contexts/analytics/schemas/hopeQualityMeasures.schema";
 import { BenefitPeriodSchema, CapCalculationSchema, NOESchema } from "@/contexts/billing/schemas";
-import { FlaccScaleSchema, PatientSchema } from "@/contexts/clinical/schemas";
+import {
+  CreatePatientBodySchema,
+  FlaccScaleSchema,
+  PatchPatientBodySchema,
+  PatientListQuerySchema,
+  PatientSchema,
+} from "@/contexts/clinical/schemas";
 // Import all schemas
 import { BreakGlassSchema, SessionSchema, UserSchema } from "@/contexts/identity/schemas";
 import { AuditLogSchema } from "@/contexts/identity/schemas/audit.schema";
@@ -39,6 +45,9 @@ export const Validators = {
   // Clinical
   Patient: TypeCompiler.Compile(PatientSchema),
   FlaccScale: TypeCompiler.Compile(FlaccScaleSchema),
+  CreatePatientBody: TypeCompiler.Compile(CreatePatientBodySchema),
+  PatchPatientBody: TypeCompiler.Compile(PatchPatientBodySchema),
+  PatientListQuery: TypeCompiler.Compile(PatientListQuerySchema),
 
   // Billing
   NOE: TypeCompiler.Compile(NOESchema),

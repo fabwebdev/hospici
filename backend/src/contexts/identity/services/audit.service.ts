@@ -14,6 +14,9 @@ import { db } from "@/db/client.js";
 import { auditLogs } from "@/db/schema/audit-logs.table.js";
 import type { AuditAction } from "../schemas/audit.schema.js";
 
+/** Duck-typed DB context — satisfied by both `db` and any Drizzle transaction `tx` */
+type AuditDbCtx = { insert: (typeof db)["insert"] };
+
 export type AuditLogMetadata = {
   /** Role of the user performing the action */
   userRole: string;
@@ -48,11 +51,14 @@ export class AuditService {
     userId: string,
     patientId: string | null,
     metadata: AuditLogMetadata,
+    /** Optional Drizzle transaction — pass when logging within a db.transaction() for atomicity */
+    tx?: AuditDbCtx,
   ): Promise<void> {
     // For non-patient events (login, logout, break-glass) the resource is the user themselves.
     const resourceId = patientId ?? metadata.resourceId ?? userId;
+    const dbCtx = tx ?? db;
 
-    await db.insert(auditLogs).values({
+    await dbCtx.insert(auditLogs).values({
       userId,
       userRole: metadata.userRole,
       locationId: metadata.locationId,
