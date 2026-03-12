@@ -4,6 +4,7 @@
 import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
 import hopeRoutes from "@/contexts/analytics/routes/hope.routes.js";
+import alertRoutes from "@/contexts/compliance/routes/alert.routes.js";
 import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
 import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
@@ -149,11 +150,12 @@ export async function buildApp() {
   await fastify.register(idgMeetingsRoutes, { prefix: "/api/v1/idg-meetings" });
   await fastify.register(patientIdgRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(hopeRoutes, { prefix: "/api/v1/hope" });
+  await fastify.register(alertRoutes, { prefix: "/api/v1/alerts" });
 
   // ── BullMQ Workers ────────────────────────────────────────────────────────────
   // Workers are created after Fastify is fully configured so the logger is ready.
-  const noeWorker = createNoeDeadlineWorker();
-  const aideWorker = createAideSupervisionWorker();
+  const noeWorker = createNoeDeadlineWorker(fastify.valkey);
+  const aideWorker = createAideSupervisionWorker(fastify.valkey);
   const hopeSubmissionWorker = createHopeSubmissionWorker();
   const hopeDeadlineWorker = createHopeDeadlineCheckWorker();
   const hqrpPeriodCloseWorker = createHqrpPeriodCloseWorker();

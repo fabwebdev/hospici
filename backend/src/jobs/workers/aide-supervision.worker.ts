@@ -13,12 +13,15 @@
 
 import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
+import { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import { db } from "@/db/client.js";
 import { aideSupervisions } from "@/db/schema/aide-supervisions.table.js";
+import { users } from "@/db/schema/users.table.js";
 import { complianceEvents } from "@/events/compliance-events.js";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
 import { and, eq, lte, not } from "drizzle-orm";
+import type Valkey from "iovalkey";
 import pino from "pino";
 import { QUEUE_NAMES, createBullMQConnection } from "../queue.js";
 
@@ -30,6 +33,12 @@ export type AideSupervisionJobResult = {
   overdueCount: number;
   markedOverdue: number;
 };
+
+let alertService: AlertService | null = null;
+
+export function setAlertService(svc: AlertService): void {
+  alertService = svc;
+}
 
 /**
  * Pure handler — separated for testability.
@@ -43,11 +52,21 @@ export async function aideSupervisionHandler(_job: Job): Promise<AideSupervision
   alertDate.setDate(alertDate.getDate() + 2);
   const alertDateStr = alertDate.toISOString().split("T")[0] as string;
 
+  const supervisionFields = {
+    id: aideSupervisions.id,
+    aideId: aideSupervisions.aideId,
+    patientId: aideSupervisions.patientId,
+    locationId: aideSupervisions.locationId,
+    nextSupervisionDue: aideSupervisions.nextSupervisionDue,
+    aideName: users.name, // Better Auth stores full name in `name` (not PHI-encrypted)
+  };
+
   const [approaching, overdue] = await Promise.all([
     // Due within 2 days but not yet overdue
     db
-      .select({ id: aideSupervisions.id, aideId: aideSupervisions.aideId })
+      .select(supervisionFields)
       .from(aideSupervisions)
+      .leftJoin(users, eq(users.id, aideSupervisions.aideId))
       .where(
         and(
           lte(aideSupervisions.nextSupervisionDue, alertDateStr),
@@ -57,13 +76,9 @@ export async function aideSupervisionHandler(_job: Job): Promise<AideSupervision
       ),
     // Already past due — not yet marked
     db
-      .select({
-        id: aideSupervisions.id,
-        aideId: aideSupervisions.aideId,
-        patientId: aideSupervisions.patientId,
-        nextSupervisionDue: aideSupervisions.nextSupervisionDue,
-      })
+      .select(supervisionFields)
       .from(aideSupervisions)
+      .leftJoin(users, eq(users.id, aideSupervisions.aideId))
       .where(
         and(
           lte(aideSupervisions.nextSupervisionDue, todayStr),
@@ -77,6 +92,37 @@ export async function aideSupervisionHandler(_job: Job): Promise<AideSupervision
       { count: approaching.length, aideIds: approaching.map((r) => r.aideId) },
       "Aide supervision due within 2 days — 42 CFR §418.76",
     );
+    for (const supervision of approaching) {
+      const dueDate = supervision.nextSupervisionDue ?? todayStr;
+      const daysRemaining = Math.ceil(
+        (new Date(dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      const aideName = supervision.aideName ?? "Unknown Aide";
+
+      if (alertService && supervision.locationId && supervision.patientId) {
+        await alertService.upsertAlert({
+          type: "AIDE_SUPERVISION_UPCOMING",
+          severity: "warning",
+          patientId: supervision.patientId,
+          patientName: aideName,
+          locationId: supervision.locationId,
+          dueDate,
+          daysRemaining: Math.max(0, daysRemaining),
+          description: `Aide supervision due in ${Math.max(0, daysRemaining)} day(s). 42 CFR §418.76`,
+          rootCause: "Aide supervision approaching 14-day deadline",
+          nextAction: `Schedule in-person or virtual supervision before ${dueDate}`,
+        }).catch((err) => log.error({ err, aideId: supervision.aideId }, "alertService.upsertAlert failed"));
+
+        complianceEvents.emit("compliance:alert", {
+          alertId: supervision.id,
+          type: "AIDE_SUPERVISION_UPCOMING",
+          severity: "warning",
+          patientId: supervision.patientId,
+          locationId: supervision.locationId,
+          daysRemaining: Math.max(0, daysRemaining),
+        });
+      }
+    }
   }
 
   // Mark overdue records
@@ -103,12 +149,38 @@ export async function aideSupervisionHandler(_job: Job): Promise<AideSupervision
       const daysOverdue = Math.floor(
         (today.getTime() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24),
       );
+      const aideName = supervision.aideName ?? "Unknown Aide";
+
       complianceEvents.emit("aide:supervision:overdue", {
         aideId: supervision.aideId,
-        aideName: "", // TODO (T2-1): join with users table for name
+        aideName,
         patientId: supervision.patientId,
         daysOverdue: Math.max(0, daysOverdue),
       });
+
+      if (alertService && supervision.locationId && supervision.patientId) {
+        await alertService.upsertAlert({
+          type: "AIDE_SUPERVISION_OVERDUE",
+          severity: "critical",
+          patientId: supervision.patientId,
+          patientName: aideName,
+          locationId: supervision.locationId,
+          dueDate,
+          daysRemaining: -daysOverdue,
+          description: `Aide supervision OVERDUE by ${Math.max(0, daysOverdue)} day(s). 42 CFR §418.76`,
+          rootCause: "14-day supervision window elapsed without documented supervision",
+          nextAction: "Document supervision immediately or suspend aide visit documentation",
+        }).catch((err) => log.error({ err, aideId: supervision.aideId }, "alertService.upsertAlert failed"));
+
+        complianceEvents.emit("compliance:alert", {
+          alertId: supervision.id,
+          type: "AIDE_SUPERVISION_OVERDUE",
+          severity: "critical",
+          patientId: supervision.patientId,
+          locationId: supervision.locationId,
+          daysRemaining: -daysOverdue,
+        });
+      }
     }
   }
 
@@ -122,7 +194,10 @@ export async function aideSupervisionHandler(_job: Job): Promise<AideSupervision
 
 // ── Worker instance ───────────────────────────────────────────────────────────
 
-export function createAideSupervisionWorker(): Worker<object, AideSupervisionJobResult> {
+export function createAideSupervisionWorker(valkey?: Valkey): Worker<object, AideSupervisionJobResult> {
+  if (valkey && !alertService) {
+    alertService = new AlertService(valkey);
+  }
   const worker = new Worker(QUEUE_NAMES.AIDE_SUPERVISION_CHECK, aideSupervisionHandler, {
     connection: createBullMQConnection(),
     concurrency: 1,

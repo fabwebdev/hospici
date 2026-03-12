@@ -55,6 +55,24 @@ export interface ServerToClientEvents {
 		daysOverdue: number;
 	}) => void;
 
+	// Compliance alert dashboard (T2-8)
+	"compliance:alert": (data: {
+		alertId: string;
+		type: string;
+		severity: "critical" | "warning" | "info";
+		patientId: string;
+		locationId: string;
+		daysRemaining: number;
+	}) => void;
+
+	"compliance:alert:updated": (data: {
+		alertId: string;
+		type: string;
+		status: string;
+		patientId: string;
+		updatedBy: string;
+	}) => void;
+
 	// IDG
 	"idg:meeting:started": (data: {
 		meetingId: string;

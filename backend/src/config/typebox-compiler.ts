@@ -60,6 +60,10 @@ import {
 import { NrsScaleSchema } from "@/contexts/clinical/schemas/nrsScale.schema";
 import { PainadScaleSchema } from "@/contexts/clinical/schemas/painadScale.schema";
 import { WongBakerScaleSchema } from "@/contexts/clinical/schemas/wongBakerScale.schema";
+import {
+	AlertListResponseSchema,
+	AlertStatusPatchBodySchema,
+} from "@/contexts/compliance/schemas/alert.schema.js";
 // Import all schemas
 import { BreakGlassSchema, SessionSchema, UserSchema } from "@/contexts/identity/schemas";
 import { AuditLogSchema } from "@/contexts/identity/schemas/audit.schema";
@@ -140,6 +144,10 @@ export const Validators = {
   IDGMeetingListResponse: TypeCompiler.Compile(IDGMeetingListResponseSchema),
   IDGComplianceStatus: TypeCompiler.Compile(IDGComplianceStatusSchema),
   AideSupervision: TypeCompiler.Compile(AideSupervisionSchema),
+
+  // Compliance alerts
+  AlertListResponse: TypeCompiler.Compile(AlertListResponseSchema),
+  AlertStatusPatchBody: TypeCompiler.Compile(AlertStatusPatchBodySchema),
 
   // Analytics — HOPE Quality Reporting (replaces HIS, effective 2025-10-01)
   HOPEAdmission: TypeCompiler.Compile(HOPEAdmissionSchema),

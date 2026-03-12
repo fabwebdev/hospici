@@ -210,6 +210,10 @@ async function socketPlugin(fastify: FastifyInstance) {
     io.emit("idg:due:warning", data);
   });
 
+  complianceEvents.on("compliance:alert", (data) => {
+    io.to(`location:${data.locationId}`).emit("compliance:alert", data);
+  });
+
   complianceEvents.on("break:glass:access", (data) => {
     // Notify all admins (super_admin room, wired in T3-8)
     io.emit("break:glass:access", data);

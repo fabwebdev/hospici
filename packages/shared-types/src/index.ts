@@ -66,6 +66,15 @@ export type {
   PatchEncounterInput,
 } from "./vantageChart.js";
 export { VANTAGE_CHART_STEPS } from "./vantageChart.js";
+export { AlertType, HARD_BLOCK_ALERT_TYPES } from "./alerts.js";
+export type {
+  AlertSeverity,
+  AlertStatus,
+  Alert,
+  AlertListResponse,
+  AlertStatusPatchBody,
+  UpsertAlertInput,
+} from "./alerts.js";
 export type {
   IDGAttendeeNoteEntry,
   IDGAttendeeNotes,
