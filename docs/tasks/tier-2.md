@@ -351,29 +351,180 @@ Pre-computed alerts cached in Valkey (TTL 5 min). `upsertAlert()` writes DB + in
 
 ---
 
-## T2-9 · Note review system `MEDIUM`
+## T2-9 · Note review system `MEDIUM` ✅ DONE
 
-> Supervisors (DON, clinical manager) review in-progress and finalized notes. Enables compliance coaching and prevents documentation liabilities.
+> Supervisors (DON, clinical manager) review in-progress and finalized notes. Enables compliance coaching and prevents documentation liabilities. Expanded from original 3-state design based on competitor QA research (FireNote, Axxess, WellSky).
 
-`needs:` T1-4 (audit), T1-8 (Socket.IO), T2-1
+`needs:` T1-4 (audit), T1-8 (Socket.IO), T2-1, T2-8 (alert service)
 
-**Encounters table additions:**
-- `review_status: pgEnum('note_review_status', ['PENDING', 'APPROVED', 'REVISION_REQUESTED'])`
-- `reviewer_id`, `review_note`, `reviewed_at`
+`read:` `BE-SPEC`, `DB-ARCH`
 
-**Routes:**
-- `GET /api/v1/review-queue` (supervisor only — all encounters with `review_status: 'PENDING'`)
-- `POST /api/v1/encounters/:id/review` (supervisor only — body: `{ status: 'APPROVED' | 'REVISION_REQUESTED'; note?: string }`)
+---
 
-**Workflow:** When `REVISION_REQUESTED`, Socket.IO emits `encounter:revision-requested` to clinician's session with reviewer's note. Clinician edits, re-submits; status returns to `PENDING`.
+### Status enum (7 states)
 
-**RLS:** `PENDING` and `REVISION_REQUESTED` readable by supervisor + authoring clinician. `APPROVED` is read-only for all roles.
+```typescript
+pgEnum('note_review_status', [
+  'PENDING',             // submitted by clinician, awaiting review
+  'IN_REVIEW',           // supervisor has opened the note
+  'REVISION_REQUESTED',  // deficiencies recorded, returned to clinician
+  'RESUBMITTED',         // clinician addressed revisions, back in queue
+  'APPROVED',            // clinically acceptable — read-only for all roles
+  'LOCKED',              // fully compliant + signed + bill-safe (set by T3-5 signature workflow)
+  'ESCALATED',           // supervisor escalated — requires escalation_reason
+])
+```
 
-**Audit:** Every status transition logged to `audit_logs`.
+State machine: `PENDING → IN_REVIEW → REVISION_REQUESTED → RESUBMITTED → IN_REVIEW → APPROVED → LOCKED`. `ESCALATED` reachable from `IN_REVIEW` or `REVISION_REQUESTED`. `LOCKED` set by T3-5 (electronic signatures); T2-9 only reaches `APPROVED`.
 
-**Done when:** Supervisor sees pending notes queue; `REVISION_REQUESTED` triggers Socket.IO to clinician; approved note cannot be edited; all transitions in audit log
+---
 
-**Alert integration:** On note submission, emit `alertService.upsertAlert({ type: 'NOTE_REVIEW_REQUIRED', ... })` so T2-8 dashboard shows supervisor work items.
+### Deficiency taxonomy
+
+```typescript
+// shared-types/src/noteReview.ts
+export const DeficiencyType = {
+  CLINICAL_SUPPORT:         'CLINICAL_SUPPORT',        // missing assessment detail / supporting clinical data
+  COMPLIANCE_MISSING:       'COMPLIANCE_MISSING',       // compliance wording risk / unsupported eligibility phrasing
+  SIGNATURE_MISSING:        'SIGNATURE_MISSING',        // note unsigned (links to T3-5)
+  CARE_PLAN_MISMATCH:       'CARE_PLAN_MISMATCH',       // note inconsistent with current care plan
+  VISIT_FREQUENCY_MISMATCH: 'VISIT_FREQUENCY_MISMATCH', // visit frequency variance vs plan
+  MEDICATION_ISSUE:         'MEDICATION_ISSUE',         // medication reconciliation gap
+  HOPE_RELATED:             'HOPE_RELATED',             // HOPE window or documentation issue
+  BILLING_IMPACT:           'BILLING_IMPACT',           // note holding claim / recert / order processing
+} as const;
+```
+
+---
+
+### Encounters table additions (Migration 0014)
+
+```typescript
+// Add to encounters table
+review_status:       pgEnum('note_review_status', [...7 states...]).notNull().default('PENDING')
+reviewer_id:         uuid FK → users.id, nullable
+reviewed_at:         timestamp, nullable
+escalated_at:        timestamp, nullable
+escalation_reason:   text, nullable          // required if status = 'ESCALATED'
+// Structured revision requests — replaces free-text note
+revision_requests:   jsonb.default('[]')     // RevisionRequest[]
+// Review metadata
+priority:            integer.notNull().default(0)   // 0=normal, 1=high, 2=critical
+assigned_reviewer_id: uuid FK → users.id, nullable
+due_by:              timestamp, nullable
+billing_impact:      boolean.notNull().default(false)
+compliance_impact:   boolean.notNull().default(false)
+first_pass_approved: boolean.notNull().default(false)
+revision_count:      integer.notNull().default(0)
+```
+
+**RevisionRequest shape** (stored in `revision_requests` JSONB array):
+```typescript
+interface RevisionRequest {
+  id: string;               // uuid
+  deficiencyType: DeficiencyType;
+  comment: string;
+  severity: 'low' | 'medium' | 'high';
+  dueBy: string;            // ISO date
+  resolvedAt: string | null;
+  resolvedComment: string | null;
+}
+```
+
+---
+
+### Routes
+
+| Method | Path | Role | Description |
+|---|---|---|---|
+| `GET` | `/api/v1/review-queue` | supervisor | Filtered queue — query params: `status`, `priority`, `assignedReviewerId`, `billingImpact`, `complianceImpact`, `discipline`, `patientId` |
+| `POST` | `/api/v1/encounters/:id/review` | supervisor | Transition status — body: `{ status, revisionRequests?: RevisionRequest[], escalationReason?: string }` |
+| `PATCH` | `/api/v1/review-queue/:encounterId/assign` | supervisor | Assign reviewer — body: `{ assignedReviewerId, priority?, dueBy? }` |
+| `POST` | `/api/v1/encounters/:id/review/escalate` | supervisor | Escalate — body: `{ escalationReason }` — always requires reason (audit pattern) |
+| `GET` | `/api/v1/encounters/:id/review/history` | supervisor + author | Full revision history: original note + each revision cycle side-by-side |
+| `POST` | `/api/v1/review-queue/acknowledge` | supervisor | Bulk-acknowledge — body: `{ encounterIds: string[] }` — only valid for `status: 'new'` alerts |
+
+---
+
+### Alert type additions (add to `@hospici/shared-types/alerts.ts`)
+
+```typescript
+NOTE_REVIEW_REQUIRED: 'NOTE_REVIEW_REQUIRED',  // note submitted, awaiting supervisor
+NOTE_INCOMPLETE:      'NOTE_INCOMPLETE',         // note missing required sections
+NOTE_OVERDUE_REVIEW:  'NOTE_OVERDUE_REVIEW',     // review SLA exceeded (dueBy passed)
+```
+
+BullMQ daily job checks `encounters` for `review_status IN ('PENDING','IN_REVIEW','RESUBMITTED')` where `due_by < now()` → emits `NOTE_OVERDUE_REVIEW` alert.
+
+---
+
+### Socket.IO events
+
+| Event | Emitted when | Target |
+|---|---|---|
+| `encounter:revision-requested` | status → `REVISION_REQUESTED` | authoring clinician's session |
+| `encounter:resubmitted` | status → `RESUBMITTED` | assigned reviewer's session |
+| `review:assigned` | `PATCH /assign` called | assigned reviewer's session |
+| `review:overdue` | BullMQ job fires `NOTE_OVERDUE_REVIEW` | supervisor location room |
+| `review:approved` | status → `APPROVED` | authoring clinician's session |
+| `review:escalated` | status → `ESCALATED` | location room (all supervisors) |
+
+---
+
+### RLS
+
+- `PENDING`, `IN_REVIEW`, `REVISION_REQUESTED`, `RESUBMITTED`: readable by supervisor + authoring clinician
+- `APPROVED`: read-only for all roles (no edits permitted)
+- `ESCALATED`: readable by supervisor + admin only
+- Assignment (`assigned_reviewer_id`): only supervisor/admin can write
+
+---
+
+### Frontend
+
+| File | Purpose |
+|---|---|
+| `noteReview.functions.ts` | `getReviewQueueFn`, `submitReviewFn`, `assignReviewerFn`, `escalateReviewFn`, `getReviewHistoryFn`, `bulkAcknowledgeFn` |
+| `_authed/review-queue/index.tsx` | Queue with client-side saved filter tabs: `Needs Review`, `Revision Requested`, `Resubmitted`, `Overdue`, `High Priority`, `Billing Impact` |
+| `ReviewCard` component | Status chip + deficiency chips (one per `DeficiencyType`) + priority badge + `billingImpact` / `complianceImpact` flags + assignee selector + `dueBy` SLA timer |
+| `RevisionHistoryPanel` component | Side-by-side: original note text ↔ current draft — client-side diff (`diff` npm package) |
+| Socket.IO handlers | All 6 events above → invalidate query + toast notification |
+
+**Queue filter tabs** are client-side preset filter configs only — no DB-persisted saved views (deferred to T3-13 chart audit module).
+
+---
+
+### Backend service
+
+```typescript
+// backend/src/contexts/clinical/services/noteReview.service.ts
+NoteReviewService.listQueue(filters)          // with Valkey TTL-30s cache per location
+NoteReviewService.submitReview(encId, body, reviewerId)  // validates state machine transitions
+NoteReviewService.assignReview(encId, body)
+NoteReviewService.escalate(encId, reason, reviewerId)   // requires reason — audit mandatory
+NoteReviewService.getHistory(encId)
+NoteReviewService.bulkAcknowledge(encounterIds)
+```
+
+On every status transition: increment `revision_count` (if REVISION_REQUESTED), set `first_pass_approved = true` (if APPROVED and `revision_count === 0`), log to `audit_logs`.
+
+---
+
+### Deferred from this task (follow-on tasks)
+
+| Feature | Deferred to |
+|---|---|
+| `LOCKED` status set by electronic signature | T3-5 |
+| Discipline-specific review checklists | T3-13 (chart audit module) |
+| Chart audit / survey-readiness packet | T3-13 |
+| Quality scorecards + revision trend reporting | T3-11 (QAPI) |
+| AI/rules-assisted QA hints | T4-9 (predictive analytics) |
+| Missing signature / unsigned order indicators | T3-5 |
+| Attachment-aware review sidebar (orders, care plan) | T3-9 |
+
+---
+
+**Done when:** Queue shows all 7-state encounters with correct filter tabs; structured revision requests stored as `RevisionRequest[]` JSONB (not free-text); all 6 Socket.IO events fire to correct recipients; side-by-side revision history renders; assignment + escalation (with required reason) routes work; `NOTE_REVIEW_REQUIRED` / `NOTE_OVERDUE_REVIEW` alerts appear in T2-8 dashboard; `first_pass_approved` and `revision_count` tracked from first transition; `APPROVED` note cannot be edited; all transitions in `audit_logs`
 
 ---
 

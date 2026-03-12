@@ -64,6 +64,15 @@ import {
 	AlertListResponseSchema,
 	AlertStatusPatchBodySchema,
 } from "@/contexts/compliance/schemas/alert.schema.js";
+import {
+  AssignReviewBodySchema,
+  BulkAcknowledgeBodySchema,
+  EscalateReviewBodySchema,
+  ReviewHistoryResponseSchema,
+  ReviewQueueItemSchema,
+  ReviewQueueResponseSchema,
+  SubmitReviewBodySchema,
+} from "@/contexts/clinical/schemas/noteReview.schema.js";
 // Import all schemas
 import { BreakGlassSchema, SessionSchema, UserSchema } from "@/contexts/identity/schemas";
 import { AuditLogSchema } from "@/contexts/identity/schemas/audit.schema";
@@ -148,6 +157,15 @@ export const Validators = {
   // Compliance alerts
   AlertListResponse: TypeCompiler.Compile(AlertListResponseSchema),
   AlertStatusPatchBody: TypeCompiler.Compile(AlertStatusPatchBodySchema),
+
+  // Clinical — note review (T2-9)
+  SubmitReviewBody: TypeCompiler.Compile(SubmitReviewBodySchema),
+  AssignReviewBody: TypeCompiler.Compile(AssignReviewBodySchema),
+  EscalateReviewBody: TypeCompiler.Compile(EscalateReviewBodySchema),
+  BulkAcknowledgeBody: TypeCompiler.Compile(BulkAcknowledgeBodySchema),
+  ReviewQueueItem: TypeCompiler.Compile(ReviewQueueItemSchema),
+  ReviewQueueResponse: TypeCompiler.Compile(ReviewQueueResponseSchema),
+  ReviewHistoryResponse: TypeCompiler.Compile(ReviewHistoryResponseSchema),
 
   // Analytics — HOPE Quality Reporting (replaces HIS, effective 2025-10-01)
   HOPEAdmission: TypeCompiler.Compile(HOPEAdmissionSchema),

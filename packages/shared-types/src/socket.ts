@@ -98,6 +98,40 @@ export interface ServerToClientEvents {
 
 	"session:expiring": (data: { expiresInSeconds: number }) => void;
 
+	// Note review (T2-9)
+	"encounter:revision-requested": (data: {
+		encounterId: string;
+		reviewerId: string;
+		revisionRequests: unknown[];
+	}) => void;
+
+	"encounter:resubmitted": (data: {
+		encounterId: string;
+		assignedReviewerId: string | null;
+	}) => void;
+
+	"review:assigned": (data: {
+		encounterId: string;
+		assignedReviewerId: string;
+		assignedBy: string;
+	}) => void;
+
+	"review:approved": (data: {
+		encounterId: string;
+		reviewerId: string;
+	}) => void;
+
+	"review:escalated": (data: {
+		encounterId: string;
+		escalatedBy: string;
+		escalationReason: string | undefined;
+	}) => void;
+
+	"review:overdue": (data: {
+		overdueCount: number;
+		checkedAt: string;
+	}) => void;
+
 	// Security
 	"break:glass:access": (data: {
 		userId: string;

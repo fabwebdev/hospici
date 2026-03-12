@@ -13,6 +13,10 @@ export const AlertType = {
 	CAP_THRESHOLD: "CAP_THRESHOLD", // ≥80% hospice cap
 	BENEFIT_PERIOD_EXPIRING: "BENEFIT_PERIOD_EXPIRING", // recert needed
 	RECERTIFICATION_DUE: "RECERTIFICATION_DUE", // cert expiring + F2F dependency
+	// T2-9 — note review
+	NOTE_REVIEW_REQUIRED: "NOTE_REVIEW_REQUIRED", // note submitted, awaiting supervisor
+	NOTE_INCOMPLETE: "NOTE_INCOMPLETE", // note missing required sections
+	NOTE_OVERDUE_REVIEW: "NOTE_OVERDUE_REVIEW", // review SLA exceeded (dueBy passed)
 } as const;
 
 export type AlertType = (typeof AlertType)[keyof typeof AlertType];

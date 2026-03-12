@@ -86,3 +86,14 @@ export type {
   IDGComplianceStatus,
   CreateIDGMeetingInput,
 } from "./idg.js";
+export { DeficiencyType, NOTE_REVIEW_TRANSITIONS } from "./noteReview.js";
+export type {
+  NoteReviewStatus,
+  RevisionRequest,
+  ReviewQueueItem,
+  ReviewQueueResponse,
+  SubmitReviewInput,
+  AssignReviewInput,
+  EscalateReviewInput,
+  BulkAcknowledgeInput,
+} from "./noteReview.js";

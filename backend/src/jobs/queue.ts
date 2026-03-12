@@ -22,6 +22,7 @@ export const QUEUE_NAMES = {
   HOPE_DEADLINE_CHECK: "hope-deadline-check",
   HQRP_PERIOD_CLOSE: "hqrp-period-close",
   CAP_RECALCULATION: "cap-recalculation",
+  NOTE_REVIEW_DEADLINE_CHECK: "note-review-deadline-check",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -103,6 +104,11 @@ export const capRecalculationQueue = new Queue(QUEUE_NAMES.CAP_RECALCULATION, {
   defaultJobOptions,
 });
 
+export const noteReviewDeadlineQueue = new Queue(QUEUE_NAMES.NOTE_REVIEW_DEADLINE_CHECK, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
 // ── Daily schedule registration ───────────────────────────────────────────────
 
 /**
@@ -159,6 +165,16 @@ export async function scheduleDailyJobs(): Promise<void> {
       jobId: "cap-annual-recalculation",
     },
   );
+
+  // Note review deadline check — daily at 06:30 UTC (offset from other daily jobs)
+  await noteReviewDeadlineQueue.add(
+    "daily-check",
+    {},
+    {
+      repeat: { pattern: "30 6 * * *" },
+      jobId: "note-review-daily-check",
+    },
+  );
 }
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
@@ -171,4 +187,5 @@ export async function closeQueues(): Promise<void> {
   await hopeDeadlineCheckQueue.close();
   await hqrpPeriodCloseQueue.close();
   await capRecalculationQueue.close();
+  await noteReviewDeadlineQueue.close();
 }

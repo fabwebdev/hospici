@@ -193,9 +193,11 @@ Drizzle table `orders` + RLS.
 
 ---
 
-## T3-11 · QAPI management `MEDIUM`
+## T3-11 · QAPI management + clinician quality scorecards `MEDIUM`
 
-> Quality Assessment and Performance Improvement — CMS-required quality program.
+> Quality Assessment and Performance Improvement — CMS-required quality program. Also includes clinician-level documentation quality scorecards and branch/discipline deficiency trend reporting (powered by `revision_count`, `first_pass_approved`, `revision_requests` data captured in T2-9).
+
+`needs:` T2-9 (note review — provides `revision_count`, `first_pass_approved`, `RevisionRequest[]` data)
 
 **TypeBox `QAPIEventSchema`:**
 ```typescript
@@ -215,14 +217,54 @@ Drizzle table `orders` + RLS.
 
 Drizzle table `qapi_events` + RLS.
 
-**Routes:**
+**QAPI routes:**
 - `POST /api/v1/qapi`
 - `GET /api/v1/qapi` (filterable by status/type)
 - `PATCH /api/v1/qapi/:id` (add action items, close)
 
 **BullMQ `qapi-overdue-check`:** Daily, flag open events with overdue action items → alert dashboard.
 
-**Done when:** QAPI event created, action items assigned, overdue items surface in alert dashboard; closed events immutable
+---
+
+### Clinician quality scorecards
+
+**Route:** `GET /api/v1/analytics/clinician-quality?clinicianId=&from=&to=`
+- `supervisor` + `admin` roles only
+- Aggregates from `encounters` table (`revision_count`, `first_pass_approved`, `revision_requests` JSONB)
+
+**Scorecard shape:**
+```typescript
+{
+  clinicianId: string;
+  period: { from: string; to: string };
+  totalNotes: number;
+  firstPassApprovalRate: number;          // % approved with revision_count = 0
+  averageRevisionCount: number;
+  averageTurnaroundHours: number;         // submitted_at → approved_at delta
+  deficiencyBreakdown: {                  // grouped by DeficiencyType
+    [type: string]: number;               // count of occurrences
+  };
+  revisionTrend: { week: string; count: number }[]; // rolling 12 weeks
+}
+```
+
+---
+
+### Branch + discipline deficiency trend reporting
+
+**Route:** `GET /api/v1/analytics/deficiency-trends?locationId=&discipline=&from=&to=`
+- `supervisor` + `admin` roles only
+
+**Returns:**
+```typescript
+{
+  topDeficiencyTypes: { type: DeficiencyType; count: number }[];  // sorted desc
+  weeklyTrend: { week: string; byType: Record<DeficiencyType, number> }[];
+  reviewerWorkload: { reviewerId: string; reviewerName: string; assigned: number; resolved: number }[];
+}
+```
+
+**Done when:** QAPI event created, action items assigned, overdue items surface in alert dashboard; closed events immutable; clinician scorecard returns correct first-pass rate and deficiency breakdown from T2-9 data; trend report aggregates by DeficiencyType across location/discipline/period
 
 ---
 
@@ -259,3 +301,120 @@ Runs before the `claim-submission` BullMQ job enqueues.
 - `WARN` failures require supervisor override with reason logged to `audit_log`
 
 **Done when:** Claim with missing F2F returns BLOCK failure; claim with WARN issue requires supervisor override; all 10 rule categories produce failures on seeded test data
+
+---
+
+## T3-13 · Chart audit mode + review checklists + survey-readiness `MEDIUM`
+
+> Full chart-level audit capability — from individual note QA to survey-readiness packet completeness. Deferred from T2-9 because it requires T3-5 (signatures), T3-1 (HOPE), T3-2 (NOE/NOTR), and T3-9 (orders) to be complete.
+
+`needs:` T2-9 (note review), T3-1 (HOPE), T3-2 (NOE/NOTR), T3-5 (electronic signatures), T3-9 (physician orders)
+
+`read:` `BE-SPEC`, `DB-ARCH`
+
+---
+
+### Discipline-specific review checklists
+
+A checklist template is a set of required items for a given `(discipline, visit_type)` pair. Supervisors step through checklist items when reviewing a note.
+
+**New table `review_checklist_templates`** (Migration 0015):
+```typescript
+{
+  discipline: DisciplineType;           // RN | SW | CHAPLAIN | THERAPY | AIDE
+  visitType: VisitType;                 // ROUTINE | ADMISSION | RECERTIFICATION | DISCHARGE
+  items: ChecklistItem[];               // JSONB
+  version: integer;
+  isActive: boolean;
+}
+// ChecklistItem: { id, label, required: boolean, regulatoryRef?: string }
+```
+
+Seed templates for: `RN × ROUTINE`, `RN × ADMISSION`, `RN × RECERTIFICATION`, `SW × ROUTINE`, `CHAPLAIN × ROUTINE`.
+
+**Checklist response stored per review** — add `checklist_responses` JSONB column to encounters (array of `{ itemId, checked, reviewerId, timestamp }`).
+
+**Route:** `GET /api/v1/review-checklist-templates?discipline=&visitType=` — returns active template for that pair.
+
+---
+
+### Chart audit mode
+
+A supervisor audits a patient's full chart packet — not a single encounter.
+
+**Route:** `GET /api/v1/patients/:id/chart-audit`
+- `supervisor` + `compliance_officer` roles only
+- Returns composite readiness report:
+
+```typescript
+{
+  patientId: string;
+  auditDate: string;
+  sections: {
+    encounters:        { total: number; pending: number; approved: number; locked: number; overdue: number };
+    hopeAssessments:   { required: number; filed: number; missing: string[] };  // missing window names
+    noeNotr:           { noeStatus: string; notrRequired: boolean; notrStatus: string | null };
+    orders:            { total: number; unsigned: number; expired: number };
+    signatures:        { required: number; obtained: number; missing: string[] };  // document names
+    carePlan:          { present: boolean; lastUpdated: string | null; disciplinesComplete: string[] };
+    medications:       { active: number; unreconciled: number; teachingPending: number };
+    idgMeetings:       { lastHeld: string | null; nextDue: string; overdue: boolean };
+  };
+  surveyReadiness: {
+    score: number;                      // 0-100
+    blockers: string[];                 // hard issues (CMS-required docs missing)
+    warnings: string[];                 // soft issues (coaching gaps)
+  };
+  missingDocuments: {
+    type: string;
+    description: string;
+    dueBy: string | null;
+    severity: 'critical' | 'warning';
+  }[];
+}
+```
+
+---
+
+### DB-persisted saved filter views
+
+Supervisors can save named filter configurations for the note review queue.
+
+**New table `review_queue_views`:**
+```typescript
+{
+  ownerId: uuid FK → users.id;
+  name: string;
+  filters: jsonb;   // same shape as GET /review-queue query params
+  isShared: boolean;
+  locationId: uuid;
+}
+```
+
+**Routes:**
+- `GET /api/v1/review-queue/views` — list saved views for current user + shared views in location
+- `POST /api/v1/review-queue/views` — save filter config
+- `DELETE /api/v1/review-queue/views/:id` — delete own view
+
+---
+
+### Bulk QA actions
+
+Beyond bulk-acknowledge (already in T2-9), add:
+
+**Route:** `POST /api/v1/review-queue/bulk-action`
+```typescript
+body: {
+  encounterIds: string[];
+  action: 'ASSIGN' | 'REQUEST_REVISION' | 'ACKNOWLEDGE';
+  // ASSIGN requires assignedReviewerId
+  // REQUEST_REVISION requires a single shared RevisionRequest (applied to all)
+  assignedReviewerId?: string;
+  revisionRequest?: Omit<RevisionRequest, 'id' | 'resolvedAt' | 'resolvedComment'>;
+}
+```
+
+---
+
+**Done when:** Checklist template returns correct items for `RN × ROUTINE`; checklist responses stored per review; chart audit endpoint returns all 8 sections + surveyReadiness score; missing documents listed with severity; saved filter views persist across sessions; bulk-assign and bulk-revision-request work atomically (all or none, rolled back on partial failure); unauthorized roles get 403 on all routes
+

@@ -14,6 +14,10 @@ export const alertTypeEnum = pgEnum("alert_type_enum", [
 	"CAP_THRESHOLD",
 	"BENEFIT_PERIOD_EXPIRING",
 	"RECERTIFICATION_DUE",
+	// T2-9 note review alert types
+	"NOTE_REVIEW_REQUIRED",
+	"NOTE_INCOMPLETE",
+	"NOTE_OVERDUE_REVIEW",
 ]);
 
 export const alertSeverityEnum = pgEnum("alert_severity_enum", ["critical", "warning", "info"]);

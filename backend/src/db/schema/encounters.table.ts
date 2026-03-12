@@ -1,12 +1,14 @@
 /**
  * encounters — one row per patient visit (T2-7 VantageChart).
  * VantageChart narrative fields are co-located here for CMS audit traceability.
- * Note-review columns (review_status, reviewer_id, etc.) are added in T2-9.
+ * Note-review columns added in T2-9 (migration 0013).
  */
 
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -36,6 +38,16 @@ export const encounterStatusEnum = pgEnum("encounter_status", [
 export const vantageChartMethodEnum = pgEnum("vantage_chart_method", [
   "TEMPLATE",
   "LLM",
+]);
+
+export const noteReviewStatusEnum = pgEnum("note_review_status", [
+  "PENDING",
+  "IN_REVIEW",
+  "REVISION_REQUESTED",
+  "RESUBMITTED",
+  "APPROVED",
+  "LOCKED",
+  "ESCALATED",
 ]);
 
 export const encounters = pgTable(
@@ -68,6 +80,24 @@ export const encounters = pgTable(
     }),
     /** CMS audit: maps each sentence → fragment ID + input snapshot */
     vantageChartTraceability: jsonb("vantage_chart_traceability"),
+
+    // ── Note review fields (T2-9) ──────────────────────────────────────────────
+    reviewStatus: noteReviewStatusEnum("review_status").notNull().default("PENDING"),
+    reviewerId: uuid("reviewer_id").references(() => users.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    escalatedAt: timestamp("escalated_at", { withTimezone: true }),
+    escalationReason: text("escalation_reason"),
+    /** Structured RevisionRequest[] JSONB — replaces free-text note */
+    revisionRequests: jsonb("revision_requests").notNull().default([]),
+    reviewPriority: integer("review_priority").notNull().default(0),
+    assignedReviewerId: uuid("assigned_reviewer_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    dueBy: timestamp("due_by", { withTimezone: true }),
+    billingImpact: boolean("billing_impact").notNull().default(false),
+    complianceImpact: boolean("compliance_impact").notNull().default(false),
+    firstPassApproved: boolean("first_pass_approved").notNull().default(false),
+    revisionCount: integer("revision_count").notNull().default(0),
 
     visitedAt: timestamp("visited_at", { withTimezone: true })
       .notNull()

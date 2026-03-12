@@ -17,6 +17,10 @@ export const AlertTypeSchema = Type.Union([
 	Type.Literal("CAP_THRESHOLD"),
 	Type.Literal("BENEFIT_PERIOD_EXPIRING"),
 	Type.Literal("RECERTIFICATION_DUE"),
+	// T2-9 note review alert types
+	Type.Literal("NOTE_REVIEW_REQUIRED"),
+	Type.Literal("NOTE_INCOMPLETE"),
+	Type.Literal("NOTE_OVERDUE_REVIEW"),
 ]);
 
 export const AlertSeveritySchema = Type.Union([
