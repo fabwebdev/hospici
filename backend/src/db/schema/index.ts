@@ -14,3 +14,4 @@ export * from "./noe.table.js";
 export * from "./benefit-periods.table.js";
 export * from "./idg-meetings.table.js";
 export * from "./aide-supervisions.table.js";
+export * from "./care-plans.table.js";

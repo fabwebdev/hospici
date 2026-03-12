@@ -3,13 +3,18 @@
 
 import { IDGOverdueModal } from "@/components/clinical/idg-overdue-modal.js";
 import { getTrajectoryFn } from "@/functions/assessment.functions.js";
+import { getCarePlanFn } from "@/functions/carePlan.functions.js";
 import { getIDGComplianceFn } from "@/functions/idg.functions.js";
 import { getPatientFn } from "@/functions/patient.functions.js";
 import { patientKeys } from "@/lib/query/keys.js";
 import type {
+  CarePlanResponse,
+  DisciplineType,
   HumanName,
   IDGComplianceStatus,
   PatientResponse,
+  PhysicianReview,
+  SmartGoal,
   TrajectoryDataPoint,
   TrajectoryResponse,
 } from "@hospici/shared-types";
@@ -30,6 +35,10 @@ export const Route = createFileRoute("/_authed/patients/$patientId")({
       queryClient.ensureQueryData({
         queryKey: ["idg-compliance", patientId],
         queryFn: () => getIDGComplianceFn({ data: { patientId } }),
+      }),
+      queryClient.ensureQueryData({
+        queryKey: ["care-plan", patientId],
+        queryFn: () => getCarePlanFn({ data: { patientId } }),
       }),
     ]),
   component: PatientDetailPage,
@@ -162,6 +171,169 @@ function TrajectoryPanel({ patientId }: { patientId: string }) {
   );
 }
 
+// ── Care Plan Panel ───────────────────────────────────────────────────────────
+
+const DISCIPLINE_LABELS: Record<DisciplineType, string> = {
+  RN: "Nursing (RN)",
+  SW: "Social Work",
+  CHAPLAIN: "Chaplaincy",
+  THERAPY: "Therapy",
+  AIDE: "Aide",
+  VOLUNTEER: "Volunteer Services",
+  BEREAVEMENT: "Bereavement",
+  PHYSICIAN: "Physician / Medical Director",
+};
+
+// ── Physician review status banner ───────────────────────────────────────────
+
+function PhysicianReviewBanner({ review }: { review: PhysicianReview }) {
+  if (review.isInitialReviewOverdue) {
+    return (
+      <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200">
+        <p className="text-sm font-semibold text-red-800">
+          ⚠ Initial physician review overdue (42 CFR §418.56(b))
+        </p>
+        <p className="text-xs text-red-600 mt-0.5">
+          Required within 2 calendar days of admission. Deadline:{" "}
+          {review.initialReviewDeadline ?? "—"}
+        </p>
+      </div>
+    );
+  }
+
+  if (review.isOngoingReviewOverdue) {
+    return (
+      <div className="mb-4 p-3 rounded-md bg-orange-50 border border-orange-200">
+        <p className="text-sm font-semibold text-orange-800">
+          ⚠ 14-day physician review overdue (42 CFR §418.56(b))
+        </p>
+        <p className="text-xs text-orange-600 mt-0.5">
+          Next review was due: {review.nextReviewDue ?? "—"}
+        </p>
+      </div>
+    );
+  }
+
+  if (!review.initialReviewCompletedAt && review.initialReviewDeadline) {
+    return (
+      <div className="mb-4 p-3 rounded-md bg-yellow-50 border border-yellow-200">
+        <p className="text-sm font-semibold text-yellow-800">
+          Pending initial physician review
+        </p>
+        <p className="text-xs text-yellow-600 mt-0.5">
+          Due by: {review.initialReviewDeadline}
+        </p>
+      </div>
+    );
+  }
+
+  if (review.lastReviewAt) {
+    return (
+      <div className="mb-4 p-3 rounded-md bg-green-50 border border-green-200">
+        <p className="text-sm text-green-800">
+          ✓ Last physician review:{" "}
+          {new Date(review.lastReviewAt).toLocaleDateString()} · Next due:{" "}
+          {review.nextReviewDue ?? "—"}
+        </p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function SmartGoalBadge({ goal }: { goal: SmartGoal }) {
+  const statusColors: Record<SmartGoal["status"], string> = {
+    active: "bg-blue-100 text-blue-800",
+    met: "bg-green-100 text-green-800",
+    revised: "bg-yellow-100 text-yellow-800",
+  };
+  return (
+    <div className="border border-gray-200 rounded p-3 text-sm space-y-1">
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-medium text-gray-900">{goal.goal}</p>
+        <span
+          className={`shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${statusColors[goal.status]}`}
+        >
+          {goal.status}
+        </span>
+      </div>
+      <p className="text-xs text-gray-500">Target: {goal.targetDate}</p>
+    </div>
+  );
+}
+
+function CarePlanPanel({ patientId }: { patientId: string }) {
+  const { data: carePlan, isLoading } = useQuery<CarePlanResponse | null>({
+    queryKey: ["care-plan", patientId],
+    queryFn: () =>
+      getCarePlanFn({ data: { patientId } }) as Promise<CarePlanResponse | null>,
+  });
+
+  if (isLoading) {
+    return <div className="text-xs text-gray-400 py-2">Loading care plan…</div>;
+  }
+
+  if (!carePlan) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">Interdisciplinary Care Plan</h2>
+        <p className="text-sm text-gray-400 italic">No care plan on file for this patient.</p>
+      </div>
+    );
+  }
+
+  // Always render all disciplines in fixed order, even if a section is empty
+  const ALL_DISCIPLINES: DisciplineType[] = [
+    "RN", "SW", "CHAPLAIN", "THERAPY", "AIDE", "VOLUNTEER", "BEREAVEMENT", "PHYSICIAN",
+  ];
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">Interdisciplinary Care Plan</h2>
+        <span className="text-xs text-gray-400">v{carePlan.version}</span>
+      </div>
+      <PhysicianReviewBanner review={carePlan.physicianReview} />
+      <div className="space-y-6">
+        {ALL_DISCIPLINES.map((disc) => {
+          const section = carePlan.disciplineSections[disc];
+          const hasContent = section && (section.notes || section.goals.length > 0);
+          return (
+            <div key={disc} className="border-l-2 border-gray-100 pl-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                {DISCIPLINE_LABELS[disc]}
+              </h3>
+              {!section || !hasContent ? (
+                <p className="text-xs text-gray-400 italic">No documentation yet.</p>
+              ) : (
+                <>
+                  {section.notes && (
+                    <p className="text-sm text-gray-600 mb-2">{section.notes}</p>
+                  )}
+                  {section.goals.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        SMART Goals ({section.goals.length})
+                      </p>
+                      {section.goals.map((g) => (
+                        <SmartGoalBadge key={g.id} goal={g} />
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    Updated {new Date(section.lastUpdatedAt).toLocaleDateString()}
+                  </p>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function PatientDetailPage() {
@@ -221,6 +393,9 @@ function PatientDetailPage() {
 
       {/* Decline trajectory sparklines */}
       <TrajectoryPanel patientId={patientId} />
+
+      {/* Interdisciplinary care plan — embedded inline (no separate navigation) */}
+      <CarePlanPanel patientId={patientId} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Demographics */}

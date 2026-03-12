@@ -90,7 +90,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | T2-2 | Patient list + detail — frontend     | ✅     | MEDIUM |
 | T2-3 | Pain assessments + decline trajectory | ✅     | MEDIUM |
 | T2-4 | IDG meeting recording + enforcement   | ✅     | MEDIUM |
-| T2-5 | Care plan schema + routes             | ⬜     | MEDIUM |
+| T2-5 | Care plan schema + routes             | ✅     | MEDIUM |
 | T2-6 | Medication management                 | ⬜     | MEDIUM |
 | T2-7 | VantageChart™ narrative generation   | ⬜     | HIGH   |
 | T2-8 | Compliance alert dashboard            | ⬜     | MEDIUM |
@@ -211,6 +211,8 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | 2026-03-12 | T2-3 Pain assessments + decline trajectory | 4 new scales:`painadScale`, `nrsScale`, `wongBakerScale`, `esasScale` schemas. `assessment.schema.ts`: AssessmentType enum + CRUD + TrajectoryResponse. Migration 0006: `assessment_scale_type` enum + USING cast + composite index. `pain-assessments.table.ts`: pgEnum. `assessment.service.ts`: create/list/trajectory with RLS+audit. `assessment.routes.ts`: POST+GET assessments + GET trajectory (3 routes). Updated typebox-compiler (9 new validators). `shared-types/assessment.ts` + frontend `assessment.functions.ts` + trajectory sparklines (pure SVG) in `$patientId.tsx`. Fixed test fixtures: `'numeric'` → `'NRS'`. 165/165 backend + 14/14 frontend. 0 TS errors. | T2-4                                                                                                                                                                                                                                          |
 
 | 2026-03-12 | T2-4 IDG meeting recording + enforcement | Migration 0007 (`attendee_notes` JSONB + `assembled_note` TEXT + compliance index). `idgMeeting.schema.ts`: full CRUD schemas + `assembleIDGNote()`. `idg.service.ts`: create/list/complete/compliance with RLS+audit. `IDGAttendeeValidationError` hard-blocks missing RN/MD/SW. `idg.routes.ts`: 4 routes at `/api/v1/idg-meetings` + `/api/v1/patients`. 5 new validators in typebox-compiler. `shared-types/idg.ts`. `idg.functions.ts` + `idg-overdue-modal.tsx` (hard-block, no dismiss). `$patientId.tsx` + IDG compliance loader. `schedule.tsx` route. routeTree.gen.ts updated. lucide-react installed. 197/197 backend + 22/22 frontend. 0 TS errors. | T2-5 |
+
+| 2026-03-12 | T2-5 Care plan schema + routes | Migration 0008 (`care_plans` table + unique index + GIN + RLS). `carePlan.schema.ts`: `DisciplineType` enum + `SmartGoalSchema` + `DisciplineSectionsSchema` (optional Object keys). `care-plans.table.ts`. `carePlan.service.ts`: create (idempotent)/get/patchDiscipline — JSONB merge PATCH, role gate (non-admin may only patch own discipline), version increment, RLS+audit. `carePlan.routes.ts`: 3 routes (POST/GET/PATCH). 4 new validators in typebox-compiler. `shared-types/carePlan.ts`. `carePlan.functions.ts` + 10 contract tests. `$patientId.tsx`: care plan panel (inline, no separate nav). 228/228 backend + 32/32 frontend. 0 TS errors. | T2-6 |
 
 ---
 

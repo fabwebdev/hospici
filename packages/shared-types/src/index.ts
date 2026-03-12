@@ -16,6 +16,19 @@ export type {
   TrajectoryResponse,
 } from "./assessment.js";
 export type {
+  DisciplineType,
+  SmartGoalStatus,
+  SmartGoal,
+  DisciplineSection,
+  DisciplineSections,
+  PhysicianReviewEntry,
+  PhysicianReview,
+  PhysicianReviewInput,
+  CarePlanResponse,
+  CreateCarePlanInput,
+  PatchCarePlanInput,
+} from "./carePlan.js";
+export type {
   IDGAttendeeNoteEntry,
   IDGAttendeeNotes,
   IDGAttendanceStatus,

@@ -25,6 +25,13 @@ import {
   CreateAssessmentBodySchema,
   TrajectoryResponseSchema,
 } from "@/contexts/clinical/schemas/assessment.schema";
+import {
+  CarePlanResponseSchema,
+  CreateCarePlanBodySchema,
+  DisciplineTypeSchema,
+  PatchCarePlanBodySchema,
+  PhysicianReviewBodySchema,
+} from "@/contexts/clinical/schemas/carePlan.schema";
 import { EsasScaleSchema } from "@/contexts/clinical/schemas/esasScale.schema";
 import { NrsScaleSchema } from "@/contexts/clinical/schemas/nrsScale.schema";
 import { PainadScaleSchema } from "@/contexts/clinical/schemas/painadScale.schema";
@@ -72,6 +79,13 @@ export const Validators = {
   NrsScale: TypeCompiler.Compile(NrsScaleSchema),
   WongBakerScale: TypeCompiler.Compile(WongBakerScaleSchema),
   EsasScale: TypeCompiler.Compile(EsasScaleSchema),
+
+  // Clinical — care plan
+  DisciplineType: TypeCompiler.Compile(DisciplineTypeSchema),
+  CreateCarePlanBody: TypeCompiler.Compile(CreateCarePlanBodySchema),
+  PatchCarePlanBody: TypeCompiler.Compile(PatchCarePlanBodySchema),
+  CarePlanResponse: TypeCompiler.Compile(CarePlanResponseSchema),
+  PhysicianReviewBody: TypeCompiler.Compile(PhysicianReviewBodySchema),
 
   // Clinical — assessment CRUD + trajectory
   CreateAssessmentBody: TypeCompiler.Compile(CreateAssessmentBodySchema),
