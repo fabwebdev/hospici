@@ -21,6 +21,8 @@ import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.wor
 import { createCapRecalculationWorker } from "@/jobs/workers/cap-recalculation.worker.js";
 import { createNoteReviewDeadlineWorker } from "@/jobs/workers/note-review-deadline.worker.js";
 import { createMissedVisitCheckWorker } from "@/jobs/workers/missed-visit-check.worker.js";
+import { f2fPatientRoutes, f2fStandaloneRoutes } from "@/contexts/f2f/routes/f2f.routes.js";
+import { createF2FDeadlineWorker } from "@/jobs/workers/f2f-deadline-check.worker.js";
 import visitSchedulePatientRoutes, { visitScheduleStandaloneRoutes } from "@/contexts/scheduling/routes/visitSchedule.routes.js";
 import { createHopeDeadlineCheckWorker } from "@/jobs/workers/hope-deadline-check.worker.js";
 import { createHopeSubmissionWorker } from "@/jobs/workers/hope-submission.worker.js";
@@ -162,6 +164,14 @@ export async function buildApp() {
   await fastify.register(noteReviewRoutes, { prefix: "/api/v1" });
   await fastify.register(visitSchedulePatientRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(visitScheduleStandaloneRoutes, { prefix: "/api/v1/scheduled-visits" });
+  await fastify.register(f2fPatientRoutes, {
+    prefix: "/api/v1/patients",
+    valkey: fastify.valkey,
+  } as Parameters<typeof f2fPatientRoutes>[1] & { prefix: string });
+  await fastify.register(f2fStandaloneRoutes, {
+    prefix: "/api/v1",
+    valkey: fastify.valkey,
+  } as Parameters<typeof f2fStandaloneRoutes>[1] & { prefix: string });
 
   // ── BullMQ Workers ────────────────────────────────────────────────────────────
   // Workers are created after Fastify is fully configured so the logger is ready.
@@ -173,6 +183,7 @@ export async function buildApp() {
   const capRecalculationWorker = createCapRecalculationWorker();
   const noteReviewDeadlineWorker = createNoteReviewDeadlineWorker(fastify.valkey);
   const missedVisitCheckWorker = createMissedVisitCheckWorker(fastify.valkey);
+  const f2fDeadlineWorker = createF2FDeadlineWorker(fastify.valkey);
 
   fastify.addHook("onClose", async () => {
     await noeWorker.close();
@@ -183,6 +194,7 @@ export async function buildApp() {
     await capRecalculationWorker.close();
     await noteReviewDeadlineWorker.close();
     await missedVisitCheckWorker.close();
+    await f2fDeadlineWorker.close();
     await closeQueues();
     fastify.log.info("BullMQ workers and queues closed");
   });

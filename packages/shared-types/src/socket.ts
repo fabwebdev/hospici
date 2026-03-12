@@ -212,6 +212,23 @@ export interface ServerToClientEvents {
 		patientId: string;
 	}) => void;
 
+	// F2F deadline events (T3-2b)
+	"f2f:overdue": (data: {
+		patientId: string;
+		benefitPeriodId: string;
+		periodNumber: number;
+		recertDate: string;
+		daysOverdue: number;
+	}) => void;
+
+	"order:f2f:required": (data: {
+		patientId: string;
+		benefitPeriodId: string;
+		periodNumber: number;
+		recertDate: string;
+		taskId: string;
+	}) => void;
+
 	// Security
 	"break:glass:access": (data: {
 		userId: string;

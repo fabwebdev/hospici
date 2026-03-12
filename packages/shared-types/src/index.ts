@@ -148,3 +148,15 @@ export type {
   CMSResponseInput,
   CorrectNOEInput,
 } from "./noe.js";
+export type {
+  F2FProviderRole,
+  F2FEncounterSetting,
+  F2FStatus,
+  F2FEncounterResponse,
+  F2FEncounterListResponse,
+  F2FValidityResult,
+  F2FQueueItem,
+  F2FQueueResponse,
+  CreateF2FInput,
+  PatchF2FInput,
+} from "./f2f.js";

@@ -24,6 +24,9 @@ export const alertTypeEnum = pgEnum("alert_type_enum", [
 	// T3-2a NOE/NOTR filing workbench
 	"NOE_LATE",
 	"NOTR_LATE",
+	// T3-2b F2F Validity Engine
+	"F2F_MISSING",
+	"F2F_INVALID",
 ]);
 
 export const alertSeverityEnum = pgEnum("alert_severity_enum", ["critical", "warning", "info"]);

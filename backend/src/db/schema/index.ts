@@ -26,3 +26,5 @@ export * from "./hope-assessments.table.js";
 export * from "./hope-iqies-submissions.table.js";
 export * from "./hope-reporting-periods.table.js";
 export * from "./hope-quality-measures.table.js";
+export * from "./orders.table.js";
+export * from "./face-to-face-encounters.table.js";

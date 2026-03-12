@@ -4,6 +4,7 @@
 import { IDGOverdueModal } from "@/components/clinical/idg-overdue-modal.js";
 import { getTrajectoryFn } from "@/functions/assessment.functions.js";
 import { getCarePlanFn } from "@/functions/carePlan.functions.js";
+import { getPatientF2FFn } from "@/functions/f2f.functions.js";
 import {
   getHOPEAssessmentsFn,
   getHOPEPatientTimelineFn,
@@ -15,6 +16,7 @@ import { patientKeys } from "@/lib/query/keys.js";
 import type {
   CarePlanResponse,
   DisciplineType,
+  F2FEncounterListResponse,
   HOPEAssessmentListResponse,
   HOPEAssessmentStatus,
   HOPEPatientTimeline,
@@ -607,6 +609,105 @@ function HOPEPanel({ patientId }: { patientId: string }) {
   );
 }
 
+// ── F2F Panel — benefit-period-aware F2F status indicator (T3-2b) ─────────────
+
+function F2FPanel({ patientId }: { patientId: string }) {
+  const { data, isLoading } = useQuery<F2FEncounterListResponse>({
+    queryKey: ["f2f-encounters", patientId],
+    queryFn: () =>
+      getPatientF2FFn({ data: { patientId } }) as Promise<F2FEncounterListResponse>,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">
+          Face-to-Face Certification
+        </h2>
+        <div className="text-xs text-gray-400">Loading F2F status…</div>
+      </div>
+    );
+  }
+
+  const encounters = data?.encounters ?? [];
+
+  // Find the most recent encounter from a period >= 3
+  const period3Encounters = encounters.filter((e) => e.periodNumber >= 3);
+  const latestPeriod3 = period3Encounters[0]; // already ordered by f2fDate desc
+
+  // Find highest period number among all encounters to detect if period 3+ applies
+  const maxPeriodNumber = encounters.reduce(
+    (max, e) => (e.periodNumber > max ? e.periodNumber : max),
+    0,
+  );
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Face-to-Face Certification
+        </h2>
+        <span className="text-xs text-gray-400">42 CFR §418.22</span>
+      </div>
+
+      {maxPeriodNumber < 3 ? (
+        // Period < 3 — F2F not required
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+            Not Required
+          </span>
+          <span className="text-xs text-gray-500">
+            F2F certification required from benefit period 3 onwards
+          </span>
+        </div>
+      ) : latestPeriod3 && latestPeriod3.isValidForRecert ? (
+        // Period >= 3 and valid F2F exists
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              F2F Valid
+            </span>
+            <span className="text-xs text-gray-600">
+              {latestPeriod3.f2fDate} · Period {latestPeriod3.periodNumber} (
+              {latestPeriod3.periodType})
+            </span>
+          </div>
+          {latestPeriod3.f2fProviderRole && (
+            <p className="text-xs text-gray-500 capitalize">
+              Provider role: {latestPeriod3.f2fProviderRole} ·{" "}
+              {latestPeriod3.encounterSetting}
+            </p>
+          )}
+        </div>
+      ) : (
+        // Period >= 3 but F2F missing or invalid
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              {latestPeriod3 && !latestPeriod3.isValidForRecert
+                ? "F2F Invalid"
+                : "F2F Required"}
+            </span>
+            {latestPeriod3?.invalidationReason && (
+              <span className="text-xs text-red-600 truncate max-w-xs">
+                {latestPeriod3.invalidationReason}
+              </span>
+            )}
+          </div>
+          <Link
+            to="/patients/$patientId/f2f/new"
+            params={{ patientId }}
+            search={{}}
+            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+          >
+            Document F2F Encounter
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function PatientDetailPage() {
@@ -669,6 +770,9 @@ function PatientDetailPage() {
 
       {/* HOPE assessment timeline — T3-1b */}
       <HOPEPanel patientId={patientId} />
+
+      {/* F2F Certification status — T3-2b */}
+      <F2FPanel patientId={patientId} />
 
       {/* Interdisciplinary care plan — embedded inline (no separate navigation) */}
       <CarePlanPanel patientId={patientId} />

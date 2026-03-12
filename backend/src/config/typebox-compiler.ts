@@ -106,6 +106,14 @@ import {
   ReviewQueueResponseSchema,
   SubmitReviewBodySchema,
 } from "@/contexts/clinical/schemas/noteReview.schema.js";
+import {
+  CreateF2FBodySchema,
+  F2FEncounterListResponseSchema,
+  F2FEncounterResponseSchema,
+  F2FQueueResponseSchema,
+  F2FValidityResultSchema,
+  PatchF2FBodySchema,
+} from "@/contexts/f2f/schemas/f2f.schema.js";
 // Import all schemas
 import { BreakGlassSchema, SessionSchema, UserSchema } from "@/contexts/identity/schemas";
 import { AuditLogSchema } from "@/contexts/identity/schemas/audit.schema";
@@ -246,6 +254,14 @@ export const Validators = {
   HOPEDashboardResponse: TypeCompiler.Compile(HOPEDashboardResponseSchema),
   HOPEPatientTimeline: TypeCompiler.Compile(HOPEPatientTimelineSchema),
   HOPESubmissionListResponse: TypeCompiler.Compile(HOPESubmissionListResponseSchema),
+
+  // F2F Validity Engine (T3-2b)
+  CreateF2FBody: TypeCompiler.Compile(CreateF2FBodySchema),
+  PatchF2FBody: TypeCompiler.Compile(PatchF2FBodySchema),
+  F2FValidityResult: TypeCompiler.Compile(F2FValidityResultSchema),
+  F2FEncounterResponse: TypeCompiler.Compile(F2FEncounterResponseSchema),
+  F2FEncounterListResponse: TypeCompiler.Compile(F2FEncounterListResponseSchema),
+  F2FQueueResponse: TypeCompiler.Compile(F2FQueueResponseSchema),
 };
 
 /**

@@ -24,6 +24,7 @@ export const QUEUE_NAMES = {
   CAP_RECALCULATION: "cap-recalculation",
   NOTE_REVIEW_DEADLINE_CHECK: "note-review-deadline-check",
   MISSED_VISIT_CHECK: "missed-visit-check",
+  F2F_DEADLINE_CHECK: "f2f-deadline-check",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -115,6 +116,11 @@ export const missedVisitCheckQueue = new Queue(QUEUE_NAMES.MISSED_VISIT_CHECK, {
   defaultJobOptions,
 });
 
+export const f2fDeadlineCheckQueue = new Queue(QUEUE_NAMES.F2F_DEADLINE_CHECK, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
 // ── Daily schedule registration ───────────────────────────────────────────────
 
 /**
@@ -191,6 +197,16 @@ export async function scheduleDailyJobs(): Promise<void> {
       jobId: "missed-visit-daily-check",
     },
   );
+
+  // F2F deadline check — daily at 07:30 UTC
+  await f2fDeadlineCheckQueue.add(
+    "daily-check",
+    {},
+    {
+      repeat: { pattern: "30 7 * * *" },
+      jobId: "f2f-daily-check",
+    },
+  );
 }
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
@@ -205,4 +221,5 @@ export async function closeQueues(): Promise<void> {
   await capRecalculationQueue.close();
   await noteReviewDeadlineQueue.close();
   await missedVisitCheckQueue.close();
+  await f2fDeadlineCheckQueue.close();
 }
