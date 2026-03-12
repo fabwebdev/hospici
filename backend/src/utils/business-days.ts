@@ -7,6 +7,9 @@
  *
  * Always test the Friday edge case:
  * election on Friday 2026-03-06 → deadline Friday 2026-03-13 (not 2026-03-11)
+ *
+ * All date arithmetic is done in UTC to avoid DST / timezone edge cases
+ * when dates are constructed from ISO strings (e.g. new Date("2026-03-06")).
  */
 
 /**
@@ -15,17 +18,17 @@
  */
 function federalHolidays(year: number): Set<string> {
   const holidays: Date[] = [
-    new Date(year, 0, 1),   // New Year's Day (Jan 1)
-    nthWeekday(year, 0, 1, 3), // MLK Jr Day (3rd Mon Jan)
-    nthWeekday(year, 1, 1, 3), // Presidents Day (3rd Mon Feb)
-    lastWeekday(year, 4, 1),   // Memorial Day (last Mon May)
-    new Date(year, 5, 19),  // Juneteenth (Jun 19)
-    new Date(year, 6, 4),   // Independence Day (Jul 4)
-    nthWeekday(year, 8, 1, 1), // Labor Day (1st Mon Sep)
-    nthWeekday(year, 9, 1, 2), // Columbus Day (2nd Mon Oct)
-    new Date(year, 10, 11), // Veterans Day (Nov 11)
-    nthWeekday(year, 10, 4, 4),// Thanksgiving (4th Thu Nov)
-    new Date(year, 11, 25), // Christmas (Dec 25)
+    new Date(Date.UTC(year, 0, 1)),    // New Year's Day (Jan 1)
+    nthWeekday(year, 0, 1, 3),         // MLK Jr Day (3rd Mon Jan)
+    nthWeekday(year, 1, 1, 3),         // Presidents Day (3rd Mon Feb)
+    lastWeekday(year, 4, 1),           // Memorial Day (last Mon May)
+    new Date(Date.UTC(year, 5, 19)),   // Juneteenth (Jun 19)
+    new Date(Date.UTC(year, 6, 4)),    // Independence Day (Jul 4)
+    nthWeekday(year, 8, 1, 1),         // Labor Day (1st Mon Sep)
+    nthWeekday(year, 9, 1, 2),         // Columbus Day (2nd Mon Oct)
+    new Date(Date.UTC(year, 10, 11)),  // Veterans Day (Nov 11)
+    nthWeekday(year, 10, 4, 4),        // Thanksgiving (4th Thu Nov)
+    new Date(Date.UTC(year, 11, 25)),  // Christmas (Dec 25)
   ];
 
   const observed = holidays.map((d) => observedDate(d));
@@ -34,24 +37,24 @@ function federalHolidays(year: number): Set<string> {
 
 /** Shift to observed date: if Sunday → Monday, if Saturday → Friday */
 function observedDate(d: Date): Date {
-  const day = d.getDay();
-  if (day === 0) return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
-  if (day === 6) return new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+  const day = d.getUTCDay();
+  if (day === 0) return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1));
+  if (day === 6) return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - 1));
   return d;
 }
 
 /** Nth weekday of a month. weekday: 0=Sun, 1=Mon … n: 1-based */
 function nthWeekday(year: number, month: number, weekday: number, n: number): Date {
-  const first = new Date(year, month, 1);
-  const offset = (weekday - first.getDay() + 7) % 7;
-  return new Date(year, month, 1 + offset + (n - 1) * 7);
+  const first = new Date(Date.UTC(year, month, 1));
+  const offset = (weekday - first.getUTCDay() + 7) % 7;
+  return new Date(Date.UTC(year, month, 1 + offset + (n - 1) * 7));
 }
 
 /** Last weekday of a month */
 function lastWeekday(year: number, month: number, weekday: number): Date {
-  const last = new Date(year, month + 1, 0);
-  const offset = (last.getDay() - weekday + 7) % 7;
-  return new Date(year, month, last.getDate() - offset);
+  const last = new Date(Date.UTC(year, month + 1, 0));
+  const offset = (last.getUTCDay() - weekday + 7) % 7;
+  return new Date(Date.UTC(year, month, last.getUTCDate() - offset));
 }
 
 function toIso(d: Date): string {
@@ -59,7 +62,7 @@ function toIso(d: Date): string {
 }
 
 function isWeekend(d: Date): boolean {
-  const day = d.getDay();
+  const day = d.getUTCDay();
   return day === 0 || day === 6;
 }
 
@@ -75,14 +78,23 @@ function isWeekend(d: Date): boolean {
  * addBusinessDays(new Date("2026-03-06"), 5) // → 2026-03-13
  */
 export function addBusinessDays(startDate: Date, days: number): Date {
-  let current = new Date(startDate);
+  // Normalize to UTC midnight to avoid local-time drift
+  let current = new Date(Date.UTC(
+    startDate.getUTCFullYear(),
+    startDate.getUTCMonth(),
+    startDate.getUTCDate(),
+  ));
   let remaining = days;
   const holidayCache = new Map<number, Set<string>>();
 
   while (remaining > 0) {
-    current.setDate(current.getDate() + 1);
+    current = new Date(Date.UTC(
+      current.getUTCFullYear(),
+      current.getUTCMonth(),
+      current.getUTCDate() + 1,
+    ));
 
-    const year = current.getFullYear();
+    const year = current.getUTCFullYear();
     if (!holidayCache.has(year)) {
       holidayCache.set(year, federalHolidays(year));
     }
@@ -103,7 +115,7 @@ export function addBusinessDays(startDate: Date, days: number): Date {
  */
 export function isBusinessDay(date: Date): boolean {
   if (isWeekend(date)) return false;
-  const holidays = federalHolidays(date.getFullYear());
+  const holidays = federalHolidays(date.getUTCFullYear());
   return !holidays.has(toIso(date));
 }
 
@@ -119,14 +131,14 @@ export function getCapYear(date: Date): {
   end: Date;
   year: number;
 } {
-  const month = date.getMonth(); // 0-indexed
+  const month = date.getUTCMonth(); // 0-indexed, UTC
   // November = 10, so if month >= 10 we're in the new cap year
-  const capStartYear = month >= 10 ? date.getFullYear() : date.getFullYear() - 1;
+  const capStartYear = month >= 10 ? date.getUTCFullYear() : date.getUTCFullYear() - 1;
 
   return {
     label: `${capStartYear}-${capStartYear + 1}`,
-    start: new Date(capStartYear, 10, 1),        // Nov 1
-    end: new Date(capStartYear + 1, 9, 31),       // Oct 31
+    start: new Date(Date.UTC(capStartYear, 10, 1)),       // Nov 1
+    end: new Date(Date.UTC(capStartYear + 1, 9, 31)),     // Oct 31
     year: capStartYear,
   };
 }
