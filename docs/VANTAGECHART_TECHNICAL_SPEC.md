@@ -1,9 +1,9 @@
 # VantageChart Technical Specification
 ## Hospici's RapidChart®-Equivalent Implementation
 
-**Version:** 1.0  
-**Date:** March 11, 2026  
-**Status:** Technical Specification — Implementation Ready  
+**Version:** 1.1
+**Date:** March 12, 2026
+**Status:** Technical Specification — Implementation Ready
 **Target:** Match Firenote's 9-minute routine visit documentation
 
 ---
@@ -208,6 +208,44 @@ Templates use **Handlebars-style** syntax with **conditional logic** and **varia
 ```typescript
 // contexts/clinical/schemas/narrative-template.schema.ts
 
+// ---------------------------------------------------------------------------
+// Typed rule DSL — replaces string conditions to eliminate code injection.
+// All conditions are evaluated by a deterministic interpreter; no eval/Function.
+// ---------------------------------------------------------------------------
+export const RuleConditionSchema = Type.Recursive(This =>
+  Type.Union([
+    // Comparison operators — path is a dot-path into VantageChartInput
+    Type.Object({ op: Type.Literal("eq"),  path: Type.String(), value: Type.Union([Type.String(), Type.Number(), Type.Boolean()]) }),
+    Type.Object({ op: Type.Literal("neq"), path: Type.String(), value: Type.Union([Type.String(), Type.Number(), Type.Boolean()]) }),
+    Type.Object({ op: Type.Literal("gt"),  path: Type.String(), value: Type.Number() }),
+    Type.Object({ op: Type.Literal("gte"), path: Type.String(), value: Type.Number() }),
+    Type.Object({ op: Type.Literal("lt"),  path: Type.String(), value: Type.Number() }),
+    Type.Object({ op: Type.Literal("lte"), path: Type.String(), value: Type.Number() }),
+    // Presence checks
+    Type.Object({ op: Type.Literal("truthy"), path: Type.String() }),
+    Type.Object({ op: Type.Literal("falsy"),  path: Type.String() }),
+    // Array operators
+    Type.Object({ op: Type.Literal("arrayLength"), path: Type.String(),
+      gt:  Type.Optional(Type.Number()),
+      gte: Type.Optional(Type.Number()),
+      lt:  Type.Optional(Type.Number()),
+      lte: Type.Optional(Type.Number()),
+      eq:  Type.Optional(Type.Number()),
+    }),
+    Type.Object({ op: Type.Literal("arrayAny"),   path: Type.String(), where: This }),
+    Type.Object({ op: Type.Literal("arrayEvery"), path: Type.String(), where: This }),
+    // Logical combinators
+    Type.Object({ op: Type.Literal("and"), conditions: Type.Array(This) }),
+    Type.Object({ op: Type.Literal("or"),  conditions: Type.Array(This) }),
+    Type.Object({ op: Type.Literal("not"), condition:  This }),
+  ]),
+  { $id: "RuleCondition" },
+);
+
+export type RuleCondition = Static<typeof RuleConditionSchema>;
+
+// ---------------------------------------------------------------------------
+
 export const NarrativeTemplateSchema = Type.Object({
   id: Type.String({ format: "uuid" }),
   name: Type.String(),
@@ -217,58 +255,66 @@ export const NarrativeTemplateSchema = Type.Object({
     admission: "admission",
     recertification: "recertification",
   }),
-  
+
   // Template sections
   sections: Type.Array(Type.Object({
     id: Type.String(),
     title: Type.String(),
     order: Type.Number(),
-    
-    // Conditional rendering
-    condition: Type.Optional(Type.String()), // e.g., "painAssessment.hasPain"
-    
+
+    // Conditional rendering — typed rule object, never a raw string
+    condition: Type.Optional(RuleConditionSchema),
+
     // Narrative fragments
     fragments: Type.Array(Type.Object({
       id: Type.String(),
-      template: Type.String(), // e.g., "Patient reports {{painDescription}}."
-      condition: Type.Optional(Type.String()),
-      priority: Type.Number(), // Assembly order
-      
-      // Variable mappings
+      template: Type.String(), // Handlebars template string, e.g. "Patient reports {{painDescription}}."
+      condition: Type.Optional(RuleConditionSchema),
+      priority: Type.Number(), // Assembly order within section
+
+      // Variable mappings — source MUST be a dot-path (e.g. "painAssessment.painScale").
+      // For computed array values (filtering, mapping), use a registered Handlebars helper
+      // and pass the parent array as the source (e.g. source: "symptoms").
       variables: Type.Record(Type.String(), Type.Object({
-        source: Type.String(), // Path in VantageChartInput
+        source: Type.String(),
         transform: Type.Optional(Type.Enum({
           lowerCase: "lowerCase",
           upperCase: "upperCase",
           capitalize: "capitalize",
           joinWithComma: "joinWithComma",
+          joinWithSemicolon: "joinWithSemicolon",
           numericToWord: "numericToWord",
+          formatSymptoms: "formatSymptoms",
+          worseningSymptomNames: "worseningSymptomNames",
+          formatInterventions: "formatInterventions",
+          formatSafetyConcerns: "formatSafetyConcerns",
+          booleanToNotificationPhrase: "booleanToNotificationPhrase",
         })),
         fallback: Type.Optional(Type.String()),
       })),
     })),
-    
+
     // Alternative phrasings for variety
     alternativeTemplates: Type.Optional(Type.Array(Type.Object({
       template: Type.String(),
-      condition: Type.String(), // When to use this alternative
+      condition: RuleConditionSchema,
     }))),
   })),
-  
+
   // Hospice-specific context rules
   contextRules: Type.Array(Type.Object({
-    trigger: Type.String(),
+    trigger: RuleConditionSchema,
     action: Type.Enum({
       addPhrase: "addPhrase",
       modifyTemplate: "modifyTemplate",
       addSection: "addSection",
     }),
-    value: Type.String(),
+    value: Type.String(), // phrase text or section id depending on action
   })),
-  
+
   // Compliance requirements
-  complianceTags: Type.Array(Type.String()), // e.g., [" medicare_required", "hospice_specific"]
-  
+  complianceTags: Type.Array(Type.String()),
+
   // Audit trail
   createdBy: Type.String(),
   createdAt: Type.String({ format: "date-time" }),
@@ -305,7 +351,7 @@ export const RoutineRNVisitTemplate = {
         {
           id: "orientation-status",
           template: " Patient is {{orientationStatus}}.",
-          condition: "patientStatus.isAlertAndOriented !== null",
+          condition: { op: "truthy", path: "patientStatus.isAlertAndOriented" },
           variables: {
             orientationStatus: { 
               source: "patientStatus.orientationLevel",
@@ -322,7 +368,7 @@ export const RoutineRNVisitTemplate = {
       id: "pain-assessment",
       title: "Pain Assessment",
       order: 2,
-      condition: "painAssessment.hasPain === true",
+      condition: { op: "eq", path: "painAssessment.hasPain", value: true },
       fragments: [
         {
           id: "pain-present",
@@ -340,19 +386,25 @@ export const RoutineRNVisitTemplate = {
         {
           id: "pain-managed",
           template: " Pain is well-managed with current regimen.",
-          condition: "painAssessment.painManagementEffective === true && painAssessment.painScale <= 3",
+          condition: { op: "and", conditions: [
+            { op: "eq",  path: "painAssessment.painManagementEffective", value: true },
+            { op: "lte", path: "painAssessment.painScale", value: 3 },
+          ]},
           priority: 2,
         },
         {
           id: "pain-unmanaged",
           template: " Pain management is suboptimal. Breakthrough pain noted. Recommend PRN medication review.",
-          condition: "painAssessment.painManagementEffective === false || painAssessment.painScale > 3",
+          condition: { op: "or", conditions: [
+            { op: "eq", path: "painAssessment.painManagementEffective", value: false },
+            { op: "gt", path: "painAssessment.painScale", value: 3 },
+          ]},
           priority: 2,
         },
         {
           id: "breakthrough-pain",
           template: " Patient experiencing breakthrough pain between scheduled medications.",
-          condition: "painAssessment.breakthroughPain === true",
+          condition: { op: "eq", path: "painAssessment.breakthroughPain", value: true },
           priority: 3,
         },
       ],
@@ -362,7 +414,7 @@ export const RoutineRNVisitTemplate = {
       id: "symptom-review",
       title: "Symptom Review",
       order: 3,
-      condition: "symptoms.length > 0",
+      condition: { op: "arrayLength", path: "symptoms", gt: 0 },
       fragments: [
         {
           id: "symptom-summary",
@@ -377,12 +429,13 @@ export const RoutineRNVisitTemplate = {
         },
         {
           id: "worsening-symptoms",
-          template: " Notable worsening in {{worseningSymptoms}}. Care plan adjustments may be warranted.",
-          condition: "symptoms.some(s => s.isWorsening)",
+          // worseningSymptomNames helper filters isWorsening===true and joins symptom names
+          template: " Notable worsening in {{worseningSymptomNames symptoms}}. Care plan adjustments may be warranted.",
+          condition: { op: "arrayAny", path: "symptoms", where: { op: "eq", path: "isWorsening", value: true } },
           variables: {
-            worseningSymptoms: {
-              source: "symptoms.filter(s => s.isWorsening).map(s => s.symptom)",
-              transform: "joinWithComma",
+            symptoms: {
+              // dot-path to the full array; filtering is done inside the registered helper
+              source: "symptoms",
             },
           },
           priority: 2,
@@ -394,15 +447,15 @@ export const RoutineRNVisitTemplate = {
       id: "interventions",
       title: "Interventions Provided",
       order: 4,
-      condition: "interventions.length > 0",
+      condition: { op: "arrayLength", path: "interventions", gt: 0 },
       fragments: [
         {
           id: "intervention-list",
-          template: " Interventions provided: {{interventionDescriptions}}.",
+          // formatInterventions helper maps each intervention to its description and joins with "; "
+          template: " Interventions provided: {{formatInterventions interventions}}.",
           variables: {
-            interventionDescriptions: {
-              source: "interventions.map(i => i.description)",
-              transform: "joinWithSemicolon",
+            interventions: {
+              source: "interventions", // dot-path; helper handles mapping
             },
           },
           priority: 1,
@@ -410,7 +463,7 @@ export const RoutineRNVisitTemplate = {
         {
           id: "positive-response",
           template: " Patient responded positively to interventions.",
-          condition: "interventions.every(i => i.patientResponse === 'positive')",
+          condition: { op: "arrayEvery", path: "interventions", where: { op: "eq", path: "patientResponse", value: "positive" } },
           priority: 2,
         },
       ],
@@ -440,7 +493,7 @@ export const RoutineRNVisitTemplate = {
         {
           id: "spiritual-concerns",
           template: " Spiritual concerns identified. Chaplain referral recommended.",
-          condition: "psychosocial.spiritualConcerns === true",
+          condition: { op: "eq", path: "psychosocial.spiritualConcerns", value: true },
           priority: 3,
         },
       ],
@@ -454,13 +507,13 @@ export const RoutineRNVisitTemplate = {
         {
           id: "frequencies-followed",
           template: " Care plan frequencies being followed.",
-          condition: "carePlan.frequenciesFollowed === true",
+          condition: { op: "eq", path: "carePlan.frequenciesFollowed", value: true },
           priority: 1,
         },
         {
           id: "frequencies-not-followed",
           template: " Care plan frequencies NOT being followed. Barriers: {{barriers}}. IDG discussion needed.",
-          condition: "carePlan.frequenciesFollowed === false",
+          condition: { op: "eq", path: "carePlan.frequenciesFollowed", value: false },
           variables: {
             barriers: {
               source: "carePlan.barriers",
@@ -485,7 +538,7 @@ export const RoutineRNVisitTemplate = {
       id: "plan-changes",
       title: "Plan Changes",
       order: 7,
-      condition: "planChanges.length > 0",
+      condition: { op: "arrayLength", path: "planChanges", gt: 0 },
       fragments: [
         {
           id: "changes-intro",
@@ -495,7 +548,7 @@ export const RoutineRNVisitTemplate = {
         {
           id: "change-list",
           template: " {{changeDescription}} ({{physicianNotification}})",
-          condition: "planChanges.length > 0",
+          condition: { op: "arrayLength", path: "planChanges", gt: 0 },
           variables: {
             changeDescription: { source: "planChange.description" },
             physicianNotification: {
@@ -521,7 +574,10 @@ export const RoutineRNVisitTemplate = {
         {
           id: "safety-concerns",
           template: " SAFETY CONCERNS: {{concerns}}. Immediate attention required.",
-          condition: "safety.fallRisk === 'high' || safety.environmentConcerns.length > 0",
+          condition: { op: "or", conditions: [
+            { op: "eq",          path: "safety.fallRisk", value: "high" },
+            { op: "arrayLength", path: "safety.environmentConcerns", gt: 0 },
+          ]},
           variables: {
             concerns: {
               source: "safety",
@@ -536,17 +592,17 @@ export const RoutineRNVisitTemplate = {
   
   contextRules: [
     {
-      trigger: "patientStatus.overallCondition === 'critical'",
+      trigger: { op: "eq", path: "patientStatus.overallCondition", value: "critical" },
       action: "addPhrase",
       value: " CRITICAL CONDITION - Notify physician of status change.",
     },
     {
-      trigger: "painAssessment.painScale >= 7",
+      trigger: { op: "gte", path: "painAssessment.painScale", value: 7 },
       action: "addPhrase",
       value: " SEVERE PAIN - Immediate intervention required.",
     },
     {
-      trigger: "symptoms.some(s => s.severity >= 8)",
+      trigger: { op: "arrayAny", path: "symptoms", where: { op: "gte", path: "severity", value: 8 } },
       action: "addSection",
       value: "urgent-symptom-management",
     },
@@ -701,7 +757,7 @@ export class ContextResolverService {
 // contexts/clinical/services/narrative-assembler.service.ts
 
 import Handlebars from "handlebars";
-import { get } from "lodash-es";
+import type { RuleCondition } from "@hospici/shared-types";
 
 interface AssemblyResult {
   narrative: string;
@@ -711,7 +767,7 @@ interface AssemblyResult {
     fragmentCount: number;
     wordCount: number;
     estimatedReadingTime: number;
-    complianceScore: number;
+    completenessPercent: number; // section-presence indicator only — not a regulatory compliance claim
   };
   traceability: Array<{
     narrativeSegment: string;
@@ -755,6 +811,18 @@ export class NarrativeAssemblerService {
         .map(s => `${s.symptom} (${s.severity}/10)`)
         .join(", ");
     });
+
+    // Filter to worsening symptoms only and join names — keeps source as a plain dot-path
+    this.handlebars.registerHelper("worseningSymptomNames", (symptoms: Array<{symptom: string; isWorsening: boolean}>) => {
+      if (!symptoms?.length) return "";
+      return symptoms.filter(s => s.isWorsening).map(s => s.symptom).join(", ");
+    });
+
+    // Map interventions to their descriptions and join with "; "
+    this.handlebars.registerHelper("formatInterventions", (interventions: Array<{description: string}>) => {
+      if (!interventions?.length) return "";
+      return interventions.map(i => i.description).join("; ");
+    });
   }
 
   async assembleNarrative(
@@ -770,7 +838,7 @@ export class NarrativeAssemblerService {
         fragmentCount: 0,
         wordCount: 0,
         estimatedReadingTime: 0,
-        complianceScore: 0,
+        completenessPercent: 0,
       },
       traceability: [],
     };
@@ -797,10 +865,10 @@ export class NarrativeAssemblerService {
           continue;
         }
 
-        // Resolve variables
+        // Resolve variables — source is a dot-path only; no expression evaluation
         const variableValues: Record<string, unknown> = {};
         for (const [varName, varConfig] of Object.entries(fragment.variables || {})) {
-          let value = get(input, varConfig.source);
+          let value = this.resolvePath(input, varConfig.source);
           
           // Apply transform
           if (varConfig.transform && value !== undefined) {
@@ -847,10 +915,10 @@ export class NarrativeAssemblerService {
       if (this.evaluateCondition(rule.trigger, input)) {
         switch (rule.action) {
           case "addPhrase":
-            assembledSections.push(value);
+            assembledSections.push(rule.value);
             break;
           case "addSection":
-            // Load and append additional section template
+            // Load and append additional section template by id (rule.value = section id)
             break;
         }
       }
@@ -862,19 +930,51 @@ export class NarrativeAssemblerService {
     // Calculate metadata
     result.metadata.wordCount = result.narrative.split(/\s+/).length;
     result.metadata.estimatedReadingTime = Math.ceil(result.metadata.wordCount / 200); // 200 WPM
-    result.metadata.complianceScore = this.calculateComplianceScore(template, input);
+    result.metadata.completenessPercent = this.calculateCompletenessPercent(template, input);
 
     return result;
   }
 
-  private evaluateCondition(condition: string, input: VantageChartInput): boolean {
-    // Safe evaluation of simple conditions
-    // In production, use a proper expression evaluator
-    try {
-      const fn = new Function("input", `return ${condition}`);
-      return fn(input);
-    } catch {
-      return false;
+  // Dot-path traversal only — never evaluates expressions or arbitrary code.
+  private resolvePath(obj: unknown, path: string): unknown {
+    return path.split(".").reduce((acc, key) => {
+      if (acc === null || acc === undefined) return undefined;
+      return (acc as Record<string, unknown>)[key];
+    }, obj);
+  }
+
+  // Deterministic rule interpreter — all operators are allow-listed, no dynamic execution.
+  private evaluateCondition(condition: RuleCondition, input: unknown): boolean {
+    switch (condition.op) {
+      case "eq":  return this.resolvePath(input, condition.path) === condition.value;
+      case "neq": return this.resolvePath(input, condition.path) !== condition.value;
+      case "gt":  return (this.resolvePath(input, condition.path) as number) > condition.value;
+      case "gte": return (this.resolvePath(input, condition.path) as number) >= condition.value;
+      case "lt":  return (this.resolvePath(input, condition.path) as number) < condition.value;
+      case "lte": return (this.resolvePath(input, condition.path) as number) <= condition.value;
+      case "truthy": return Boolean(this.resolvePath(input, condition.path));
+      case "falsy":  return !Boolean(this.resolvePath(input, condition.path));
+      case "arrayLength": {
+        const arr = this.resolvePath(input, condition.path);
+        const len = Array.isArray(arr) ? arr.length : 0;
+        if (condition.gt  !== undefined && !(len >  condition.gt))  return false;
+        if (condition.gte !== undefined && !(len >= condition.gte)) return false;
+        if (condition.lt  !== undefined && !(len <  condition.lt))  return false;
+        if (condition.lte !== undefined && !(len <= condition.lte)) return false;
+        if (condition.eq  !== undefined && len !== condition.eq)    return false;
+        return true;
+      }
+      case "arrayAny": {
+        const arr = this.resolvePath(input, condition.path);
+        return Array.isArray(arr) && arr.some(item => this.evaluateCondition(condition.where, item));
+      }
+      case "arrayEvery": {
+        const arr = this.resolvePath(input, condition.path);
+        return Array.isArray(arr) && arr.every(item => this.evaluateCondition(condition.where, item));
+      }
+      case "and": return condition.conditions.every(c => this.evaluateCondition(c, input));
+      case "or":  return condition.conditions.some(c => this.evaluateCondition(c, input));
+      case "not": return !this.evaluateCondition(condition.condition, input);
     }
   }
 
@@ -897,17 +997,19 @@ export class NarrativeAssemblerService {
     }
   }
 
-  private calculateComplianceScore(template: NarrativeTemplate, input: VantageChartInput): number {
-    let score = 0;
-    const maxScore = template.sections.length;
-    
+  // Returns a UI progress indicator (0–100). This is not a regulatory compliance claim.
+  // A real completeness engine must track required fields by visit type separately.
+  private calculateCompletenessPercent(template: NarrativeTemplate, input: VantageChartInput): number {
+    let present = 0;
+    const total = template.sections.length;
+
     for (const section of template.sections) {
       if (!section.condition || this.evaluateCondition(section.condition, input)) {
-        score++;
+        present++;
       }
     }
-    
-    return Math.round((score / maxScore) * 100);
+
+    return Math.round((present / total) * 100);
   }
 }
 ```
@@ -1037,7 +1139,7 @@ export function VantageChartContainer({
         <NarrativePreviewPanel
           preview={preview}
           isLoading={isAssembling}
-          complianceScore={preview?.metadata.complianceScore}
+          completenessPercent={preview?.metadata.completenessPercent}
         />
       </div>
 
@@ -1338,39 +1440,39 @@ Templates are pre-compiled at build time:
 ```typescript
 // config/vantagechart-compiler.ts
 
-import { readdirSync, readFileSync, writeFileSync } from "fs";
-import Handlebars from "handlebars";
+// scripts/compile-templates.ts
+// Validates all templates at build time against NarrativeTemplateSchema.
+// Templates are normal TypeScript exports — no eval, no readFileSync+string execution.
+
+import { writeFileSync } from "fs";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
+import { NarrativeTemplateSchema } from "../contexts/clinical/schemas/narrative-template.schema.js";
 
-// Compile all templates at build time
-export function compileTemplates() {
-  const templateDir = "./templates/vantagechart";
-  const templates = readdirSync(templateDir)
-    .filter(f => f.endsWith(".template.ts"))
-    .map(f => {
-      const content = readFileSync(`${templateDir}/${f}`, "utf-8");
-      const template = eval(content); // Safe: build-time only
-      
-      // Pre-compile Handlebars templates
-      const compiledSections = template.sections.map((section: Section) => ({
-        ...section,
-        compiledFragments: section.fragments.map((fragment: Fragment) => ({
-          ...fragment,
-          render: Handlebars.compile(fragment.template),
-        })),
-      }));
-      
-      return {
-        id: template.id,
-        compiledSections,
-      };
-    });
+// Add new templates here as static imports — never read and eval .ts files at runtime
+import { RoutineRNVisitTemplate } from "../templates/vantagechart/routine-rn-visit.template.js";
+import { AdmissionTemplate }      from "../templates/vantagechart/admission.template.js";
 
-  // Write compiled templates
+const TEMPLATES = [RoutineRNVisitTemplate, AdmissionTemplate];
+
+const validator = TypeCompiler.Compile(NarrativeTemplateSchema);
+
+export function compileTemplates(): void {
+  for (const template of TEMPLATES) {
+    if (!validator.Check(template)) {
+      const errors = [...validator.Errors(template)];
+      throw new Error(
+        `Template "${template.id}" failed schema validation:\n${JSON.stringify(errors, null, 2)}`
+      );
+    }
+  }
+
+  // Write validated template manifests (Handlebars strings kept as-is; compiled at service startup)
   writeFileSync(
     "./src/compiled/vantagechart-templates.json",
-    JSON.stringify(templates, null, 2),
+    JSON.stringify(TEMPLATES, null, 2),
   );
+
+  console.log(`Compiled and validated ${TEMPLATES.length} templates.`);
 }
 ```
 
@@ -1407,7 +1509,7 @@ interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
   warnings: ValidationWarning[];
-  complianceScore: number;
+  validationScore: number; // derived from error/warning counts — separate from assembler completenessPercent
 }
 
 export class VantageChartValidator {
@@ -1455,7 +1557,7 @@ export class VantageChartValidator {
       isValid: errors.length === 0,
       errors,
       warnings,
-      complianceScore: this.calculateScore(errors, warnings),
+      validationScore: this.calculateScore(errors, warnings),
     };
   }
 
