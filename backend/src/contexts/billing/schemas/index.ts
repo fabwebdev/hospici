@@ -1,12 +1,40 @@
 // contexts/billing/schemas/index.ts
 
 export {
-  NOESchema,
-  NOEStatusSchema,
-  validateNOEDeadline,
-  type NOE,
-  type NOEStatus,
-} from "./noticeOfElection.schema";
+  NoticeFilingStatusSchema,
+  CreateNOEBodySchema,
+  NOEResponseSchema,
+  NOEWithHistoryResponseSchema,
+  CMSResponseBodySchema,
+  CorrectNOEBodySchema,
+  LateOverrideBodySchema,
+  ReadinessCheckItemSchema,
+  ReadinessResponseSchema,
+  FilingHistoryEventSchema,
+  FilingHistoryResponseSchema,
+  RevocationReasonSchema,
+  CreateNOTRBodySchema,
+  NOTRResponseSchema,
+  FilingQueueItemSchema,
+  FilingQueueResponseSchema,
+  FilingQueueQuerySchema,
+  type NoticeFilingStatus,
+  type CreateNOEBody,
+  type NOEResponse,
+  type NOEWithHistoryResponse,
+  type CMSResponseBody,
+  type CorrectNOEBody,
+  type LateOverrideBody,
+  type ReadinessResponse,
+  type FilingHistoryEvent,
+  type FilingHistoryResponse,
+  type RevocationReason,
+  type CreateNOTRBody,
+  type NOTRResponse,
+  type FilingQueueItem,
+  type FilingQueueResponse,
+  type FilingQueueQuery,
+} from "./noe.schema.js";
 
 export {
   BenefitPeriodSchema,
@@ -18,7 +46,7 @@ export {
   type BenefitPeriod,
   type BenefitPeriodType,
   type BenefitPeriodStatus,
-} from "./benefitPeriod.schema";
+} from "./benefitPeriod.schema.js";
 
 export {
   CapCalculationSchema,
@@ -27,4 +55,4 @@ export {
   getCapYearDates,
   type CapCalculation,
   type CapMethodology,
-} from "./hospiceCap.schema";
+} from "./hospiceCap.schema.js";

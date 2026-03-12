@@ -96,6 +96,9 @@ function AuthedLayout() {
                 <a href="/scheduling/idg" className="px-3 py-2 text-gray-700 hover:text-blue-600">
                   IDG
                 </a>
+                <Link to="/filings" className="px-3 py-2 text-gray-700 hover:text-blue-600">
+                  Filings
+                </Link>
                 {/* TODO T3-7: replace with <Link> once route is implemented */}
                 <a href="/billing" className="px-3 py-2 text-gray-700 hover:text-blue-600">
                   Billing

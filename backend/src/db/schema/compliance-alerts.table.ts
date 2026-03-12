@@ -21,6 +21,9 @@ export const alertTypeEnum = pgEnum("alert_type_enum", [
 	// T2-10 visit scheduling alert types
 	"MISSED_VISIT",
 	"VISIT_FREQUENCY_VARIANCE",
+	// T3-2a NOE/NOTR filing workbench
+	"NOE_LATE",
+	"NOTR_LATE",
 ]);
 
 export const alertSeverityEnum = pgEnum("alert_severity_enum", ["critical", "warning", "info"]);

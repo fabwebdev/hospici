@@ -31,7 +31,21 @@ import {
   HOPEHospiceCareIndexSchema,
   HOPETreatmentPreferencesMeasureSchema,
 } from "@/contexts/analytics/schemas/hopeQualityMeasures.schema";
-import { BenefitPeriodSchema, CapCalculationSchema, NOESchema } from "@/contexts/billing/schemas";
+import { BenefitPeriodSchema, CapCalculationSchema } from "@/contexts/billing/schemas";
+import {
+  CMSResponseBodySchema,
+  CorrectNOEBodySchema,
+  CreateNOEBodySchema,
+  CreateNOTRBodySchema,
+  FilingHistoryResponseSchema,
+  FilingQueueQuerySchema,
+  FilingQueueResponseSchema,
+  LateOverrideBodySchema,
+  NOEResponseSchema,
+  NOEWithHistoryResponseSchema,
+  NOTRResponseSchema,
+  ReadinessResponseSchema,
+} from "@/contexts/billing/schemas/noe.schema.js";
 import {
   CreatePatientBodySchema,
   FlaccScaleSchema,
@@ -159,10 +173,23 @@ export const Validators = {
   AssessmentListResponse: TypeCompiler.Compile(AssessmentListResponseSchema),
   TrajectoryResponse: TypeCompiler.Compile(TrajectoryResponseSchema),
 
-  // Billing
-  NOE: TypeCompiler.Compile(NOESchema),
+  // Billing — BenefitPeriod + Cap
   BenefitPeriod: TypeCompiler.Compile(BenefitPeriodSchema),
   CapCalculation: TypeCompiler.Compile(CapCalculationSchema),
+
+  // Billing — NOE/NOTR Filing Workbench (T3-2a)
+  CreateNOEBody: TypeCompiler.Compile(CreateNOEBodySchema),
+  NOEResponse: TypeCompiler.Compile(NOEResponseSchema),
+  NOEWithHistoryResponse: TypeCompiler.Compile(NOEWithHistoryResponseSchema),
+  CMSResponseBody: TypeCompiler.Compile(CMSResponseBodySchema),
+  CorrectNOEBody: TypeCompiler.Compile(CorrectNOEBodySchema),
+  LateOverrideBody: TypeCompiler.Compile(LateOverrideBodySchema),
+  ReadinessResponse: TypeCompiler.Compile(ReadinessResponseSchema),
+  FilingHistoryResponse: TypeCompiler.Compile(FilingHistoryResponseSchema),
+  CreateNOTRBody: TypeCompiler.Compile(CreateNOTRBodySchema),
+  NOTRResponse: TypeCompiler.Compile(NOTRResponseSchema),
+  FilingQueueQuery: TypeCompiler.Compile(FilingQueueQuerySchema),
+  FilingQueueResponse: TypeCompiler.Compile(FilingQueueResponseSchema),
 
   // Scheduling — IDG
   IDGMeeting: TypeCompiler.Compile(IDGMeetingSchema),

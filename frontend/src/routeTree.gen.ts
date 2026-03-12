@@ -18,6 +18,7 @@ import { Route as authedHopeAssessmentsNewRoute } from "./routes/_authed/hope/as
 import { Route as authedHopeAssessmentsIdRoute } from "./routes/_authed/hope/assessments/$id";
 import { Route as authedHopeDashboardRoute } from "./routes/_authed/hope/dashboard";
 import { Route as authedHopeSubmissionsRoute } from "./routes/_authed/hope/submissions";
+import { Route as authedFilingsIndexRoute } from "./routes/_authed/filings/index";
 import { Route as IndexRoute } from "./routes/index";
 import { Route as LoginRoute } from "./routes/login";
 
@@ -39,6 +40,7 @@ const authedRouteWithChildren = authedRoute.addChildren({
   authedHopeAssessmentsIdRoute,
   authedHopeDashboardRoute,
   authedHopeSubmissionsRoute,
+  authedFilingsIndexRoute,
 });
 
 export const routeTree = rootRoute.addChildren({
@@ -160,6 +162,13 @@ declare module "@tanstack/react-router" {
       path: "/hope/submissions";
       fullPath: "/hope/submissions";
       preLoaderRoute: typeof authedHopeSubmissionsRoute;
+      parentRoute: typeof authedRoute;
+    };
+    "/_authed/filings/": {
+      id: "/_authed/filings/";
+      path: "/filings";
+      fullPath: "/filings";
+      preLoaderRoute: typeof authedFilingsIndexRoute;
       parentRoute: typeof authedRoute;
     };
   }

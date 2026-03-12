@@ -130,3 +130,21 @@ export type {
   EscalateReviewInput,
   BulkAcknowledgeInput,
 } from "./noteReview.js";
+export { TERMINAL_FILING_STATUSES, CLAIM_BLOCKING_STATUSES } from "./noe.js";
+export type {
+  NoticeFilingStatus,
+  NOEResponse,
+  NOEWithHistoryResponse,
+  NOTRResponse,
+  FilingQueueItem,
+  FilingQueueResponse,
+  FilingHistoryEvent,
+  ReadinessCheckItem,
+  ReadinessResponse,
+  CreateNOEInput,
+  RevocationReason,
+  CreateNOTRInput,
+  LateOverrideInput,
+  CMSResponseInput,
+  CorrectNOEInput,
+} from "./noe.js";

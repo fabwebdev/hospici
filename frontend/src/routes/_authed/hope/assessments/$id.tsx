@@ -115,7 +115,10 @@ function IssueCard({
 function HOPEAssessmentDetailPage() {
   const { id } = Route.useParams();
   const initialData = Route.useLoaderData();
+  const { session } = Route.useRouteContext();
   const queryClient = useQueryClient();
+
+  const isSupervisor = ["supervisor", "admin", "super_admin"].includes(session?.role ?? "");
 
   const { data: assessment } = useQuery({
     queryKey: ["hope", "assessment", id],
@@ -165,6 +168,7 @@ function HOPEAssessmentDetailPage() {
   }
 
   const canApprove =
+    isSupervisor &&
     assessment.status === "ready_for_review" &&
     (validation?.blockingErrors.length ?? assessment.fatalErrorCount) === 0;
 
@@ -346,7 +350,7 @@ function HOPEAssessmentDetailPage() {
         {/* Submit button — disabled until no blocking errors */}
         <button
           type="button"
-          disabled={blockingCount > 0 || assessment.status !== "ready_for_review"}
+          disabled={!canApprove}
           onClick={() => void approveMutation.mutateAsync()}
           className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors ${
             canApprove
@@ -354,11 +358,13 @@ function HOPEAssessmentDetailPage() {
               : "bg-gray-300 cursor-not-allowed"
           }`}
           title={
-            blockingCount > 0
+            !isSupervisor
+              ? "Only supervisors and admins can approve assessments for iQIES submission"
+              : blockingCount > 0
               ? `Resolve ${blockingCount} blocking error(s) first`
               : assessment.status !== "ready_for_review"
               ? `Status must be 'ready_for_review' (currently: ${assessment.status})`
-              : "Approve for iQIES submission (supervisor only)"
+              : "Approve for iQIES submission"
           }
         >
           {approveMutation.isPending ? "Approving…" : "Approve for Submission"}

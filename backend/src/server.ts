@@ -7,6 +7,7 @@ import hopeRoutes, { analyticsRoutes } from "@/contexts/analytics/routes/hope.ro
 import alertRoutes from "@/contexts/compliance/routes/alert.routes.js";
 import noteReviewRoutes from "@/contexts/clinical/routes/noteReview.routes.js";
 import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
+import noePatientRoutes, { noeStandaloneRoutes } from "@/contexts/billing/routes/noe.routes.js";
 import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
 import medicationRoutes from "@/contexts/clinical/routes/medication.routes.js";
@@ -150,6 +151,8 @@ export async function buildApp() {
   await fastify.register(medicationRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(vantageChartRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(billingRoutes, { prefix: "/api/v1/billing" });
+  await fastify.register(noePatientRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(noeStandaloneRoutes, { prefix: "/api/v1" });
   await fastify.register(schedulingRoutes, { prefix: "/api/v1/scheduling" });
   await fastify.register(idgMeetingsRoutes, { prefix: "/api/v1/idg-meetings" });
   await fastify.register(patientIdgRoutes, { prefix: "/api/v1/patients" });

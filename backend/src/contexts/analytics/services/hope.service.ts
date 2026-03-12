@@ -44,7 +44,7 @@ import {
   HQRP_TARGET_RATES,
 } from "@/db/schema/hope-quality-measures.table.js";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, asc, count, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lt, lte, sql } from "drizzle-orm";
 import type * as schema from "@/db/schema/index.js";
 import { createHash } from "node:crypto";
 import type { FastifyBaseLogger } from "fastify";
@@ -886,13 +886,40 @@ export class HOPEService {
     const periodStart = `${year}-${String((quarter - 1) * 3 + 1).padStart(2, "0")}-01`;
     const periodEnd = new Date(year, quarter * 3, 0).toISOString().split("T")[0] ?? "";
 
+    // Load last 4 completed periods for trend data (done once, reused per measure below)
+    const todayStr = today.toISOString().split("T")[0] ?? "";
+    const historicalPeriods = await db
+      .select({
+        id: hopeReportingPeriods.id,
+        calendarYear: hopeReportingPeriods.calendarYear,
+        quarter: hopeReportingPeriods.quarter,
+      })
+      .from(hopeReportingPeriods)
+      .where(
+        and(
+          eq(hopeReportingPeriods.locationId, locationId),
+          lt(hopeReportingPeriods.periodEnd, todayStr),
+        ),
+      )
+      .orderBy(desc(hopeReportingPeriods.periodEnd))
+      .limit(4);
+
     // Load measures from DB if period exists, else return seeded static averages
     const measuresToShow = Object.entries(HQRP_NATIONAL_AVERAGES);
     let atRiskAny = false;
 
+    const measureNames: Record<string, string> = {
+      NQF3235: "Comprehensive Assessment at Admission",
+      NQF3633: "Treatment Preferences",
+      NQF3634A: "Hospice Visits in Last Days of Life — Part A (RN/MD)",
+      NQF3634B: "Hospice Visits in Last Days of Life — Part B (SWW/Chaplain)",
+      HCI: "Hospice Care Index (10-indicator composite)",
+    };
+
     const measures = await Promise.all(
       measuresToShow.map(async ([code, nationalAvg]) => {
         const target = HQRP_TARGET_RATES[code] ?? 70;
+        const measureCode = code as "NQF3235" | "NQF3633" | "NQF3634A" | "NQF3634B" | "HCI";
         let locationRate: number | null = null;
 
         if (period) {
@@ -902,7 +929,7 @@ export class HOPEService {
             .where(
               and(
                 eq(hopeQualityMeasures.reportingPeriodId, period.id),
-                eq(hopeQualityMeasures.measureCode, code as "NQF3235" | "NQF3633" | "NQF3634A" | "NQF3634B" | "HCI"),
+                eq(hopeQualityMeasures.measureCode, measureCode),
               ),
             )
             .limit(1);
@@ -913,13 +940,26 @@ export class HOPEService {
         const atRisk = locationRate !== null && locationRate < target;
         if (atRisk) atRiskAny = true;
 
-        const measureNames: Record<string, string> = {
-          NQF3235: "Comprehensive Assessment at Admission",
-          NQF3633: "Treatment Preferences",
-          NQF3634A: "Hospice Visits in Last Days of Life — Part A (RN/MD)",
-          NQF3634B: "Hospice Visits in Last Days of Life — Part B (SWW/Chaplain)",
-          HCI: "Hospice Care Index (10-indicator composite)",
-        };
+        // Trend: last 4 completed quarters in chronological order (oldest first)
+        const trendDesc = await Promise.all(
+          historicalPeriods.map(async (hp) => {
+            const [hqm] = await db
+              .select({ rate: hopeQualityMeasures.rate })
+              .from(hopeQualityMeasures)
+              .where(
+                and(
+                  eq(hopeQualityMeasures.reportingPeriodId, hp.id),
+                  eq(hopeQualityMeasures.measureCode, measureCode),
+                ),
+              )
+              .limit(1);
+            return {
+              quarter: `${hp.calendarYear} Q${hp.quarter}`,
+              rate: hqm?.rate != null ? Number(hqm.rate) : null,
+            };
+          }),
+        );
+        const trend = [...trendDesc].reverse();
 
         return {
           measureCode: code,
@@ -928,7 +968,7 @@ export class HOPEService {
           nationalAverage: nationalAvg,
           targetRate: target,
           atRisk,
-          trend: [], // T3-1b will populate with last 4 quarters
+          trend,
         };
       }),
     );

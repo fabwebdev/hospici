@@ -730,15 +730,406 @@ Add to `compliance-events.ts` and `shared-types/socket.ts`:
 
 ---
 
-## T3-4 · Benefit period automation `MEDIUM`
+## T3-4 · Benefit Period Control System `HIGH`
 
-`read:` `backend/src/contexts/billing/schemas/benefitPeriod.schema.ts`
+`read:` `BE-SPEC` §Phase 3, `DB-ARCH` §billing
 
-- 90d / 90d / 60d / 60d state machine
-- F2F required from period 3 onward
-- Concurrent care revocation workflow
+`needs:` T3-2a (NOE linkage awareness — T3-4 FK-references `notice_of_election`; T3-2b in turn `needs:` T3-4)
 
-**Done when:** Period 3 transition blocked without F2F; recertification state machine tested
+> Period engine, recertification timeline, transfer-aware recalculation, and operational control layer.
+> T3-2b (`F2F Validity Engine`) depends on this task's `f2fStatus` / `f2fRequired` fields.
+
+---
+
+### DB migration
+
+New migration `000X_benefit_periods.sql` — all tables get RLS policies.
+
+**New enums:**
+```sql
+CREATE TYPE benefit_period_status AS ENUM (
+  'current', 'upcoming', 'recert_due', 'at_risk', 'past_due',
+  'closed', 'revoked', 'transferred_out', 'concurrent_care', 'discharged'
+);
+
+CREATE TYPE benefit_period_recert_status AS ENUM (
+  'not_yet_due', 'ready_for_recert', 'pending_physician', 'completed', 'missed'
+);
+
+CREATE TYPE benefit_period_f2f_status AS ENUM (
+  'not_required', 'not_yet_due', 'due_soon', 'documented', 'invalid', 'missing', 'recert_blocked'
+);
+
+CREATE TYPE benefit_period_admission_type AS ENUM (
+  'new_admission', 'hospice_to_hospice_transfer', 'revocation_readmission'
+);
+```
+
+**`benefit_periods` table:**
+```typescript
+{
+  id: uuid PK;
+  patientId: uuid FK → patients.id;
+  locationId: uuid FK;                    // RLS anchor
+
+  // Period identity
+  periodNumber: integer NOT NULL;         // 1-indexed; inherited from source on transfer
+  startDate: date NOT NULL;
+  endDate: date NOT NULL;
+  periodLengthDays: integer GENERATED ALWAYS AS (endDate - startDate) STORED;
+  // Period 1 = 90d, Period 2 = 90d, Period 3+ = 60d
+
+  // Lifecycle state
+  status: benefit_period_status NOT NULL DEFAULT 'upcoming';
+  admissionType: benefit_period_admission_type DEFAULT 'new_admission';
+  isTransferDerived: boolean DEFAULT false;
+  sourceAdmissionId: uuid nullable;       // FK to patients.id of previous hospice on H→H transfer
+
+  // Reporting control
+  isReportingPeriod: boolean DEFAULT false;  // at most one true per patient (partial unique index)
+
+  // Recertification
+  recertDueDate: date nullable;           // null for period 1; startDate + periodLengthDays - 14 advisory
+  recertStatus: benefit_period_recert_status DEFAULT 'not_yet_due';
+  recertCompletedAt: timestamptz nullable;
+  recertPhysicianId: uuid nullable FK → users.id;
+
+  // F2F (required period 3+)
+  f2fRequired: boolean DEFAULT false;
+  f2fStatus: benefit_period_f2f_status DEFAULT 'not_required';
+  f2fDocumentedAt: date nullable;
+  f2fProviderId: uuid nullable FK → users.id;
+  f2fWindowStart: date nullable;          // recertDueDate - 30 calendar days
+  f2fWindowEnd: date nullable;            // recertDueDate (F2F must be BEFORE recert date)
+
+  // Billing risk
+  billingRisk: boolean DEFAULT false;
+  billingRiskReason: text nullable;
+
+  // NOE linkage (period 2+ links to its recertification NOE)
+  noeId: uuid nullable FK → notice_of_election.id;
+
+  // Concurrent care sub-state
+  concurrentCareStart: date nullable;
+  concurrentCareEnd: date nullable;
+
+  // Revocation
+  revocationDate: date nullable;
+
+  // Error correction audit trail
+  correctionHistory: jsonb NOT NULL DEFAULT '[]';
+  // Each entry: { correctedAt, correctedByUserId, field, oldValue, newValue, reason, previewApproved }
+
+  createdAt: timestamptz;
+  updatedAt: timestamptz;
+}
+```
+
+**Indexes:**
+```sql
+-- Fast per-patient timeline
+CREATE INDEX ON benefit_periods (patient_id, period_number);
+-- Enforce at-most-one reporting period per patient
+CREATE UNIQUE INDEX ON benefit_periods (patient_id) WHERE is_reporting_period = true;
+-- RLS / location queries
+CREATE INDEX ON benefit_periods (location_id, status);
+-- Recert due queue
+CREATE INDEX ON benefit_periods (recert_due_date) WHERE status IN ('current', 'recert_due', 'at_risk');
+```
+
+**RLS policies (mirror NOE pattern):**
+- `location_read`: `locationId = current_setting('app.location_id')`
+- `location_insert`: same
+- `owner_or_admin_update`: `locationId matches` OR `role = 'admin'`
+- Super-admin bypass
+
+---
+
+### Bounded context: `backend/src/contexts/billing/`
+
+**New files:**
+- `benefit-periods.table.ts` — Drizzle table definition
+- `schemas/benefitPeriod.schema.ts` — TypeBox schemas (all CRUD + period engine DTOs)
+- `services/benefit-period.service.ts` — period engine
+- `routes/benefit-period.routes.ts`
+
+**`BenefitPeriodService` methods:**
+
+```typescript
+// Initialize periods for new admission or H→H transfer
+// Generates all periods: 1×90d, 1×90d, then 60d thereafter up to reasonable horizon (4 periods)
+// Transfer: inherits periodNumber from source, adjusts startDate to transfer date
+initializePeriods(patientId, admissionDate, admissionType, sourceAdmissionId?): Promise<BenefitPeriod[]>
+
+// When admission date / transfer date changes — recalculates all downstream periods
+// Returns { preview: BenefitPeriod[], requiresApproval: boolean } before committing
+recalculateFromPeriod(periodId): Promise<RecalculationPreview>
+
+// Commit a previewed recalculation — writes correctionHistory entries on each affected period
+commitRecalculation(previewToken: string, approvedByUserId: string): Promise<BenefitPeriod[]>
+
+// Transition status machine — called by daily BullMQ job
+// Derives: current → recert_due (14d before endDate), recert_due → at_risk (7d before), → past_due
+// Also derives f2fStatus, billingRisk flag
+deriveStatuses(locationId): Promise<void>
+
+// Set reporting period (clears previous isReportingPeriod for same patient)
+setReportingPeriod(periodId): Promise<BenefitPeriod>
+
+// Record completed recertification — transitions recertStatus, updates recertCompletedAt
+completeRecertification(periodId, physicianId): Promise<BenefitPeriod>
+
+// Record concurrent care entry / exit
+setConcurrentCare(periodId, start, end?): Promise<BenefitPeriod>
+
+// Record revocation — closes period, sets status=revoked, sets revocationDate
+revokeElection(periodId, revocationDate): Promise<BenefitPeriod>
+
+// Error correction with preview
+previewCorrection(periodId, field, newValue): Promise<CorrectionPreview>
+commitCorrection(periodId, correction, approvedByUserId): Promise<BenefitPeriod>
+
+// Manager list — location-wide, filterable by status
+listPeriods(locationId, filters): Promise<BenefitPeriodListResponse>
+
+// Patient timeline
+getPatientTimeline(patientId): Promise<BenefitPeriodTimeline>
+
+// Period detail
+getPeriod(periodId): Promise<BenefitPeriodDetail>
+```
+
+**Period length rules (hardcoded, not configurable):**
+```typescript
+function getPeriodLengthDays(periodNumber: number): 90 | 60 {
+  return periodNumber <= 2 ? 90 : 60;
+}
+// F2F required for period 3 onward
+function isF2FRequired(periodNumber: number): boolean {
+  return periodNumber >= 3;
+}
+// F2F window: [recertDueDate - 30 calendar days, recertDueDate)
+// Must be BEFORE the recertification date (42 CFR §418.22)
+```
+
+**`billingRisk` derivation:**
+- `recertStatus = 'missed'` → billingRisk=true, reason=`MISSED_RECERTIFICATION`
+- `f2fStatus IN ('missing', 'invalid', 'recert_blocked')` AND `f2fRequired=true` → billingRisk=true, reason=`F2F_DEFICIENT`
+- Period `status = 'past_due'` → billingRisk=true, reason=`PERIOD_PAST_DUE`
+
+**Transfer-aware initialization:**
+```typescript
+// H→H transfer: new hospice inherits existing period number, starts new sub-period
+// Admission type = 'hospice_to_hospice_transfer', isTransferDerived=true, sourceAdmissionId set
+// Period length resets to 60d regardless of inherited period number
+// Clock does NOT restart to period 1
+```
+
+---
+
+### Routes
+
+```typescript
+// Benefit Period Manager — location-wide operational view
+GET    /api/v1/benefit-periods
+  query: { status?, patientId?, recertDueBefore?, billingRisk?, page, limit }
+  returns: BenefitPeriodListResponse (paginated)
+
+// Patient timeline
+GET    /api/v1/patients/:id/benefit-periods
+  returns: BenefitPeriodTimeline
+
+// Period detail
+GET    /api/v1/benefit-periods/:id
+  returns: BenefitPeriodDetail
+
+// Set reporting period (role: admin | billing_coordinator)
+PATCH  /api/v1/benefit-periods/:id/reporting
+  body: { isReportingPeriod: true }
+  note: clears previous isReportingPeriod for same patient atomically
+
+// Preview recalculation (no mutation — returns diff)
+POST   /api/v1/benefit-periods/:id/recalculate-from-here/preview
+  returns: RecalculationPreview { affectedPeriods, changesSummary, previewToken (TTL 5 min) }
+
+// Commit a previewed recalculation
+POST   /api/v1/benefit-periods/:id/recalculate-from-here
+  body: { previewToken }
+  note: requires approval; writes correctionHistory on each affected period
+
+// Record completed recertification
+POST   /api/v1/benefit-periods/:id/recertify
+  body: { physicianId, completedAt }
+
+// Error correction (field-level, with audit)
+POST   /api/v1/benefit-periods/:id/correct
+  body: { field, newValue, reason }
+  note: runs preview inline; small corrections (non-date fields) auto-commit; date changes require previewToken flow
+```
+
+**Role gates:**
+- `view benefit periods`: all clinical roles
+- `edit benefit periods` (correct, recertify): clinical_admin, billing_coordinator
+- `override reporting period`: billing_coordinator, admin
+
+---
+
+### BullMQ job: `benefit-period-check`
+
+Schedule: `0 7 * * *` (daily 07:00 UTC)
+
+**Worker logic:**
+1. Call `BenefitPeriodService.deriveStatuses(locationId)` for all active locations
+2. For each period status transition → `AlertService.upsertAlert()`:
+   - `recert_due` (14d window) → `RECERT_DUE` alert (warning)
+   - `at_risk` (7d window) → `RECERT_AT_RISK` alert (critical)
+   - `past_due` → `RECERT_PAST_DUE` alert (critical, hard-block on billing)
+   - `f2fStatus = 'due_soon'` → `F2F_DUE_SOON` alert (warning)
+   - `f2fStatus = 'missing'` AND past window → `F2F_MISSING` alert (critical)
+   - `billingRisk` flips to true → `BENEFIT_PERIOD_BILLING_RISK` alert
+3. Emit Socket.IO `benefit:period:status:changed` to `location:{id}` room
+
+Add 6 alert type values to `alert_type_enum`:
+`RECERT_DUE`, `RECERT_AT_RISK`, `RECERT_PAST_DUE`, `F2F_DUE_SOON`, `F2F_MISSING`, `BENEFIT_PERIOD_BILLING_RISK`
+
+---
+
+### Physician-routing event hooks (consumed by T3-2b + T3-9)
+
+When `deriveStatuses` transitions a period to `recert_due`/`at_risk`, or updates `f2fStatus` to `due_soon`/`missing`, the BullMQ worker emits two additional Socket.IO events (alongside the alert upsert):
+
+```typescript
+// Add both to shared-types/src/socket.ts
+interface BenefitPeriodRecertTaskPayload {
+  event: 'benefit:period:recert_task';
+  periodId: string;
+  patientId: string;
+  locationId: string;
+  periodNumber: number;
+  recertDueDate: string;      // ISO date
+  severity: 'warning' | 'critical';
+}
+
+interface BenefitPeriodF2FTaskPayload {
+  event: 'benefit:period:f2f_task';
+  periodId: string;
+  patientId: string;
+  locationId: string;
+  periodNumber: number;
+  f2fWindowStart: string;     // ISO date
+  f2fWindowEnd: string;       // ISO date
+  severity: 'warning' | 'critical';
+}
+```
+
+**Consumers:**
+- T3-9 (physician order inbox) subscribes to `benefit:period:recert_task` to auto-create recertification tasks routed to the certifying physician
+- T3-2b (F2F validity engine) subscribes to `benefit:period:f2f_task` to surface "Document F2F" deep links in the F2F worklist
+
+Emit to `location:{locationId}` room. No additional DB write — the alert row already persists the event.
+
+---
+
+### shared-types: `packages/shared-types/src/benefit-period.ts`
+
+```typescript
+export type BenefitPeriodStatus =
+  | 'current' | 'upcoming' | 'recert_due' | 'at_risk' | 'past_due'
+  | 'closed' | 'revoked' | 'transferred_out' | 'concurrent_care' | 'discharged';
+
+export type BenefitPeriodRecertStatus =
+  | 'not_yet_due' | 'ready_for_recert' | 'pending_physician' | 'completed' | 'missed';
+
+export type BenefitPeriodF2FStatus =
+  | 'not_required' | 'not_yet_due' | 'due_soon' | 'documented' | 'invalid' | 'missing' | 'recert_blocked';
+
+export interface BenefitPeriod { /* all fields */ }
+export interface BenefitPeriodDetail extends BenefitPeriod {
+  patient: { id: string; name: string };
+  noe?: { id: string; status: string; filedAt?: string };
+  correctionHistory: CorrectionEntry[];
+}
+export interface BenefitPeriodTimeline {
+  patientId: string;
+  admissionType: BenefitPeriodAdmissionType;
+  periods: BenefitPeriod[];
+  activeAlerts: Alert[];
+}
+export interface BenefitPeriodListResponse { items: BenefitPeriodDetail[]; total: number; page: number; }
+export interface RecalculationPreview {
+  previewToken: string;
+  expiresAt: string;
+  affectedPeriods: Array<{ id: string; field: string; oldValue: unknown; newValue: unknown }>;
+}
+```
+
+Add to `socket.ts`: `'benefit:period:status:changed'` event.
+
+---
+
+### Frontend modules
+
+**`routes/_authed/benefit-periods/index.tsx` — Benefit Period Manager**
+- Three operational queue tabs: **Recert Upcoming** / **At Risk** / **Past Due**
+- Each row: patient name, period number, start/end, status badge, F2F indicator, billingRisk badge, "Open" link → detail drawer
+- Location-wide summary widgets (counts per status)
+- Accessible from main nav (Compliance section)
+
+**`components/BenefitPeriodTimeline.tsx`** — reusable in `$patientId.tsx`
+- Horizontal timeline cards per period
+- Color-coded status: green (current/closed), amber (recert_due/at_risk), red (past_due/revoked)
+- F2F chip: `F2F missing` (red) / `F2F due soon` (amber) / `F2F documented` (green) / `F2F invalid` (red) / `not required` (gray)
+- Transfer indicator on inherited periods
+- Concurrent care band overlay when active
+- Click → `PeriodDetailDrawer`
+
+**`components/PeriodDetailDrawer.tsx`**
+- Period number, dates, length, status
+- Recertification section: due date, status, physician, completedAt
+- F2F section: required flag, status, window dates, documented date, provider
+- NOE link (opens T3-2a workbench)
+- Billing risk banner with reason
+- Correction History accordion (from `correctionHistory` JSONB)
+- Action buttons: "Set as Reporting Period", "Record Recertification", "Correct Period" (triggers preview modal)
+
+**`components/RecalculationPreviewModal.tsx`**
+- Shows diff table (field / old value / new value) for all affected periods
+- "Confirm" button commits via previewToken
+- Expires-in countdown
+
+**`routes/_authed/compliance/recert-queue.tsx`** — Recertifications Due report
+- Sortable by due date, filterable by status/location
+- Deep link to "Record Recertification" on each row — opens `PeriodDetailDrawer` with the recertification form pre-expanded for that period
+
+**`components/BenefitPeriodRiskWidget.tsx`** — main ops dashboard summary card
+- Counts of `at_risk` + `past_due` periods for the active location
+- CTA: "View All" → Benefit Period Manager filtered to at-risk/past-due
+- Live updates via `benefit:period:status:changed` Socket.IO event
+- Slot alongside HOPE and compliance alert widgets in the main ops dashboard
+
+---
+
+### TypeBox validators (add to `typebox-compiler.ts`)
+
+`BenefitPeriodListQuery`, `BenefitPeriodResponse`, `BenefitPeriodDetailResponse`,
+`BenefitPeriodTimelineResponse`, `SetReportingPeriodBody`, `RecalculationPreviewResponse`,
+`CommitRecalculationBody`, `RecertifyBody`, `CorrectPeriodBody`, `BenefitPeriodListResponse`
+(10 validators)
+
+---
+
+**Done when:**
+- Period 3 transition blocks recertification when `f2fStatus` is `missing` or `recert_blocked`
+- H→H transfer initializes with inherited periodNumber and `isTransferDerived=true`
+- Downstream recalculation preview shows correct diff; commit writes `correctionHistory` entries
+- `isReportingPeriod` partial unique index enforced (only one per patient)
+- BullMQ job transitions `recert_due → at_risk → past_due` and upserts the correct alert types
+- `billingRisk=true` surfaces on T3-12 pre-submission audit (flag only; claim blocking in T3-7/T3-12)
+- 14-day F2F window computed as [recertDueDate − 30d, recertDueDate) per 42 CFR §418.22
+- `recert-queue.tsx` "Record Recertification" deep link opens `PeriodDetailDrawer` with the recertification form pre-expanded
+- `BenefitPeriodRiskWidget` renders correct at-risk/past-due counts and updates live via Socket.IO
+- `benefit:period:recert_task` and `benefit:period:f2f_task` Socket.IO events emitted and typed in `shared-types/src/socket.ts`
+- All status transitions tested in unit + integration tests
 
 ---
 

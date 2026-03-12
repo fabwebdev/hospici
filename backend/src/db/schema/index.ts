@@ -11,6 +11,7 @@ export * from "./audit-logs.table.js";
 export * from "./patients.table.js";
 export * from "./pain-assessments.table.js";
 export * from "./noe.table.js";
+export * from "./notr.table.js";
 export * from "./benefit-periods.table.js";
 export * from "./idg-meetings.table.js";
 export * from "./aide-supervisions.table.js";

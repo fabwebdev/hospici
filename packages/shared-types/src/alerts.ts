@@ -20,6 +20,9 @@ export const AlertType = {
 	// T2-10 — visit scheduling
 	MISSED_VISIT: "MISSED_VISIT", // scheduled visit passed with no completion
 	VISIT_FREQUENCY_VARIANCE: "VISIT_FREQUENCY_VARIANCE", // actual < planned frequency
+	// T3-2a — NOE/NOTR filing workbench
+	NOE_LATE: "NOE_LATE", // NOE deadline passed — claims blocked
+	NOTR_LATE: "NOTR_LATE", // NOTR deadline passed — claims blocked
 } as const;
 
 export type AlertType = (typeof AlertType)[keyof typeof AlertType];

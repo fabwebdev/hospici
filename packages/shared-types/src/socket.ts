@@ -164,6 +164,54 @@ export interface ServerToClientEvents {
 		rejectionDetails: string | null;
 	}) => void;
 
+	// NOE/NOTR Filing Workbench (T3-2a)
+	"noe:late": (data: {
+		noeId: string;
+		patientId: string;
+		patientName: string;
+		deadline: string;
+		daysOverdue: number;
+	}) => void;
+
+	"noe:accepted": (data: {
+		noeId: string;
+		patientId: string;
+	}) => void;
+
+	"noe:rejected": (data: {
+		noeId: string;
+		patientId: string;
+		responseCode: string;
+	}) => void;
+
+	"notr:created": (data: {
+		notrId: string;
+		noeId: string;
+		patientId: string;
+		deadline: string;
+	}) => void;
+
+	"notr:deadline:warning": (data: {
+		notrId: string;
+		patientId: string;
+		patientName: string;
+		deadline: string;
+		businessDaysRemaining: number;
+	}) => void;
+
+	"notr:late": (data: {
+		notrId: string;
+		patientId: string;
+		patientName: string;
+		deadline: string;
+		daysOverdue: number;
+	}) => void;
+
+	"notr:accepted": (data: {
+		notrId: string;
+		patientId: string;
+	}) => void;
+
 	// Security
 	"break:glass:access": (data: {
 		userId: string;

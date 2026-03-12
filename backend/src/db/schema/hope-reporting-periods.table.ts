@@ -15,12 +15,14 @@ import {
   date,
   index,
   integer,
+  pgEnum,
   pgTable,
   timestamp,
   unique,
   uuid,
-  varchar,
 } from "drizzle-orm/pg-core";
+
+export const hopePeriodStatusEnum = pgEnum("hope_period_status", ["open", "submitted", "closed"]);
 import { locations } from "./locations.table.js";
 
 export const hopeReportingPeriods = pgTable(
@@ -43,7 +45,7 @@ export const hopeReportingPeriods = pgTable(
     /** HQRP submission deadline: typically 4.5 months after quarter end */
     submissionDeadline: date("submission_deadline").notNull(),
 
-    status: varchar("status", { length: 20 }).notNull().default("open"),
+    status: hopePeriodStatusEnum("status").notNull().default("open"),
 
     penaltyApplied: boolean("penalty_applied").notNull().default(false),
 

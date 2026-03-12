@@ -3,7 +3,6 @@ import {
   date,
   integer,
   jsonb,
-  pgEnum,
   pgTable,
   text,
   timestamp,
@@ -13,21 +12,13 @@ import {
 import { locations } from "./locations.table.js";
 import { patients } from "./patients.table.js";
 import { users } from "./users.table.js";
+import { noticeFilingStatusEnum, noticesOfElection } from "./noe.table.js";
 
-export const noticeFilingStatusEnum = pgEnum("notice_filing_status", [
-  "draft",
-  "ready_for_submission",
-  "submitted",
-  "accepted",
-  "rejected",
-  "needs_correction",
-  "late_pending_override",
-  "voided",
-  "closed",
-]);
-
-export const noticesOfElection = pgTable("notices_of_election", {
+export const noticesOfTerminationRevocation = pgTable("notices_of_termination_revocation", {
   id: uuid("id").primaryKey().defaultRandom(),
+  noeId: uuid("noe_id")
+    .references(() => noticesOfElection.id)
+    .notNull(),
   patientId: uuid("patient_id")
     .references(() => patients.id, { onDelete: "cascade" })
     .notNull(),
@@ -35,13 +26,17 @@ export const noticesOfElection = pgTable("notices_of_election", {
     .references(() => locations.id, { onDelete: "cascade" })
     .notNull(),
   status: noticeFilingStatusEnum("status").notNull().default("draft"),
-  electionDate: date("election_date").notNull(),
+  revocationDate: date("revocation_date").notNull(),
+  revocationReason: text("revocation_reason").notNull(),
   deadlineDate: date("deadline_date").notNull(),
   isLate: boolean("is_late").notNull().default(false),
   lateReason: text("late_reason"),
   overrideApprovedBy: uuid("override_approved_by").references(() => users.id),
   overrideApprovedAt: timestamp("override_approved_at", { withTimezone: true }),
   overrideReason: text("override_reason"),
+  receivingHospiceId: varchar("receiving_hospice_id", { length: 20 }),
+  receivingHospiceName: text("receiving_hospice_name"),
+  transferDate: date("transfer_date"),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
   submittedByUserId: uuid("submitted_by_user_id").references(() => users.id),
   responseCode: varchar("response_code", { length: 20 }),
@@ -54,5 +49,7 @@ export const noticesOfElection = pgTable("notices_of_election", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export type NoticesOfElectionRow = typeof noticesOfElection.$inferSelect;
-export type NoticesOfElectionInsert = typeof noticesOfElection.$inferInsert;
+export type NoticesOfTerminationRevocationRow =
+  typeof noticesOfTerminationRevocation.$inferSelect;
+export type NoticesOfTerminationRevocationInsert =
+  typeof noticesOfTerminationRevocation.$inferInsert;
