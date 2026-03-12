@@ -8,6 +8,9 @@ import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
 import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
 import authRoutes from "@/contexts/identity/routes/auth.routes.js";
 import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
+import { closeQueues, scheduleDailyJobs } from "@/jobs/queue.js";
+import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.worker.js";
+import { createNoeDeadlineWorker } from "@/jobs/workers/noe-deadline.worker.js";
 import { registerRLSMiddleware } from "@/middleware/rls.middleware.js";
 import valkeyPlugin from "@/plugins/valkey.plugin.js";
 import cors from "@fastify/cors";
@@ -48,7 +51,6 @@ export async function buildApp() {
       "X-Request-ID",
       "Idempotency-Key",
       "If-Match",
-      "X-Location-ID",
     ],
     exposedHeaders: ["ETag", "X-Request-ID", "Retry-After"],
   });
@@ -130,6 +132,21 @@ export async function buildApp() {
   await fastify.register(billingRoutes, { prefix: "/api/v1/billing" });
   await fastify.register(schedulingRoutes, { prefix: "/api/v1/scheduling" });
   await fastify.register(hopeRoutes, { prefix: "/api/v1/hope" });
+
+  // ── BullMQ Workers ────────────────────────────────────────────────────────────
+  // Workers are created after Fastify is fully configured so the logger is ready.
+  const noeWorker = createNoeDeadlineWorker();
+  const aideWorker = createAideSupervisionWorker();
+
+  fastify.addHook("onClose", async () => {
+    await noeWorker.close();
+    await aideWorker.close();
+    await closeQueues();
+    fastify.log.info("BullMQ workers and queues closed");
+  });
+
+  // Register repeatable daily jobs (deduplicates on restart)
+  await scheduleDailyJobs();
 
   return fastify;
 }

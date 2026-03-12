@@ -72,10 +72,10 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 |----|------|--------|------|
 | T1-1 | Better Auth — backend | ✅ | MEDIUM |
 | T1-2 | Better Auth — frontend | ✅ | MEDIUM |
-| T1-3 | Replace header-stub RLS with JWT claims | ⬜ | MEDIUM |
-| T1-4 | AuditService | ⬜ | MEDIUM |
-| T1-5 | PHI encryption service | ⬜ | MEDIUM |
-| T1-6 | BullMQ foundation + compliance queues | ⬜ | MEDIUM |
+| T1-3 | Replace header-stub RLS with JWT claims | ✅ | MEDIUM |
+| T1-4 | AuditService | ✅ | MEDIUM |
+| T1-5 | PHI encryption service | ✅ | MEDIUM |
+| T1-6 | BullMQ foundation + compliance queues | ✅ | MEDIUM |
 | T1-7 | HOPE + cap BullMQ queues | ⬜ | MEDIUM |
 | T1-8 | Socket.IO server | ⬜ | MEDIUM |
 | T1-9 | Integration tests + RLS suite | ⬜ | MEDIUM |
@@ -197,6 +197,10 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | 2026-03-12 | Schema fixes + tests | Zero TS errors: `type Static` imports, ABAC deny policy, valkey password spread, HOPE response schemas, `HOPEReportingPeriodSchema` added, dotenv installed. Fixed business-days UTC bug — 9/9 tests passing. | T1-1 |
 | 2026-03-12 | T1-1 Better Auth backend | `auth.config.ts` (drizzleAdapter + twoFactor plugin + 30min session + httpOnly cookie). `auth.routes.ts` (Web API Request bridge pattern). `auth-tables.ts` (sessions/accounts/verifications/twoFactors). `users.table.ts` extended (name/image/isActive/twoFactorEnabled). Migration 0002. 0 TS errors, 9/9 tests. | T1-2 |
 | 2026-03-12 | T1-2 Better Auth frontend | `auth.server.ts` (createAuthClient + HospiciSession type + parseHospiciSession). `validators/auth.validators.ts` (TypeBox AOT for login + break-glass). `auth.functions.ts` (loginFn/logoutFn/getCurrentSessionFn/breakGlassFn — real BA calls, Set-Cookie forwarding via vinxi/http). `auth.middleware.ts` (real session cookie validation). `rls.middleware.ts` (null session guard). `server.ts` (register authRoutes, fixing T1-1 gap). 18 pre-existing FE TS errors unchanged, 9/9 backend tests. | T1-3 |
+| 2026-03-12 | T1-3 RLS session extraction | `backend/rls.middleware.ts`: replaced header-stub with `auth.api.getSession()` — extracts userId/locationId/role from verified BA session cookie, adds TOTP enforcement gate (403 if not enrolled), removes dev guard entirely. `frontend/rls.middleware.ts`: removed X-User-ID/X-User-Role/X-Location-ID injection (keep only X-Request-ID). `server.ts`: removed X-Location-ID from CORS allowedHeaders. 0 TS errors, 9/9 tests. | T1-4 |
+| 2026-03-12 | T1-4 AuditService | `audit.service.ts`: `AuditService.log(action, userId, patientId|null, metadata)` — append-only db.insert, fallback resourceId logic (patientId → metadata.resourceId → userId). 7 unit tests (vi.hoisted mock pattern). 0 TS errors, 16/16 tests. Route wiring deferred to T2-1+ when real handlers exist. | T1-5 |
+| 2026-03-12 | T1-5 PHI encryption | `phi-encryption.service.ts`: `PHI_FIELDS` set (19 field names covering all 18 HIPAA Safe Harbor classes). `encrypt/decrypt` via pgp_sym_encrypt/pgp_sym_decrypt with base64 transport. `encryptFields/decryptFields` for flat record objects. Key from `env.phiEncryptionKey`. 9 unit tests. 0 TS errors, 25/25 tests. | T1-6 |
+| 2026-03-12 | T1-6 BullMQ foundation | `queue.ts`: `createBullMQConnection()` (raw opts, `maxRetriesPerRequest:null`), `noeDeadlineQueue` + `aideSupervisionQueue`, `scheduleDailyJobs()` (0 6 * * *), `closeQueues()`. `noe-deadline.worker.ts`: queries `notice_of_election` for upcoming/overdue NOEs, logs + TODO T1-8. `aide-supervision.worker.ts`: queries `aide_supervisions`, marks `isOverdue=true`, logs + TODO T1-8. Workers registered + shutdown in `server.ts`. 5 unit tests. 0 TS errors, 30/30 tests. | T1-7 |
 
 ---
 
