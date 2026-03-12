@@ -40,7 +40,10 @@ const DisciplineParamsSchema = {
   type: "object",
   properties: {
     patientId: { type: "string", format: "uuid" },
-    discipline: { type: "string", enum: ["RN", "SW", "CHAPLAIN", "THERAPY", "AIDE", "VOLUNTEER", "BEREAVEMENT"] },
+    discipline: {
+      type: "string",
+      enum: ["RN", "SW", "CHAPLAIN", "THERAPY", "AIDE", "VOLUNTEER", "BEREAVEMENT"],
+    },
   },
   required: ["patientId", "discipline"],
 } as const;
@@ -187,7 +190,7 @@ export default async function carePlanRoutes(fastify: FastifyInstance): Promise<
           success: false,
           error: {
             code: "INVALID_DISCIPLINE",
-            message: `discipline must be one of: RN, SW, CHAPLAIN, THERAPY, AIDE`,
+            message: "discipline must be one of: RN, SW, CHAPLAIN, THERAPY, AIDE",
           },
         });
       }

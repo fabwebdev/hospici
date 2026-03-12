@@ -29,6 +29,27 @@ export type {
   PatchCarePlanInput,
 } from "./carePlan.js";
 export type {
+  MedicationStatus,
+  FrequencyType,
+  DEASchedule,
+  MedicareCoverageType,
+  AdministrationType,
+  AllergySeverity,
+  AllergenType,
+  DrugInteractionWarning,
+  MedicationResponse,
+  MedicationListResponse,
+  MedicationAdministration,
+  AdministrationListResponse,
+  PatientAllergy,
+  AllergyListResponse,
+  CreateMedicationInput,
+  PatchMedicationInput,
+  RecordAdministrationInput,
+  CreateAllergyInput,
+  PatchAllergyInput,
+} from "./medication.js";
+export type {
   IDGAttendeeNoteEntry,
   IDGAttendeeNotes,
   IDGAttendanceStatus,

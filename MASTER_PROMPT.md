@@ -91,7 +91,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | T2-3 | Pain assessments + decline trajectory | ✅     | MEDIUM |
 | T2-4 | IDG meeting recording + enforcement   | ✅     | MEDIUM |
 | T2-5 | Care plan schema + routes             | ✅     | MEDIUM |
-| T2-6 | Medication management                 | ⬜     | MEDIUM |
+| T2-6 | Medication management                 | ✅     | MEDIUM |
 | T2-7 | VantageChart™ narrative generation   | ⬜     | HIGH   |
 | T2-8 | Compliance alert dashboard            | ⬜     | MEDIUM |
 | T2-9 | Note review system                    | ⬜     | MEDIUM |
@@ -213,6 +213,8 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | 2026-03-12 | T2-4 IDG meeting recording + enforcement | Migration 0007 (`attendee_notes` JSONB + `assembled_note` TEXT + compliance index). `idgMeeting.schema.ts`: full CRUD schemas + `assembleIDGNote()`. `idg.service.ts`: create/list/complete/compliance with RLS+audit. `IDGAttendeeValidationError` hard-blocks missing RN/MD/SW. `idg.routes.ts`: 4 routes at `/api/v1/idg-meetings` + `/api/v1/patients`. 5 new validators in typebox-compiler. `shared-types/idg.ts`. `idg.functions.ts` + `idg-overdue-modal.tsx` (hard-block, no dismiss). `$patientId.tsx` + IDG compliance loader. `schedule.tsx` route. routeTree.gen.ts updated. lucide-react installed. 197/197 backend + 22/22 frontend. 0 TS errors. | T2-5 |
 
 | 2026-03-12 | T2-5 Care plan schema + routes | Migration 0008 (`care_plans` table + unique index + GIN + RLS). `carePlan.schema.ts`: `DisciplineType` enum + `SmartGoalSchema` + `DisciplineSectionsSchema` (optional Object keys). `care-plans.table.ts`. `carePlan.service.ts`: create (idempotent)/get/patchDiscipline — JSONB merge PATCH, role gate (non-admin may only patch own discipline), version increment, RLS+audit. `carePlan.routes.ts`: 3 routes (POST/GET/PATCH). 4 new validators in typebox-compiler. `shared-types/carePlan.ts`. `carePlan.functions.ts` + 10 contract tests. `$patientId.tsx`: care plan panel (inline, no separate nav). 228/228 backend + 32/32 frontend. 0 TS errors. | T2-6 |
+
+| 2026-03-12 | T2-6 Medication management | Migration 0010: 7 enums (`medication_status`, `medication_frequency_type`, `dea_schedule`, `medicare_coverage_type`, `medication_administration_type`, `allergy_severity`, `allergen_type`) + 3 tables with full RLS. `medication.schema.ts`: all 12 feature domains (active list, comfort-kit, PRN, MAR, effectiveness, controlled substance, allergy, drug interaction, physician order linkage, pharmacy, caregiver teaching, Medicare billing). `medications.table.ts` + `medication-administrations.table.ts` + `patient-allergies.table.ts`. `medication.service.ts`: 8 service methods (listMedications/createMedication/patchMedication/recordAdministration/listAdministrations/listAllergies/createAllergy/patchAllergy) — all RLS+audit. OpenFDA interaction check on medication add (fail-open). `medication.routes.ts`: 8 routes. 9 new validators in typebox-compiler. `shared-types/medication.ts`. `medications.functions.ts` + 15 contract tests. Socket.IO `medication:administered` on MAR insert. 228/228 backend + 47/47 frontend. 0 TS errors. | T2-7 |
 
 ---
 

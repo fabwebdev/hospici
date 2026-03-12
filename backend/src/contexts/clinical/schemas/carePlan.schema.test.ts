@@ -198,7 +198,12 @@ describe("CarePlanResponseSchema", () => {
             lastUpdatedBy: "00000000-0000-0000-0000-000000000099",
             lastUpdatedAt: now,
           },
-          PHYSICIAN: { notes: "Plan reviewed", goals: [], lastUpdatedBy: validUUID, lastUpdatedAt: now },
+          PHYSICIAN: {
+            notes: "Plan reviewed",
+            goals: [],
+            lastUpdatedBy: validUUID,
+            lastUpdatedAt: now,
+          },
         },
         physicianReview: {
           ...validPhysicianReview,

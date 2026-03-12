@@ -20,6 +20,13 @@ import {
 } from "@/contexts/analytics/schemas/hopeQualityMeasures.schema";
 import { BenefitPeriodSchema, CapCalculationSchema, NOESchema } from "@/contexts/billing/schemas";
 import {
+  CreatePatientBodySchema,
+  FlaccScaleSchema,
+  PatchPatientBodySchema,
+  PatientListQuerySchema,
+  PatientSchema,
+} from "@/contexts/clinical/schemas";
+import {
   AssessmentListResponseSchema,
   AssessmentResponseSchema,
   CreateAssessmentBodySchema,
@@ -33,16 +40,20 @@ import {
   PhysicianReviewBodySchema,
 } from "@/contexts/clinical/schemas/carePlan.schema";
 import { EsasScaleSchema } from "@/contexts/clinical/schemas/esasScale.schema";
+import {
+  CreateAllergyBodySchema,
+  CreateMedicationBodySchema,
+  MedicationAdministrationSchema,
+  MedicationListResponseSchema,
+  MedicationResponseSchema,
+  PatchAllergyBodySchema,
+  PatchMedicationBodySchema,
+  PatientAllergySchema,
+  RecordAdministrationBodySchema,
+} from "@/contexts/clinical/schemas/medication.schema";
 import { NrsScaleSchema } from "@/contexts/clinical/schemas/nrsScale.schema";
 import { PainadScaleSchema } from "@/contexts/clinical/schemas/painadScale.schema";
 import { WongBakerScaleSchema } from "@/contexts/clinical/schemas/wongBakerScale.schema";
-import {
-  CreatePatientBodySchema,
-  FlaccScaleSchema,
-  PatchPatientBodySchema,
-  PatientListQuerySchema,
-  PatientSchema,
-} from "@/contexts/clinical/schemas";
 // Import all schemas
 import { BreakGlassSchema, SessionSchema, UserSchema } from "@/contexts/identity/schemas";
 import { AuditLogSchema } from "@/contexts/identity/schemas/audit.schema";
@@ -86,6 +97,17 @@ export const Validators = {
   PatchCarePlanBody: TypeCompiler.Compile(PatchCarePlanBodySchema),
   CarePlanResponse: TypeCompiler.Compile(CarePlanResponseSchema),
   PhysicianReviewBody: TypeCompiler.Compile(PhysicianReviewBodySchema),
+
+  // Clinical — medications, MAR, allergies
+  CreateMedicationBody: TypeCompiler.Compile(CreateMedicationBodySchema),
+  PatchMedicationBody: TypeCompiler.Compile(PatchMedicationBodySchema),
+  MedicationResponse: TypeCompiler.Compile(MedicationResponseSchema),
+  MedicationListResponse: TypeCompiler.Compile(MedicationListResponseSchema),
+  RecordAdministrationBody: TypeCompiler.Compile(RecordAdministrationBodySchema),
+  MedicationAdministration: TypeCompiler.Compile(MedicationAdministrationSchema),
+  CreateAllergyBody: TypeCompiler.Compile(CreateAllergyBodySchema),
+  PatchAllergyBody: TypeCompiler.Compile(PatchAllergyBodySchema),
+  PatientAllergy: TypeCompiler.Compile(PatientAllergySchema),
 
   // Clinical — assessment CRUD + trajectory
   CreateAssessmentBody: TypeCompiler.Compile(CreateAssessmentBodySchema),

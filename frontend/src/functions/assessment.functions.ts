@@ -12,10 +12,9 @@ export async function fetchTrajectory(
   patientId: string,
   cookieHeader: string,
 ): Promise<TrajectoryResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/patients/${patientId}/trajectory`,
-    { headers: { cookie: cookieHeader } },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/patients/${patientId}/trajectory`, {
+    headers: { cookie: cookieHeader },
+  });
 
   if (response.status === 404) {
     throw new Error("Patient not found");

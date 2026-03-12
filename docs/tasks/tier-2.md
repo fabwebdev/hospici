@@ -115,26 +115,50 @@ Care plan embedded in encounter response — no separate module navigation requi
 
 ---
 
-## T2-6 · Medication management MVP `MEDIUM`
+## T2-6 · Medication management `MEDIUM`
 
 No medication module exists anywhere. Full schema-first workflow.
 
-**Schemas (TypeBox):**
-- `MedicationSchema`: `{ name, dosage, route, frequency, startDate, endDate?, prescriberId, indication }`
-- `MedicationAdministrationSchema`: MAR record
+### Feature scope
 
-**Drizzle tables:** `medications`, `medication_administrations` + migration with RLS
+| Area | Implementation |
+|------|---------------|
+| Active medication list | `medications` table — status `ACTIVE \| DISCONTINUED \| ON_HOLD` |
+| Comfort-kit tracking | `is_comfort_kit` boolean promoted column; comfort kit medications filtered separately |
+| PRN management | `frequency_type: SCHEDULED \| PRN`; `prn_reason`, `prn_max_doses_per_day` |
+| MAR (administration recording) | `medication_administrations` table — type `GIVEN \| OMITTED \| REFUSED` |
+| Effectiveness monitoring | `effectiveness_rating` (1–5) + `adverse_effect_noted` + `adverse_effect_description` on each MAR row |
+| Controlled substance tracking | `dea_schedule` enum `I–V`; `is_controlled_substance` boolean promoted column |
+| Allergy tracking | `patient_allergies` table — `allergen_type`, `severity`, `reaction` |
+| Drug interaction check | OpenFDA `/drug/interaction.json` — queried on POST medication against all active meds |
+| Physician order linkage | Nullable `physician_order_id` FK on medications (wired to T3-9) |
+| Pharmacy coordination | `pharmacy_name`, `pharmacy_phone`, `pharmacy_fax` on medications |
+| Caregiver teaching | `patient_instructions` (text) + `teaching_completed` flag + timestamp/userId |
+| Medication reconciliation | `reconciled_at`, `reconciled_by`, `reconciliation_notes` on medications |
+| Hospice billing classification | `medicare_coverage_type: PART_A_RELATED \| PART_D \| NOT_COVERED \| OTC` |
 
-**Routes:**
-- `GET /api/v1/patients/:id/medications`
-- `POST /api/v1/patients/:id/medications`
-- `POST /api/v1/patients/:id/medications/:medId/administer`
+### Drizzle tables
+- `medications` — full medication list (all fields above)
+- `medication_administrations` — MAR records
+- `patient_allergies` — drug/food/environmental allergies
+All three in migration 0010 with RLS policies.
 
-**Drug interaction check:** OpenFDA API (free, no contract required). Wire `medication:administered` Socket.IO event.
+### Routes
+- `GET /api/v1/patients/:id/medications` — active med list (with interaction warnings)
+- `POST /api/v1/patients/:id/medications` — add medication + OpenFDA interaction check
+- `PATCH /api/v1/patients/:id/medications/:medId` — update status / discontinue / reconcile / teaching
+- `GET /api/v1/patients/:id/medications/:medId/administrations` — MAR history
+- `POST /api/v1/patients/:id/medications/:medId/administer` — record administration
+- `GET /api/v1/patients/:id/allergies` — allergy list
+- `POST /api/v1/patients/:id/allergies` — add allergy
+- `PATCH /api/v1/patients/:id/allergies/:allergyId` — inactivate allergy
 
+**Socket.IO:** `medication:administered` event fires on every MAR record.
 Note: eRx/EPCS integration deferred to T4-3.
 
-**Done when:** Medication created and retrieved; MAR records administrations; Socket.IO event fires; OpenFDA interaction check returns warnings
+`read:` `DRIZZLE`, `BE-SPEC`
+
+**Done when:** Full med list CRUD; MAR records with effectiveness + adverse effects; PRN and comfort-kit filtering; OpenFDA returns interaction warnings; allergy CRUD; Socket.IO event fires; RLS policy in migration; controlled substance flag queryable
 
 ---
 

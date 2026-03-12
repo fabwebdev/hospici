@@ -186,10 +186,7 @@ export async function listAssessments(
   });
 }
 
-export async function getTrajectory(
-  patientId: string,
-  user: UserCtx,
-): Promise<TrajectoryResponse> {
+export async function getTrajectory(patientId: string, user: UserCtx): Promise<TrajectoryResponse> {
   return db.transaction(async (tx) => {
     await applyRlsContext(tx, user);
 

@@ -7,13 +7,11 @@ import hopeRoutes from "@/contexts/analytics/routes/hope.routes.js";
 import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
 import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
+import medicationRoutes from "@/contexts/clinical/routes/medication.routes.js";
 import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
 import authRoutes from "@/contexts/identity/routes/auth.routes.js";
+import { idgMeetingsRoutes, patientIdgRoutes } from "@/contexts/scheduling/routes/idg.routes.js";
 import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
-import {
-  idgMeetingsRoutes,
-  patientIdgRoutes,
-} from "@/contexts/scheduling/routes/idg.routes.js";
 import { closeQueues, scheduleDailyJobs } from "@/jobs/queue.js";
 import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.worker.js";
 import { createCapRecalculationWorker } from "@/jobs/workers/cap-recalculation.worker.js";
@@ -143,6 +141,7 @@ export async function buildApp() {
   await fastify.register(patientRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(assessmentRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(carePlanRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(medicationRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(billingRoutes, { prefix: "/api/v1/billing" });
   await fastify.register(schedulingRoutes, { prefix: "/api/v1/scheduling" });
   await fastify.register(idgMeetingsRoutes, { prefix: "/api/v1/idg-meetings" });

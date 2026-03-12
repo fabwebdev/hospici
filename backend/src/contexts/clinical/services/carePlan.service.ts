@@ -24,13 +24,13 @@
  *   physician | medical_director → PHYSICIAN
  */
 
+import { randomUUID } from "node:crypto";
 import { logAudit } from "@/contexts/identity/services/audit.service.js";
 import { db } from "@/db/client.js";
 import { carePlans } from "@/db/schema/care-plans.table.js";
 import { patients } from "@/db/schema/patients.table.js";
 import { eq, sql } from "drizzle-orm";
 import type { FastifyRequest } from "fastify";
-import { randomUUID } from "node:crypto";
 import type {
   CarePlanResponse,
   CreateCarePlanBody,
@@ -102,9 +102,7 @@ function isPhysicianRole(role: string): boolean {
 function buildPhysicianReview(row: typeof carePlans.$inferSelect): PhysicianReview {
   const now = new Date();
 
-  const initialDeadline = row.initialReviewDeadline
-    ? new Date(row.initialReviewDeadline)
-    : null;
+  const initialDeadline = row.initialReviewDeadline ? new Date(row.initialReviewDeadline) : null;
   const nextReviewDue = row.nextReviewDue ? new Date(row.nextReviewDue) : null;
 
   return {
@@ -115,9 +113,7 @@ function buildPhysicianReview(row: typeof carePlans.$inferSelect): PhysicianRevi
     nextReviewDue: row.nextReviewDue ?? null,
     reviewHistory: (row.reviewHistory ?? []) as PhysicianReviewEntry[],
     isInitialReviewOverdue:
-      initialDeadline !== null &&
-      row.initialReviewCompletedAt === null &&
-      now > initialDeadline,
+      initialDeadline !== null && row.initialReviewCompletedAt === null && now > initialDeadline,
     isOngoingReviewOverdue: nextReviewDue !== null && now > nextReviewDue,
   };
 }
@@ -179,16 +175,21 @@ export async function createCarePlan(
     const admissionDate = patientRows[0]?.admissionDate
       ? new Date(patientRows[0].admissionDate)
       : null;
-    const initialReviewDeadline = admissionDate
-      ? addCalendarDays(admissionDate, 2)
-      : null;
+    const initialReviewDeadline = admissionDate ? addCalendarDays(admissionDate, 2) : null;
 
     // Initialize ALL discipline sections so every slot is present from day one
     const discipline = disciplineForRole(user.role);
     const now = new Date().toISOString();
 
     const ALL_DISCIPLINES: DisciplineType[] = [
-      "RN", "SW", "CHAPLAIN", "THERAPY", "AIDE", "VOLUNTEER", "BEREAVEMENT", "PHYSICIAN",
+      "RN",
+      "SW",
+      "CHAPLAIN",
+      "THERAPY",
+      "AIDE",
+      "VOLUNTEER",
+      "BEREAVEMENT",
+      "PHYSICIAN",
     ];
 
     const sections: DisciplineSections = Object.fromEntries(

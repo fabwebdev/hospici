@@ -152,7 +152,9 @@ export type PhysicianReviewBody = Static<typeof PhysicianReviewBodySchema>;
 
 export const CreateCarePlanBodySchema = Type.Object(
   {
-    notes: Type.Optional(Type.String({ description: "Initial notes (discipline inferred from user role)" })),
+    notes: Type.Optional(
+      Type.String({ description: "Initial notes (discipline inferred from user role)" }),
+    ),
     goals: Type.Optional(Type.Array(SmartGoalSchema)),
   },
   { additionalProperties: false },

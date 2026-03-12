@@ -137,9 +137,7 @@ export const createCarePlanFn = createServerFn({ method: "POST" })
   });
 
 export const physicianReviewFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (data: unknown) => data as { patientId: string; input: PhysicianReviewInput },
-  )
+  .inputValidator((data: unknown) => data as { patientId: string; input: PhysicianReviewInput })
   .handler(async ({ data }) => {
     const request = getRequest();
     const cookieHeader = request.headers.get("cookie") ?? "";

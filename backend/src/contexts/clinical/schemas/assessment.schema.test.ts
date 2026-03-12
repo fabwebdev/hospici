@@ -187,9 +187,9 @@ describe("EsasScaleSchema", () => {
   });
 
   it("accepts ESAS with optional other symptom", () => {
-    expect(
-      EsasValidator.Check({ ...validEsas, otherSymptom: "constipation", otherScore: 4 }),
-    ).toBe(true);
+    expect(EsasValidator.Check({ ...validEsas, otherSymptom: "constipation", otherScore: 4 })).toBe(
+      true,
+    );
   });
 
   it("accepts all zeros", () => {

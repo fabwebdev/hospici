@@ -217,12 +217,8 @@ function PhysicianReviewBanner({ review }: { review: PhysicianReview }) {
   if (!review.initialReviewCompletedAt && review.initialReviewDeadline) {
     return (
       <div className="mb-4 p-3 rounded-md bg-yellow-50 border border-yellow-200">
-        <p className="text-sm font-semibold text-yellow-800">
-          Pending initial physician review
-        </p>
-        <p className="text-xs text-yellow-600 mt-0.5">
-          Due by: {review.initialReviewDeadline}
-        </p>
+        <p className="text-sm font-semibold text-yellow-800">Pending initial physician review</p>
+        <p className="text-xs text-yellow-600 mt-0.5">Due by: {review.initialReviewDeadline}</p>
       </div>
     );
   }
@@ -231,8 +227,7 @@ function PhysicianReviewBanner({ review }: { review: PhysicianReview }) {
     return (
       <div className="mb-4 p-3 rounded-md bg-green-50 border border-green-200">
         <p className="text-sm text-green-800">
-          ✓ Last physician review:{" "}
-          {new Date(review.lastReviewAt).toLocaleDateString()} · Next due:{" "}
+          ✓ Last physician review: {new Date(review.lastReviewAt).toLocaleDateString()} · Next due:{" "}
           {review.nextReviewDue ?? "—"}
         </p>
       </div>
@@ -266,8 +261,7 @@ function SmartGoalBadge({ goal }: { goal: SmartGoal }) {
 function CarePlanPanel({ patientId }: { patientId: string }) {
   const { data: carePlan, isLoading } = useQuery<CarePlanResponse | null>({
     queryKey: ["care-plan", patientId],
-    queryFn: () =>
-      getCarePlanFn({ data: { patientId } }) as Promise<CarePlanResponse | null>,
+    queryFn: () => getCarePlanFn({ data: { patientId } }) as Promise<CarePlanResponse | null>,
   });
 
   if (isLoading) {
@@ -285,7 +279,14 @@ function CarePlanPanel({ patientId }: { patientId: string }) {
 
   // Always render all disciplines in fixed order, even if a section is empty
   const ALL_DISCIPLINES: DisciplineType[] = [
-    "RN", "SW", "CHAPLAIN", "THERAPY", "AIDE", "VOLUNTEER", "BEREAVEMENT", "PHYSICIAN",
+    "RN",
+    "SW",
+    "CHAPLAIN",
+    "THERAPY",
+    "AIDE",
+    "VOLUNTEER",
+    "BEREAVEMENT",
+    "PHYSICIAN",
   ];
 
   return (
@@ -308,9 +309,7 @@ function CarePlanPanel({ patientId }: { patientId: string }) {
                 <p className="text-xs text-gray-400 italic">No documentation yet.</p>
               ) : (
                 <>
-                  {section.notes && (
-                    <p className="text-sm text-gray-600 mb-2">{section.notes}</p>
-                  )}
+                  {section.notes && <p className="text-sm text-gray-600 mb-2">{section.notes}</p>}
                   {section.goals.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
