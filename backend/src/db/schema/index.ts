@@ -6,6 +6,7 @@
 
 export * from "./locations.table.js";
 export * from "./users.table.js";
+export * from "./auth-tables.js";
 export * from "./audit-logs.table.js";
 export * from "./patients.table.js";
 export * from "./pain-assessments.table.js";

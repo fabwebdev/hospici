@@ -1,146 +1,146 @@
 // server.ts
 // Fastify 5 application entry point
 
-import Fastify from "fastify";
+import { env } from "@/config/env.js";
+import { createLoggingConfig } from "@/config/logging.config.js";
+import hopeRoutes from "@/contexts/analytics/routes/hope.routes.js";
+import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
+import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
+import identityRoutes from "@/contexts/identity/routes/identity.routes.js";
+import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
+import { registerRLSMiddleware } from "@/middleware/rls.middleware.js";
+import valkeyPlugin from "@/plugins/valkey.plugin.js";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
-import { env } from "@/config/env.js";
-import { createLoggingConfig } from "@/config/logging.config.js";
-import valkeyPlugin from "@/plugins/valkey.plugin.js";
-import { registerRLSMiddleware } from "@/middleware/rls.middleware.js";
-import hopeRoutes from "@/contexts/analytics/routes/hope.routes.js";
-import identityRoutes from "@/contexts/identity/routes/identity.routes.js";
-import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
-import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
-import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
+import Fastify from "fastify";
 
 /**
  * Build and configure the Fastify application
  */
 export async function buildApp() {
-	const fastify = Fastify({
-		logger: createLoggingConfig({ logLevel: env.logLevel, isDev: env.isDev }),
-		trustProxy: true,
-	});
+  const fastify = Fastify({
+    logger: createLoggingConfig({ logLevel: env.logLevel, isDev: env.isDev }),
+    trustProxy: true,
+  });
 
-	// ── Security Middleware ──────────────────────────────────────────────────────
-	await fastify.register(helmet, {
-		contentSecurityPolicy: {
-			directives: {
-				defaultSrc: ["'self'"],
-				scriptSrc: ["'self'"],
-				styleSrc: ["'self'", "'unsafe-inline'"],
-				imgSrc: ["'self'", "data:"],
-			},
-		},
-	});
+  // ── Security Middleware ──────────────────────────────────────────────────────
+  await fastify.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:"],
+      },
+    },
+  });
 
-	await fastify.register(cors, {
-		origin: env.allowedOrigins,
-		credentials: true,
-		methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-		allowedHeaders: [
-			"Authorization",
-			"Content-Type",
-			"X-Request-ID",
-			"Idempotency-Key",
-			"If-Match",
-			"X-Location-ID",
-		],
-		exposedHeaders: ["ETag", "X-Request-ID", "Retry-After"],
-	});
+  await fastify.register(cors, {
+    origin: env.allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Authorization",
+      "Content-Type",
+      "X-Request-ID",
+      "Idempotency-Key",
+      "If-Match",
+      "X-Location-ID",
+    ],
+    exposedHeaders: ["ETag", "X-Request-ID", "Retry-After"],
+  });
 
-	// ── OpenAPI / Swagger Documentation ───────────────────────────────────────────
-	await fastify.register(swagger, {
-		openapi: {
-			openapi: "3.1.0",
-			info: {
-				title: "Hospici API",
-				description: "Hospici hospice EHR — REST + FHIR R4/R6 API",
-				version: "1.0.0",
-			},
-			servers: [{ url: env.betterAuthUrl }],
-			components: {
-				securitySchemes: {
-					bearerAuth: {
-						type: "http",
-						scheme: "bearer",
-						bearerFormat: "JWT",
-					},
-				},
-			},
-		},
-	});
+  // ── OpenAPI / Swagger Documentation ───────────────────────────────────────────
+  await fastify.register(swagger, {
+    openapi: {
+      openapi: "3.1.0",
+      info: {
+        title: "Hospici API",
+        description: "Hospici hospice EHR — REST + FHIR R4/R6 API",
+        version: "1.0.0",
+      },
+      servers: [{ url: env.betterAuthUrl }],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
+        },
+      },
+    },
+  });
 
-	await fastify.register(swaggerUi, {
-		routePrefix: "/docs",
-		uiConfig: { docExpansion: "list", deepLinking: true },
-	});
+  await fastify.register(swaggerUi, {
+    routePrefix: "/docs",
+    uiConfig: { docExpansion: "list", deepLinking: true },
+  });
 
-	// ── Rate Limiting ─────────────────────────────────────────────────────────────
-	await fastify.register(rateLimit, { max: 100, timeWindow: "1 minute" });
+  // ── Rate Limiting ─────────────────────────────────────────────────────────────
+  await fastify.register(rateLimit, { max: 100, timeWindow: "1 minute" });
 
-	// ── Infrastructure Plugins ──────────────────────────────────────────────────
-	await fastify.register(valkeyPlugin);
+  // ── Infrastructure Plugins ──────────────────────────────────────────────────
+  await fastify.register(valkeyPlugin);
 
-	// ── RLS Middleware (Parameterized - Safe) ───────────────────────────────────
-	registerRLSMiddleware(fastify);
+  // ── RLS Middleware (Parameterized - Safe) ───────────────────────────────────
+  registerRLSMiddleware(fastify);
 
-	// ── Health Check Endpoint ────────────────────────────────────────────────────
-	fastify.get(
-		"/health",
-		{
-			schema: {
-				tags: ["System"],
-				response: {
-					200: {
-						type: "object",
-						properties: {
-							status: { type: "string" },
-							version: { type: "string" },
-							fhir: { type: "string" },
-							timestamp: { type: "string" },
-							db: { type: "string" },
-							valkey: { type: "string" },
-						},
-					},
-				},
-			},
-		},
-		async () => ({
-			status: "ok",
-			version: "1.0.0",
-			fhir: env.fhirVersionDefault,
-			timestamp: new Date().toISOString(),
-			db: "connected",
-			valkey: "connected",
-		}),
-	);
+  // ── Health Check Endpoint ────────────────────────────────────────────────────
+  fastify.get(
+    "/health",
+    {
+      schema: {
+        tags: ["System"],
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              status: { type: "string" },
+              version: { type: "string" },
+              fhir: { type: "string" },
+              timestamp: { type: "string" },
+              db: { type: "string" },
+              valkey: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async () => ({
+      status: "ok",
+      version: "1.0.0",
+      fhir: env.fhirVersionDefault,
+      timestamp: new Date().toISOString(),
+      db: "connected",
+      valkey: "connected",
+    }),
+  );
 
-	// ── API Routes ────────────────────────────────────────────────────────────────
-	await fastify.register(identityRoutes, {
-		prefix: "/api/v1/auth",
-		config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
-	});
-	await fastify.register(patientRoutes, { prefix: "/api/v1/patients" });
-	await fastify.register(billingRoutes, { prefix: "/api/v1/billing" });
-	await fastify.register(schedulingRoutes, { prefix: "/api/v1/scheduling" });
-	await fastify.register(hopeRoutes, { prefix: "/api/v1/hope" });
+  // ── API Routes ────────────────────────────────────────────────────────────────
+  await fastify.register(identityRoutes, {
+    prefix: "/api/v1/auth",
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+  });
+  await fastify.register(patientRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(billingRoutes, { prefix: "/api/v1/billing" });
+  await fastify.register(schedulingRoutes, { prefix: "/api/v1/scheduling" });
+  await fastify.register(hopeRoutes, { prefix: "/api/v1/hope" });
 
-	return fastify;
+  return fastify;
 }
 
 // ── Application Bootstrap ─────────────────────────────────────────────────────
 const app = await buildApp();
 
 try {
-	await app.listen({ port: env.port, host: env.host });
-	app.log.info(`🚀 Server running on http://${env.host}:${env.port}`);
-	app.log.info(`📚 Swagger docs: http://localhost:${env.port}/docs`);
+  await app.listen({ port: env.port, host: env.host });
+  app.log.info(`🚀 Server running on http://${env.host}:${env.port}`);
+  app.log.info(`📚 Swagger docs: http://localhost:${env.port}/docs`);
 } catch (err) {
-	app.log.error(err);
-	process.exit(1);
+  app.log.error(err);
+  process.exit(1);
 }

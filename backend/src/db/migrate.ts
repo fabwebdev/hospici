@@ -1,8 +1,8 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

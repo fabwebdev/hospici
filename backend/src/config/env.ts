@@ -33,10 +33,7 @@ export const env = {
   phiEncryptionKey: required("PHI_ENCRYPTION_KEY"),
   phiEncryptionIv: required("PHI_ENCRYPTION_IV"),
 
-  allowedOrigins: optional(
-    "ALLOWED_ORIGINS",
-    "http://localhost:5173"
-  ).split(","),
+  allowedOrigins: optional("ALLOWED_ORIGINS", "http://localhost:5173").split(","),
 
   fhirBaseUrl: optional("FHIR_BASE_URL", "http://localhost:3000/fhir/r4"),
   fhirVersionDefault: optional("FHIR_VERSION_DEFAULT", "4.0"),

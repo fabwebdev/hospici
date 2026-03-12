@@ -1,7 +1,7 @@
+import { env } from "@/config/env.ts";
 import type { FastifyInstance } from "fastify";
 import fp from "fastify-plugin";
 import Valkey from "iovalkey";
-import { env } from "@/config/env.ts";
 
 declare module "fastify" {
   interface FastifyInstance {

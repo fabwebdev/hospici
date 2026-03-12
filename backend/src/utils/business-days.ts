@@ -18,17 +18,17 @@
  */
 function federalHolidays(year: number): Set<string> {
   const holidays: Date[] = [
-    new Date(Date.UTC(year, 0, 1)),    // New Year's Day (Jan 1)
-    nthWeekday(year, 0, 1, 3),         // MLK Jr Day (3rd Mon Jan)
-    nthWeekday(year, 1, 1, 3),         // Presidents Day (3rd Mon Feb)
-    lastWeekday(year, 4, 1),           // Memorial Day (last Mon May)
-    new Date(Date.UTC(year, 5, 19)),   // Juneteenth (Jun 19)
-    new Date(Date.UTC(year, 6, 4)),    // Independence Day (Jul 4)
-    nthWeekday(year, 8, 1, 1),         // Labor Day (1st Mon Sep)
-    nthWeekday(year, 9, 1, 2),         // Columbus Day (2nd Mon Oct)
-    new Date(Date.UTC(year, 10, 11)),  // Veterans Day (Nov 11)
-    nthWeekday(year, 10, 4, 4),        // Thanksgiving (4th Thu Nov)
-    new Date(Date.UTC(year, 11, 25)),  // Christmas (Dec 25)
+    new Date(Date.UTC(year, 0, 1)), // New Year's Day (Jan 1)
+    nthWeekday(year, 0, 1, 3), // MLK Jr Day (3rd Mon Jan)
+    nthWeekday(year, 1, 1, 3), // Presidents Day (3rd Mon Feb)
+    lastWeekday(year, 4, 1), // Memorial Day (last Mon May)
+    new Date(Date.UTC(year, 5, 19)), // Juneteenth (Jun 19)
+    new Date(Date.UTC(year, 6, 4)), // Independence Day (Jul 4)
+    nthWeekday(year, 8, 1, 1), // Labor Day (1st Mon Sep)
+    nthWeekday(year, 9, 1, 2), // Columbus Day (2nd Mon Oct)
+    new Date(Date.UTC(year, 10, 11)), // Veterans Day (Nov 11)
+    nthWeekday(year, 10, 4, 4), // Thanksgiving (4th Thu Nov)
+    new Date(Date.UTC(year, 11, 25)), // Christmas (Dec 25)
   ];
 
   const observed = holidays.map((d) => observedDate(d));
@@ -79,27 +79,23 @@ function isWeekend(d: Date): boolean {
  */
 export function addBusinessDays(startDate: Date, days: number): Date {
   // Normalize to UTC midnight to avoid local-time drift
-  let current = new Date(Date.UTC(
-    startDate.getUTCFullYear(),
-    startDate.getUTCMonth(),
-    startDate.getUTCDate(),
-  ));
+  let current = new Date(
+    Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()),
+  );
   let remaining = days;
   const holidayCache = new Map<number, Set<string>>();
 
   while (remaining > 0) {
-    current = new Date(Date.UTC(
-      current.getUTCFullYear(),
-      current.getUTCMonth(),
-      current.getUTCDate() + 1,
-    ));
+    current = new Date(
+      Date.UTC(current.getUTCFullYear(), current.getUTCMonth(), current.getUTCDate() + 1),
+    );
 
     const year = current.getUTCFullYear();
     if (!holidayCache.has(year)) {
       holidayCache.set(year, federalHolidays(year));
     }
 
-    const holidays = holidayCache.get(year)!;
+    const holidays = holidayCache.get(year) ?? new Set<string>();
     const iso = toIso(current);
 
     if (!isWeekend(current) && !holidays.has(iso)) {
@@ -137,8 +133,8 @@ export function getCapYear(date: Date): {
 
   return {
     label: `${capStartYear}-${capStartYear + 1}`,
-    start: new Date(Date.UTC(capStartYear, 10, 1)),       // Nov 1
-    end: new Date(Date.UTC(capStartYear + 1, 9, 31)),     // Oct 31
+    start: new Date(Date.UTC(capStartYear, 10, 1)), // Nov 1
+    end: new Date(Date.UTC(capStartYear + 1, 9, 31)), // Oct 31
     year: capStartYear,
   };
 }

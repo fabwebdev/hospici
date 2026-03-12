@@ -70,7 +70,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 
 | ID | Task | Status | Size |
 |----|------|--------|------|
-| T1-1 | Better Auth — backend | ⬜ | MEDIUM |
+| T1-1 | Better Auth — backend | ✅ | MEDIUM |
 | T1-2 | Better Auth — frontend | ⬜ | MEDIUM |
 | T1-3 | Replace header-stub RLS with JWT claims | ⬜ | MEDIUM |
 | T1-4 | AuditService | ⬜ | MEDIUM |
@@ -195,6 +195,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | 2026-03-11 | Firenote analysis (r2) | VantageChart arch: Layer 1 deterministic + Layer 2 optional LLM. Decline trajectory, voice input, HOPE completeness ring, quality benchmarks, Product Strategy | T0-1..T0-7 |
 | 2026-03-12 | T0-1..T0-7 | All build blockers done. Migration paths fixed; 9 Drizzle tables; logging.config.ts; rate-limit + 5 routes registered; shared-types wired. | — |
 | 2026-03-12 | Schema fixes + tests | Zero TS errors: `type Static` imports, ABAC deny policy, valkey password spread, HOPE response schemas, `HOPEReportingPeriodSchema` added, dotenv installed. Fixed business-days UTC bug — 9/9 tests passing. | T1-1 |
+| 2026-03-12 | T1-1 Better Auth backend | `auth.config.ts` (drizzleAdapter + twoFactor plugin + 30min session + httpOnly cookie). `auth.routes.ts` (Web API Request bridge pattern). `auth-tables.ts` (sessions/accounts/verifications/twoFactors). `users.table.ts` extended (name/image/isActive/twoFactorEnabled). Migration 0002. 0 TS errors, 9/9 tests. | T1-2 |
 
 ---
 
