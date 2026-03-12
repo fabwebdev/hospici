@@ -9,6 +9,10 @@ import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
 import authRoutes from "@/contexts/identity/routes/auth.routes.js";
 import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
+import {
+  idgMeetingsRoutes,
+  patientIdgRoutes,
+} from "@/contexts/scheduling/routes/idg.routes.js";
 import { closeQueues, scheduleDailyJobs } from "@/jobs/queue.js";
 import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.worker.js";
 import { createCapRecalculationWorker } from "@/jobs/workers/cap-recalculation.worker.js";
@@ -139,6 +143,8 @@ export async function buildApp() {
   await fastify.register(assessmentRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(billingRoutes, { prefix: "/api/v1/billing" });
   await fastify.register(schedulingRoutes, { prefix: "/api/v1/scheduling" });
+  await fastify.register(idgMeetingsRoutes, { prefix: "/api/v1/idg-meetings" });
+  await fastify.register(patientIdgRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(hopeRoutes, { prefix: "/api/v1/hope" });
 
   // ── BullMQ Workers ────────────────────────────────────────────────────────────

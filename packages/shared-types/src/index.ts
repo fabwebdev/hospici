@@ -15,3 +15,14 @@ export type {
   TrajectoryDataPoint,
   TrajectoryResponse,
 } from "./assessment.js";
+export type {
+  IDGAttendeeNoteEntry,
+  IDGAttendeeNotes,
+  IDGAttendanceStatus,
+  IDGMeetingStatus,
+  IDGMemberResponse,
+  IDGMeetingResponse,
+  IDGMeetingListResponse,
+  IDGComplianceStatus,
+  CreateIDGMeetingInput,
+} from "./idg.js";

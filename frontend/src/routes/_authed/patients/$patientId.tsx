@@ -1,10 +1,18 @@
 // routes/_authed/patients/$patientId.tsx
-// Patient detail view with decline trajectory sparklines
+// Patient detail view with decline trajectory sparklines + IDG compliance hard-block
 
+import { IDGOverdueModal } from "@/components/clinical/idg-overdue-modal.js";
 import { getTrajectoryFn } from "@/functions/assessment.functions.js";
+import { getIDGComplianceFn } from "@/functions/idg.functions.js";
 import { getPatientFn } from "@/functions/patient.functions.js";
 import { patientKeys } from "@/lib/query/keys.js";
-import type { HumanName, PatientResponse, TrajectoryDataPoint, TrajectoryResponse } from "@hospici/shared-types";
+import type {
+  HumanName,
+  IDGComplianceStatus,
+  PatientResponse,
+  TrajectoryDataPoint,
+  TrajectoryResponse,
+} from "@hospici/shared-types";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
@@ -18,6 +26,10 @@ export const Route = createFileRoute("/_authed/patients/$patientId")({
       queryClient.ensureQueryData({
         queryKey: ["trajectory", patientId],
         queryFn: () => getTrajectoryFn({ data: { patientId } }),
+      }),
+      queryClient.ensureQueryData({
+        queryKey: ["idg-compliance", patientId],
+        queryFn: () => getIDGComplianceFn({ data: { patientId } }),
       }),
     ]),
   component: PatientDetailPage,
@@ -80,7 +92,13 @@ function Sparkline({ label, points, color }: SparklineProps) {
   return (
     <div className="text-center">
       <div className="text-xs text-gray-500 mb-1">{label}</div>
-      <svg width={width} height={height} className="mx-auto">
+      <svg
+        width={width}
+        height={height}
+        className="mx-auto"
+        role="img"
+        aria-label={`${label} trend sparkline`}
+      >
         <path d={pathSegments.join(" ")} stroke={color} strokeWidth="1.5" fill="none" />
         <circle cx={lastX} cy={lastY} r="2" fill={color} />
       </svg>
@@ -106,9 +124,7 @@ function TrajectoryPanel({ patientId }: { patientId: string }) {
   const points: TrajectoryDataPoint[] = trajectory?.dataPoints ?? [];
 
   if (points.length === 0) {
-    return (
-      <div className="text-xs text-gray-400 italic py-2">No assessments recorded yet.</div>
-    );
+    return <div className="text-xs text-gray-400 italic py-2">No assessments recorded yet.</div>;
   }
 
   const pain = points.map((p) => p.pain);
@@ -160,6 +176,13 @@ function PatientDetailPage() {
     queryFn: () => getPatientFn({ data: { patientId } }) as Promise<PatientResponse>,
   });
 
+  const { data: idgCompliance } = useQuery<IDGComplianceStatus>({
+    queryKey: ["idg-compliance", patientId],
+    queryFn: () => getIDGComplianceFn({ data: { patientId } }) as Promise<IDGComplianceStatus>,
+  });
+
+  const idgOverdue = idgCompliance !== undefined && !idgCompliance.compliant;
+
   if (isLoading) {
     return <div className="text-gray-500 py-8 text-center">Loading patient…</div>;
   }
@@ -178,6 +201,14 @@ function PatientDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* IDG 15-day hard-block modal — no dismiss (CMS 42 CFR §418.56) */}
+      <IDGOverdueModal
+        open={idgOverdue}
+        patientId={patientId}
+        daysSinceLastIDG={idgCompliance?.daysSinceLastIdg ?? null}
+        daysOverdue={idgCompliance?.daysOverdue ?? 0}
+      />
+
       <div className="flex items-center gap-4 flex-wrap">
         <Link to="/patients" className="text-blue-600 hover:text-blue-900 text-sm">
           ← Patients

@@ -32,6 +32,8 @@ export const idgMeetings = pgTable("idg_meetings", {
   symptomManagementDiscussed: boolean("symptom_management_discussed").default(false),
   goalsOfCareReviewed: boolean("goals_of_care_reviewed").default(false),
   notes: text("notes"),
+  attendeeNotes: jsonb("attendee_notes").notNull().default({}),
+  assembledNote: text("assembled_note"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });

@@ -39,7 +39,15 @@ import {
 // Import all schemas
 import { BreakGlassSchema, SessionSchema, UserSchema } from "@/contexts/identity/schemas";
 import { AuditLogSchema } from "@/contexts/identity/schemas/audit.schema";
-import { AideSupervisionSchema, IDGMeetingSchema } from "@/contexts/scheduling/schemas";
+import {
+  AideSupervisionSchema,
+  CompleteIDGMeetingBodySchema,
+  CreateIDGMeetingBodySchema,
+  IDGComplianceStatusSchema,
+  IDGMeetingListResponseSchema,
+  IDGMeetingResponseSchema,
+  IDGMeetingSchema,
+} from "@/contexts/scheduling/schemas";
 
 /**
  * Central validator registry - compiled ONCE at application startup
@@ -76,8 +84,13 @@ export const Validators = {
   BenefitPeriod: TypeCompiler.Compile(BenefitPeriodSchema),
   CapCalculation: TypeCompiler.Compile(CapCalculationSchema),
 
-  // Scheduling
+  // Scheduling — IDG
   IDGMeeting: TypeCompiler.Compile(IDGMeetingSchema),
+  CreateIDGMeetingBody: TypeCompiler.Compile(CreateIDGMeetingBodySchema),
+  CompleteIDGMeetingBody: TypeCompiler.Compile(CompleteIDGMeetingBodySchema),
+  IDGMeetingResponse: TypeCompiler.Compile(IDGMeetingResponseSchema),
+  IDGMeetingListResponse: TypeCompiler.Compile(IDGMeetingListResponseSchema),
+  IDGComplianceStatus: TypeCompiler.Compile(IDGComplianceStatusSchema),
   AideSupervision: TypeCompiler.Compile(AideSupervisionSchema),
 
   // Analytics — HOPE Quality Reporting (replaces HIS, effective 2025-10-01)

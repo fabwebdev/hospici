@@ -4,12 +4,28 @@ export {
   IDGMeetingSchema,
   IDGMemberSchema,
   IDGAttendanceStatusSchema,
+  IDGAttendeeNoteEntrySchema,
+  IDGAttendeeNotesSchema,
+  IDGMeetingStatusSchema,
+  CreateIDGMeetingBodySchema,
+  CompleteIDGMeetingBodySchema,
+  IDGMeetingResponseSchema,
+  IDGMeetingListResponseSchema,
+  IDGComplianceStatusSchema,
   checkIDGCompliance,
   hasRequiredAttendees,
+  assembleIDGNote,
   type IDGMeeting,
   type IDGMember,
   type IDGAttendanceStatus,
-} from "./idgMeeting.schema";
+  type IDGAttendeeNoteEntry,
+  type IDGAttendeeNotes,
+  type CreateIDGMeetingBody,
+  type CompleteIDGMeetingBody,
+  type IDGMeetingResponse,
+  type IDGMeetingListResponse,
+  type IDGComplianceStatus,
+} from "./idgMeeting.schema.js";
 
 export {
   AideSupervisionSchema,
@@ -19,4 +35,4 @@ export {
   shouldSendSupervisionAlert,
   type AideSupervision,
   type SupervisionMethod,
-} from "./aideSupervision.schema";
+} from "./aideSupervision.schema.js";
