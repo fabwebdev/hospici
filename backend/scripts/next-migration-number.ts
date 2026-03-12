@@ -7,7 +7,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const migrationsDir = join(__dirname, "../drizzle/migrations");
+const migrationsDir = join(__dirname, "../database/migrations/drizzle");
 
 let files: string[] = [];
 try {

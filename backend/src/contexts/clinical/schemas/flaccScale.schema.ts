@@ -1,7 +1,7 @@
 // contexts/clinical/schemas/flaccScale.schema.ts
 // FLACC Pain Scale for pediatric patients (0-2 years)
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const FlaccScaleSchema = Type.Object(

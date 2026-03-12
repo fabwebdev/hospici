@@ -826,6 +826,34 @@ export type HOPEDischargeAssessment = Static<typeof HOPEDischargeAssessmentSchem
 export type HOPEiQIESSubmission = Static<typeof HOPEiQIESSubmissionSchema>;
 
 // ---------------------------------------------------------------------------
+// HOPE Reporting Period — HQRP submission windows
+// ---------------------------------------------------------------------------
+
+export const HOPEReportingPeriodSchema = Type.Object(
+	{
+		id: Type.String({ format: "uuid" }),
+		locationId: Type.String({ format: "uuid" }),
+		calendarYear: Type.Integer({ minimum: 2025, description: "Calendar year (HQRP uses Q4 deadlines)" }),
+		quarter: Type.Integer({ minimum: 1, maximum: 4 }),
+		startDate: Type.String({ format: "date" }),
+		endDate: Type.String({ format: "date" }),
+		submissionDeadline: Type.String({ format: "date", description: "iQIES submission deadline" }),
+		status: Type.Enum(
+			{ open: "open", submitted: "submitted", closed: "closed" },
+			{ description: "Reporting period status" },
+		),
+		penaltyApplied: Type.Boolean({ description: "2% Medicare reduction applied for missed deadline" }),
+		createdAt: Type.String({ format: "date-time" }),
+	},
+	{
+		additionalProperties: false,
+		description: "HQRP reporting period with iQIES submission tracking",
+	},
+);
+
+export type HOPEReportingPeriod = Static<typeof HOPEReportingPeriodSchema>;
+
+// ---------------------------------------------------------------------------
 // Validation helpers
 // ---------------------------------------------------------------------------
 

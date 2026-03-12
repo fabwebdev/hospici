@@ -1,7 +1,7 @@
 // contexts/identity/schemas/audit.schema.ts
 // HIPAA-compliant audit logging schemas
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const AuditActionSchema = Type.Enum({

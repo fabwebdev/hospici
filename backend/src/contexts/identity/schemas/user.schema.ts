@@ -2,7 +2,7 @@
 // User identity and ABAC (Attribute-Based Access Control) schemas
 // Updated with comprehensive role definitions for hospice EHR
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 /**

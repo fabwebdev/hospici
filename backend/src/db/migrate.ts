@@ -18,7 +18,7 @@ const db = drizzle(pool);
 try {
   process.stdout.write("Running migrations...\n");
   await migrate(db, {
-    migrationsFolder: join(__dirname, "../../drizzle/migrations"),
+    migrationsFolder: join(__dirname, "../../database/migrations/drizzle"),
   });
   process.stdout.write("✅ Migrations complete\n");
 } catch (err) {

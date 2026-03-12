@@ -1,7 +1,7 @@
 // contexts/billing/schemas/benefitPeriod.schema.ts
 // CMS Hospice Benefit Periods (90d/90d/60d/60d...)
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const BenefitPeriodTypeSchema = Type.Enum({

@@ -2,7 +2,7 @@
 // Attribute-Based Access Control (ABAC) Service
 // Implements comprehensive ABAC policies for hospice EHR
 
-import { UserRole, RoleGroups } from "../schemas/user.schema.js";
+import { type UserRole, RoleGroups } from "../schemas/user.schema.js";
 
 // ═══════════════════════════════════════════════════════════
 // TYPES
@@ -868,7 +868,7 @@ export const RoleDefinitions: Record<UserRole, RoleDefinition> = {
 			},
 			{
 				resource: "patient",
-				action: "deny",
+				action: ["read", "write", "delete", "sign", "export", "admin"],
 				effect: "deny",
 				description: "HR cannot access patient data",
 			},

@@ -4,11 +4,12 @@
  * the drizzle() client and drizzle-kit config.
  */
 
-// Core tables (add as you create them)
-// export * from "./locations.table.ts";
-// export * from "./users.table.ts";
-// export * from "./patients.table.ts";
-// export * from "./benefit-periods.table.ts";
-// export * from "./noe.table.ts";
-// export * from "./audit-logs.table.ts";
-// export * from "./agent-memory.table.ts";
+export * from "./locations.table.js";
+export * from "./users.table.js";
+export * from "./audit-logs.table.js";
+export * from "./patients.table.js";
+export * from "./pain-assessments.table.js";
+export * from "./noe.table.js";
+export * from "./benefit-periods.table.js";
+export * from "./idg-meetings.table.js";
+export * from "./aide-supervisions.table.js";

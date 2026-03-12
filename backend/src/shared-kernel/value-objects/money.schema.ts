@@ -1,7 +1,7 @@
 // shared-kernel/value-objects/money.schema.ts
 // CMS-compliant monetary value object
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 
 export const MoneySchema = Type.Object(
 	{

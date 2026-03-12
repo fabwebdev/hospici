@@ -1,7 +1,7 @@
 // contexts/billing/schemas/noticeOfElection.schema.ts
 // CMS NOE (Notice of Election) - 5-day filing rule with Friday edge case
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const NOEStatusSchema = Type.Enum({

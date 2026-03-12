@@ -13,7 +13,7 @@ async function valkeyPlugin(fastify: FastifyInstance) {
   const client = new Valkey({
     host: env.valkeyHost,
     port: env.valkeyPort,
-    password: env.valkeyPassword || undefined,
+    ...(env.valkeyPassword ? { password: env.valkeyPassword } : {}),
     maxRetriesPerRequest: 3,
     enableReadyCheck: true,
     lazyConnect: false,

@@ -1,7 +1,7 @@
 // contexts/clinical/schemas/patient.schema.ts
 // Patient demographics and FHIR R4 Patient resource
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const HumanNameSchema = Type.Object({

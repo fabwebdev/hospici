@@ -58,13 +58,13 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 
 | ID | Task | Status | Size |
 |----|------|--------|------|
-| T0-1 | Fix migration paths | ⬜ | LOW |
-| T0-2 | Add `fastify-plugin` dep | ⬜ | LOW |
-| T0-3 | Wire `@hospici/shared-types` | ⬜ | LOW |
-| T0-4 | Create `frontend/src/api.ts` | ⬜ | LOW |
-| T0-5 | Write all Drizzle table definitions | ⬜ | MEDIUM |
-| T0-6 | Register routes + rate limiting | ⬜ | LOW |
-| T0-7 | Extract logging config | ⬜ | LOW |
+| T0-1 | Fix migration paths | ✅ | LOW |
+| T0-2 | Add `fastify-plugin` dep | ✅ | LOW |
+| T0-3 | Wire `@hospici/shared-types` | ✅ | LOW |
+| T0-4 | Create `frontend/src/api.ts` | ✅ | LOW |
+| T0-5 | Write all Drizzle table definitions | ✅ | MEDIUM |
+| T0-6 | Register routes + rate limiting | ✅ | LOW |
+| T0-7 | Extract logging config | ✅ | LOW |
 
 ### Tier 1 — Security Foundation _(needs: all T0 done)_
 
@@ -158,6 +158,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | `RUNBOOK` | `docs/operations/runbook.md` |
 | `HOPE-DOC` | `docs/compliance/hope-reporting.md` |
 | `VANTAGE` | `docs/VANTAGECHART_TECHNICAL_SPEC.md` |
+| `DESIGN-PROMPT` | `docs/design/DESIGN_PROMPT.md` |
 
 ---
 
@@ -192,6 +193,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | 2026-03-11 | Gaps audit | 47-gap audit. Added: T2-6, T3-8, NOTR→T3-2, extra pain scales→T2-3, iQIES reg as immediate action | T0-1..T0-7 |
 | 2026-03-11 | Firenote analysis (r1) | Added T2-7..T2-9, T3-9..T3-12. `care_model` enum, No-Prep IDG, unified care plan, SMART goals | T0-1..T0-7 |
 | 2026-03-11 | Firenote analysis (r2) | VantageChart arch: Layer 1 deterministic + Layer 2 optional LLM. Decline trajectory, voice input, HOPE completeness ring, quality benchmarks, Product Strategy | T0-1..T0-7 |
+| 2026-03-12 | T0-1..T0-7 | All build blockers done. Migration paths fixed; 9 Drizzle tables; logging.config.ts; rate-limit + 5 routes registered; shared-types wired. Pre-existing schema TS errors remain (not T0 scope). | T1-1 |
 
 ---
 

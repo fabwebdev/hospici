@@ -1,7 +1,7 @@
 // contexts/scheduling/schemas/aideSupervision.schema.ts
 // HHA Aide Supervision - CMS 42 CFR §418.76 (14-day requirement)
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const SupervisionMethodSchema = Type.Enum({
@@ -39,7 +39,7 @@ export const AideSupervisionSchema = Type.Object(
 export const calculateNextSupervisionDue = (supervisionDate: string): string => {
 	const date = new Date(supervisionDate);
 	date.setDate(date.getDate() + 14);
-	return date.toISOString().split("T")[0];
+	return date.toISOString().split("T")[0] ?? "";
 };
 
 // Check if supervision is overdue

@@ -4,34 +4,25 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { env } from "@/config/env.js";
+import { createLoggingConfig } from "@/config/logging.config.js";
 import valkeyPlugin from "@/plugins/valkey.plugin.js";
 import { registerRLSMiddleware } from "@/middleware/rls.middleware.js";
+import hopeRoutes from "@/contexts/analytics/routes/hope.routes.js";
+import identityRoutes from "@/contexts/identity/routes/identity.routes.js";
+import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
+import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
+import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
 
 /**
  * Build and configure the Fastify application
  */
 export async function buildApp() {
 	const fastify = Fastify({
-		logger: {
-			level: env.logLevel,
-			// PHI redaction - extend this list as new PHI fields are added
-			redact: [
-				"req.headers.authorization",
-				"req.body.password",
-				"req.body.ssn",
-				"req.body.medicareId",
-				"req.body.dateOfBirth",
-				"req.body.firstName",
-				"req.body.lastName",
-				"req.body.mrn",
-			],
-			...(env.isDev
-				? { transport: { target: "pino-pretty", options: { colorize: true } } }
-				: {}),
-		},
+		logger: createLoggingConfig({ logLevel: env.logLevel, isDev: env.isDev }),
 		trustProxy: true,
 	});
 
@@ -89,6 +80,9 @@ export async function buildApp() {
 		uiConfig: { docExpansion: "list", deepLinking: true },
 	});
 
+	// ── Rate Limiting ─────────────────────────────────────────────────────────────
+	await fastify.register(rateLimit, { max: 100, timeWindow: "1 minute" });
+
 	// ── Infrastructure Plugins ──────────────────────────────────────────────────
 	await fastify.register(valkeyPlugin);
 
@@ -126,13 +120,15 @@ export async function buildApp() {
 		}),
 	);
 
-	// ── API Routes (to be registered as contexts are implemented) ────────────────
-	// await fastify.register(identityRoutes, { prefix: "/api/v1/auth" });
-	// await fastify.register(patientRoutes, { prefix: "/api/v1/patients" });
-	// await fastify.register(billingRoutes, { prefix: "/api/v1/billing" });
-	// await fastify.register(clinicalRoutes, { prefix: "/api/v1/clinical" });
-	// await fastify.register(schedulingRoutes, { prefix: "/api/v1/scheduling" });
-	// await fastify.register(fhirRoutes, { prefix: "/fhir/r4" });
+	// ── API Routes ────────────────────────────────────────────────────────────────
+	await fastify.register(identityRoutes, {
+		prefix: "/api/v1/auth",
+		config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+	});
+	await fastify.register(patientRoutes, { prefix: "/api/v1/patients" });
+	await fastify.register(billingRoutes, { prefix: "/api/v1/billing" });
+	await fastify.register(schedulingRoutes, { prefix: "/api/v1/scheduling" });
+	await fastify.register(hopeRoutes, { prefix: "/api/v1/hope" });
 
 	return fastify;
 }

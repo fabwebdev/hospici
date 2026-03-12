@@ -1,7 +1,7 @@
 // contexts/scheduling/schemas/idgMeeting.schema.ts
 // Interdisciplinary Group (IDG) Meeting - CMS 15-day requirement
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const IDGAttendanceStatusSchema = Type.Enum({

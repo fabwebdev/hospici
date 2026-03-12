@@ -21,12 +21,24 @@
  */
 
 import type { FastifyInstance } from "fastify";
+import { Type } from "@sinclair/typebox";
 import {
 	HOPEAdmissionSchema,
 	HOPEUpdateVisitSchema,
 	HOPEDischargeAssessmentSchema,
 } from "@/contexts/analytics/schemas";
 import { Validators } from "@/config/typebox-compiler";
+
+const ErrorResponseSchema = Type.Object({
+	success: Type.Boolean(),
+	error: Type.Object({
+		code: Type.String(),
+		message: Type.String(),
+		details: Type.Optional(
+			Type.Array(Type.Object({ path: Type.String(), message: Type.String() })),
+		),
+	}),
+});
 
 export default async function hopeRoutes(fastify: FastifyInstance): Promise<void> {
 	// -------------------------------------------------------------------------
@@ -43,6 +55,8 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
 				body: HOPEAdmissionSchema,
 				response: {
 					201: HOPEAdmissionSchema,
+					400: ErrorResponseSchema,
+					501: ErrorResponseSchema,
 				},
 			},
 			preValidation: async (request, reply) => {
@@ -80,6 +94,8 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
 				body: HOPEUpdateVisitSchema,
 				response: {
 					201: HOPEUpdateVisitSchema,
+					400: ErrorResponseSchema,
+					501: ErrorResponseSchema,
 				},
 			},
 			preValidation: async (request, reply) => {
@@ -118,6 +134,8 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
 				body: HOPEDischargeAssessmentSchema,
 				response: {
 					201: HOPEDischargeAssessmentSchema,
+					400: ErrorResponseSchema,
+					501: ErrorResponseSchema,
 				},
 			},
 			preValidation: async (request, reply) => {

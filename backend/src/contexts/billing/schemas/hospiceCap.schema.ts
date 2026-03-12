@@ -1,7 +1,7 @@
 // contexts/billing/schemas/hospiceCap.schema.ts
 // Hospice Cap Calculation - Aggregate and Proportional methodologies
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const CapMethodologySchema = Type.Enum({
