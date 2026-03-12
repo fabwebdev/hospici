@@ -13,6 +13,9 @@ import { Route as authedPatientsPatientIdIdgScheduleRoute } from "./routes/_auth
 import { Route as authedPatientsPatientIdEncountersEncounterIdVantageChartRoute } from "./routes/_authed/patients/$patientId/encounters/$encounterId/vantage-chart";
 import { Route as authedPatientsPatientIdVisitsIndexRoute } from "./routes/_authed/patients/$patientId/visits/index";
 import { Route as authedPatientsIndexRoute } from "./routes/_authed/patients/index";
+import { Route as authedHopeAssessmentsIndexRoute } from "./routes/_authed/hope/assessments/index";
+import { Route as authedHopeAssessmentsNewRoute } from "./routes/_authed/hope/assessments/new";
+import { Route as authedHopeAssessmentsIdRoute } from "./routes/_authed/hope/assessments/$id";
 import { Route as IndexRoute } from "./routes/index";
 import { Route as LoginRoute } from "./routes/login";
 
@@ -29,6 +32,9 @@ const authedRouteWithChildren = authedRoute.addChildren({
   authedReviewQueueIndexRoute,
   authedPatientsIndexRoute,
   authedPatientsPatientIdRoute: authedPatientsPatientIdRouteWithChildren,
+  authedHopeAssessmentsIndexRoute,
+  authedHopeAssessmentsNewRoute,
+  authedHopeAssessmentsIdRoute,
 });
 
 export const routeTree = rootRoute.addChildren({
@@ -116,6 +122,27 @@ declare module "@tanstack/react-router" {
       fullPath: "/patients/$patientId/visits";
       preLoaderRoute: typeof authedPatientsPatientIdVisitsIndexRoute;
       parentRoute: typeof authedPatientsPatientIdRoute;
+    };
+    "/_authed/hope/assessments/": {
+      id: "/_authed/hope/assessments/";
+      path: "/hope/assessments";
+      fullPath: "/hope/assessments";
+      preLoaderRoute: typeof authedHopeAssessmentsIndexRoute;
+      parentRoute: typeof authedRoute;
+    };
+    "/_authed/hope/assessments/new": {
+      id: "/_authed/hope/assessments/new";
+      path: "/hope/assessments/new";
+      fullPath: "/hope/assessments/new";
+      preLoaderRoute: typeof authedHopeAssessmentsNewRoute;
+      parentRoute: typeof authedRoute;
+    };
+    "/_authed/hope/assessments/$id": {
+      id: "/_authed/hope/assessments/$id";
+      path: "/hope/assessments/$id";
+      fullPath: "/hope/assessments/$id";
+      preLoaderRoute: typeof authedHopeAssessmentsIdRoute;
+      parentRoute: typeof authedRoute;
     };
   }
 }

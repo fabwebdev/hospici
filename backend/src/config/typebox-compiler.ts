@@ -13,6 +13,16 @@ import {
   HOPEiQIESSubmissionSchema,
 } from "@/contexts/analytics/schemas/hope.schema";
 import {
+  CreateHOPEAssessmentBodySchema,
+  HOPEAssessmentListQuerySchema,
+  HOPEAssessmentListResponseSchema,
+  HOPEAssessmentResponseSchema,
+  HOPEQualityBenchmarkSchema,
+  HOPESubmissionRowSchema,
+  HOPEValidationResultSchema,
+  PatchHOPEAssessmentBodySchema,
+} from "@/contexts/analytics/schemas/hopeAssessmentCrud.schema";
+import {
   HOPEComprehensiveAssessmentMeasureSchema,
   HOPEHVLDLMeasureSchema,
   HOPEHospiceCareIndexSchema,
@@ -191,6 +201,16 @@ export const Validators = {
   HOPEHVLDLMeasure: TypeCompiler.Compile(HOPEHVLDLMeasureSchema),
   HOPETreatmentPreferencesMeasure: TypeCompiler.Compile(HOPETreatmentPreferencesMeasureSchema),
   HOPEHospiceCareIndex: TypeCompiler.Compile(HOPEHospiceCareIndexSchema),
+
+  // Analytics — HOPE CRUD + Validation Engine (T3-1a)
+  CreateHOPEAssessmentBody: TypeCompiler.Compile(CreateHOPEAssessmentBodySchema),
+  PatchHOPEAssessmentBody: TypeCompiler.Compile(PatchHOPEAssessmentBodySchema),
+  HOPEAssessmentListQuery: TypeCompiler.Compile(HOPEAssessmentListQuerySchema),
+  HOPEAssessmentResponse: TypeCompiler.Compile(HOPEAssessmentResponseSchema),
+  HOPEAssessmentListResponse: TypeCompiler.Compile(HOPEAssessmentListResponseSchema),
+  HOPEValidationResult: TypeCompiler.Compile(HOPEValidationResultSchema),
+  HOPESubmissionRow: TypeCompiler.Compile(HOPESubmissionRowSchema),
+  HOPEQualityBenchmark: TypeCompiler.Compile(HOPEQualityBenchmarkSchema),
 };
 
 /**

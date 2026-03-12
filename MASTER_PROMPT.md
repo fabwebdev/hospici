@@ -42,7 +42,7 @@
 | HHA supervision 14-day — alert day 12 (`AIDE_SUPERVISION_UPCOMING`), block if overdue (`AIDE_SUPERVISION_OVERDUE`). 42 CFR §418.76 | ⬜ |
 | Hospice cap year — Nov 1–Oct 31.`getCapYear()` implemented. Nov 2 recalc job + 80% alert pending | 🔄     |
 | Benefit periods — 90/90/60/60d. F2F required period 3+, within 30 prior days                        | ⬜     |
-| HOPE windows — admission ≤7 days, discharge ≤7 days.`HOPEWindowViolationError` class exists     | ✅     |
+| HOPE windows — admission ≤7 days, discharge ≤7 days. Full T3-1a: CRUD, two-tier validation, iQIES BullMQ pipeline, payloadHash, DLQ, Socket.IO events, completeness ring | ✅     |
 | HQRP penalty — missed iQIES deadline = 2% reduction. Track `penaltyApplied` flag                  | ⬜     |
 | HIS — retired 2025-10-01.**Never reference HIS**. HOPE only                                   | ✅     |
 | NOTR — 5 business days from revocation. Mirrors NOE logic                                           | ⬜     |
@@ -101,7 +101,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 
 | ID    | Task                                                       | Status | Size   |
 | ----- | ---------------------------------------------------------- | ------ | ------ |
-| T3-1a | HOPE Infrastructure + Validation Engine                    | ⬜     | HIGH   |
+| T3-1a | HOPE Infrastructure + Validation Engine                    | ✅     | HIGH   |
 | T3-1b | HOPE Operations Hub (dashboard, timeline, workbench)        | ⬜     | MEDIUM |
 | T3-2a | NOE/NOTR Filing Workbench (state machine, deadline, correction, audit trail) | ⬜ | HIGH |
 | T3-2b | F2F Validity Engine + Physician Routing (benefit-period-aware, tasks, deep links) | ⬜ | MEDIUM |

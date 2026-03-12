@@ -3,7 +3,7 @@
 
 import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
-import hopeRoutes from "@/contexts/analytics/routes/hope.routes.js";
+import hopeRoutes, { analyticsRoutes } from "@/contexts/analytics/routes/hope.routes.js";
 import alertRoutes from "@/contexts/compliance/routes/alert.routes.js";
 import noteReviewRoutes from "@/contexts/clinical/routes/noteReview.routes.js";
 import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
@@ -154,6 +154,7 @@ export async function buildApp() {
   await fastify.register(idgMeetingsRoutes, { prefix: "/api/v1/idg-meetings" });
   await fastify.register(patientIdgRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(hopeRoutes, { prefix: "/api/v1/hope" });
+  await fastify.register(analyticsRoutes, { prefix: "/api/v1/analytics" });
   await fastify.register(alertRoutes, { prefix: "/api/v1/alerts" });
   await fastify.register(noteReviewRoutes, { prefix: "/api/v1" });
   await fastify.register(visitSchedulePatientRoutes, { prefix: "/api/v1/patients" });

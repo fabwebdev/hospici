@@ -219,6 +219,19 @@ async function socketPlugin(fastify: FastifyInstance) {
     io.emit("break:glass:access", data);
   });
 
+  // ── HOPE events (T3-1a) ────────────────────────────────────────────────────
+  complianceEvents.on("hope:deadline:warning", (data) => {
+    io.emit("hope:deadline:warning", data);
+  });
+
+  complianceEvents.on("hope:assessment:overdue", (data) => {
+    io.emit("hope:assessment:overdue", data);
+  });
+
+  complianceEvents.on("hope:submission:rejected", (data) => {
+    io.emit("hope:submission:rejected", data);
+  });
+
   // ── Graceful shutdown ───────────────────────────────────────────────────────
   fastify.addHook("onClose", async () => {
     await new Promise<void>((resolve) => io.close(() => resolve()));

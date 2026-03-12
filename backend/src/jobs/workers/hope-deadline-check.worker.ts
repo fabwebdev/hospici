@@ -1,20 +1,23 @@
 /**
- * HOPE Deadline Check Worker
+ * HOPE Deadline Check Worker (T3-1a)
  *
- * Daily job that flags HOPE assessments approaching or past their 7-day window.
- * CMS rule: HOPE-A must be completed within 7 days of election; HOPE-D within
- * 7 days of discharge/death. 42 CFR §418.312.
+ * Daily job (0 6 * * *) that scans hope_assessments for assessments
+ * approaching or past their 7-day CMS window.
+ *
+ * CMS rule: HOPE-A and HOPE-D must be completed within 7 calendar days.
+ * 42 CFR §418.312 — non-submission = 2% Medicare payment reduction.
  *
  * Alerts:
- *   - ≤3 days remaining in window → yellow warning
- *   - Past window deadline, not yet submitted → overdue flag
- *
- * TODO (T3-1): Wire to hope_assessments table once migrated.
- * TODO (T1-8): Emit Socket.IO events per patient for UI banners.
+ *   - window_deadline ≤ today + 1 day (< 24h) → hope:deadline:warning Socket.IO
+ *   - window_deadline < today, status not submitted/accepted → hope:assessment:overdue
  */
 
 import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
+import { db } from "@/db/client.js";
+import { hopeAssessments } from "@/db/schema/hope-assessments.table.js";
+import { complianceEvents } from "@/events/compliance-events.js";
+import { and, inArray, lte, sql } from "drizzle-orm";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
 import pino from "pino";
@@ -33,44 +36,103 @@ export type HopeDeadlineJobResult = {
  */
 export async function hopeDeadlineHandler(_job: Job): Promise<HopeDeadlineJobResult> {
   const today = new Date();
+  const todayStr = today.toISOString().split("T")[0] ?? "";
 
-  // TODO (T3-1): Query hope_assessments for assessments approaching or past 7-day window:
-  //
-  // const todayStr = today.toISOString().split("T")[0];
-  // const lookaheadStr = new Date(today.getTime() + 3 * 86400000).toISOString().split("T")[0];
-  //
-  // const [upcoming, overdue] = await Promise.all([
-  //   db.select({ id: hopeAssessments.id, patientId: hopeAssessments.patientId })
-  //     .from(hopeAssessments)
-  //     .where(and(
-  //       inArray(hopeAssessments.assessmentType, ["01", "03"]),
-  //       inArray(hopeAssessments.status, ["draft", "in_progress"]),
-  //       lte(hopeAssessments.windowDeadline, lookaheadStr),
-  //       gte(hopeAssessments.windowDeadline, todayStr),
-  //     )),
-  //   db.select({ id: hopeAssessments.id, patientId: hopeAssessments.patientId })
-  //     .from(hopeAssessments)
-  //     .where(and(
-  //       inArray(hopeAssessments.assessmentType, ["01", "03"]),
-  //       inArray(hopeAssessments.status, ["draft", "in_progress"]),
-  //       lt(hopeAssessments.windowDeadline, todayStr),
-  //     )),
-  // ]);
-  //
-  // if (upcoming.length > 0) {
-  //   log.warn({ count: upcoming.length }, "HOPE assessment window closing within 3 days");
-  // }
-  // if (overdue.length > 0) {
-  //   log.error({ count: overdue.length }, "HOPE assessment OVERDUE — 42 CFR §418.312 violation");
-  // }
-  // TODO (T1-8): emit Socket.IO event per patient
+  // window_deadline within 24 hours (tomorrow or past-today but not yet submitted)
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  const tomorrowStr = tomorrow.toISOString().split("T")[0] ?? "";
 
-  log.info({ checkedAt: today.toISOString() }, "hope-deadline-check: completed (T3-1 pending)");
+  const activeStatuses: ("draft" | "in_progress" | "ready_for_review")[] = [
+    "draft",
+    "in_progress",
+    "ready_for_review",
+  ];
+
+  // Assessments with deadline < 24h remaining (includes already-expired)
+  const [upcoming, overdue] = await Promise.all([
+    db
+      .select({
+        id: hopeAssessments.id,
+        patientId: hopeAssessments.patientId,
+        assessmentType: hopeAssessments.assessmentType,
+        windowDeadline: hopeAssessments.windowDeadline,
+      })
+      .from(hopeAssessments)
+      .where(
+        and(
+          inArray(hopeAssessments.assessmentType, ["01", "03"]), // A and D only (UV is same-day)
+          inArray(hopeAssessments.status, activeStatuses),
+          lte(hopeAssessments.windowDeadline, tomorrowStr),
+          sql`${hopeAssessments.windowDeadline} >= ${todayStr}`,
+        ),
+      ),
+
+    db
+      .select({
+        id: hopeAssessments.id,
+        patientId: hopeAssessments.patientId,
+        assessmentType: hopeAssessments.assessmentType,
+        windowDeadline: hopeAssessments.windowDeadline,
+      })
+      .from(hopeAssessments)
+      .where(
+        and(
+          inArray(hopeAssessments.assessmentType, ["01", "03"]),
+          inArray(hopeAssessments.status, activeStatuses),
+          lte(hopeAssessments.windowDeadline, todayStr),
+          sql`${hopeAssessments.windowDeadline} < ${todayStr}`,
+        ),
+      ),
+  ]);
+
+  // Emit Socket.IO events for upcoming deadline warnings
+  for (const a of upcoming) {
+    const deadline = new Date(a.windowDeadline);
+    const hoursRemaining = Math.round((deadline.getTime() - today.getTime()) / (1000 * 60 * 60));
+    complianceEvents.emit("hope:deadline:warning", {
+      assessmentId: a.id,
+      patientId: a.patientId,
+      assessmentType: a.assessmentType as "01" | "02" | "03",
+      windowDeadline: a.windowDeadline,
+      hoursRemaining,
+    });
+  }
+
+  // Emit Socket.IO events for overdue assessments
+  for (const a of overdue) {
+    const deadline = new Date(a.windowDeadline);
+    const daysOverdue = Math.floor((today.getTime() - deadline.getTime()) / (1000 * 60 * 60 * 24));
+    complianceEvents.emit("hope:assessment:overdue", {
+      assessmentId: a.id,
+      patientId: a.patientId,
+      assessmentType: a.assessmentType as "01" | "02" | "03",
+      windowDeadline: a.windowDeadline,
+      daysOverdue,
+    });
+  }
+
+  if (upcoming.length > 0) {
+    log.warn(
+      { count: upcoming.length },
+      "HOPE assessment window closing within 24 hours — 42 CFR §418.312",
+    );
+  }
+  if (overdue.length > 0) {
+    log.error(
+      { count: overdue.length },
+      "HOPE assessment OVERDUE — 42 CFR §418.312 violation — iQIES window missed",
+    );
+  }
+
+  log.info(
+    { checkedAt: today.toISOString(), upcomingCount: upcoming.length, overdueCount: overdue.length },
+    "hope-deadline-check: completed",
+  );
 
   return {
     checkedAt: today.toISOString(),
-    upcomingCount: 0, // TODO (T3-1)
-    overdueCount: 0, // TODO (T3-1)
+    upcomingCount: upcoming.length,
+    overdueCount: overdue.length,
   };
 }
 

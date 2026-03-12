@@ -139,6 +139,31 @@ export interface ServerToClientEvents {
 		checkedAt: string;
 	}) => void;
 
+	// HOPE quality reporting (T3-1a)
+	"hope:deadline:warning": (data: {
+		assessmentId: string;
+		patientId: string;
+		assessmentType: "01" | "02" | "03";
+		windowDeadline: string;
+		hoursRemaining: number;
+	}) => void;
+
+	"hope:assessment:overdue": (data: {
+		assessmentId: string;
+		patientId: string;
+		assessmentType: "01" | "02" | "03";
+		windowDeadline: string;
+		daysOverdue: number;
+	}) => void;
+
+	"hope:submission:rejected": (data: {
+		assessmentId: string;
+		submissionId: string;
+		patientId: string;
+		rejectionCodes: string[];
+		rejectionDetails: string | null;
+	}) => void;
+
 	// Security
 	"break:glass:access": (data: {
 		userId: string;

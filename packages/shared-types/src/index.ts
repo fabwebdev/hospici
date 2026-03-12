@@ -96,6 +96,26 @@ export type {
   CreateScheduledVisitInput,
   PatchScheduledVisitStatusInput,
 } from "./visitSchedule.js";
+export {
+  HOPE_ASSESSMENT_TYPE_LABELS,
+  HOPE_STATUS_LABELS,
+  IQIES_ERROR_GUIDANCE,
+} from "./hope.js";
+export type {
+  HOPEAssessmentStatus,
+  HOPEAssessmentType,
+  HOPEAssessmentData,
+  HOPEAssessmentResponse,
+  HOPEAssessmentListResponse,
+  HOPEAssessmentListQuery,
+  CreateHOPEAssessmentInput,
+  PatchHOPEAssessmentInput,
+  HOPEValidationIssue,
+  HOPEValidationResult,
+  HOPESubmissionRow,
+  HOPEMeasureBenchmark,
+  HOPEQualityBenchmark,
+} from "./hope.js";
 export type {
   NoteReviewStatus,
   RevisionRequest,
