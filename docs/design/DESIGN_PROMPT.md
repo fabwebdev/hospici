@@ -42,7 +42,7 @@
 |-------|-------|-----|
 | `primary` | `oklch(0.623 0.214 259.8)` — Clinical Blue | Primary CTAs, nav selection |
 | `destructive` | `oklch(0.577 0.245 27.3)` — Red | Hard blocks, critical alerts, delete |
-| `warning` | `oklch(0.769 0.188 84.6)` — Amber | Deadline warnings, 80%+ cap |
+| `warning` | `oklch(0.769 0.188 84.6)` — Amber | Deadline warnings, cap 70–89% (`CAP_THRESHOLD_70/80`) |
 | `success` | `oklch(0.527 0.154 150.1)` — Green | Completed, signed, saved |
 | `clinical` | `oklch(0.591 0.126 181.3)` — Teal | Clinical decision support, informational |
 | `muted` | `oklch(0.965 0.009 264.5)` — Light gray | Secondary text, timestamps |
@@ -506,13 +506,71 @@ Multi-step form. 5 steps shown as a top progress bar.
 
 ---
 
-### 5.15 Hospice Cap (`/billing/cap`)
+### 5.15 Hospice Cap Intelligence Dashboard (`/cap`)
 
-**Location-level cap dashboard:**
-- Large cap utilization gauge (circular, 0–100%). Red zone at 80%+.
-- Cap year label: "Nov 1, 2025 – Oct 31, 2026"
-- Patient-level breakdown table: each admitted patient's per-day cap contribution
-- "Alert at 80%" toggle (should always be on)
+> Route was `/billing/cap` — updated to `/cap` to match T3-3 implementation.
+
+**Summary widget row (top bar, always visible on this page):**
+- **CapGauge** (§6.9, 200px) — utilization percent; green <70%, amber 70–89%, red 90%+
+- **Projected Year-End %** — monospace number, amber if 90–99%, red if ≥100%
+- **Estimated Liability ($)** — formatted currency
+- **Days Remaining** — e.g. "183 days left in cap year" in muted small text
+- **Last Calculated** — relative timestamp ("2 hours ago") + "Recalculate" button (admin/billing_specialist only; triggers POST /api/v1/cap/recalculate; shows spinner while BullMQ job runs; toasts on `cap:calculation:complete`)
+- Cap year label: "Nov 1, 2025 – Oct 31, 2026" with prior-year toggle (dropdown)
+
+**7-section tab panel** (tabs below widget row):
+
+**Tab 1 — Current Utilization:**
+- CapGauge (large, 200px) with three threshold tick marks at 70%, 80%, 90%
+- Threshold alert history table: alert type chip, fired-at timestamp, acknowledged by
+- Prior-year comparison: "Last cap year final: X%" in muted text below gauge
+
+**Tab 2 — Projected Year-End:**
+- Line chart: X-axis = Nov 1 → Oct 31 (full cap year); Y-axis = utilization %
+- Solid line = actual utilization per monthly snapshot
+- Dashed line = linear projection to Oct 31 (from `projectedYearEndPercent` field)
+- Horizontal reference lines at 70%, 80%, 90%, 100%
+- If projected ≥ 100%: amber callout box — "Projected overage. Review high-LOS patients."
+
+**Tab 3 — Top 25 Contributors:**
+- Sortable table: Patient Name, Admission Date, LOS (days), Care Model badge, Contribution $, Contribution % of cap
+- "High Utilization" pill on rows in top 10% of contribution
+- Expandable row: shows Routine Days / CHC Days / Inpatient Days / Live Discharge flag
+- Action column (per row): "Review Eligibility" · "Review Level of Care" · "Review Discharge Planning" · "Review Documentation Strength" — each opens corresponding patient chart section in a new tab
+- Click patient name → navigate to `/patients/:id`
+- Filterable: LOS bucket (0–60d / 61–180d / 181d+), High Utilization only toggle
+- "Export CSV" button (top right; admin/billing_specialist only)
+
+**Tab 4 — Trend by Month:**
+- Line chart (same X/Y as Tab 2 but grouped by month)
+- Each month shows: actual utilization %, projected year-end % at that snapshot, patient count
+- Hover tooltip: values + snapshotId for reference
+
+**Tab 5 — By Branch:**
+- Branch ranking table: Location Name, Utilization %, Projected %, Patient Count, Trend Arrow (↑ up / ↓ down / → stable vs prior month), "Needs Intervention" badge if ≥ 90%
+- Only shows branches visible to current user's RLS scope
+- Click branch row → filters Tabs 3 and 6 to that branch
+
+**Tab 6 — High-Risk Patients:**
+- Pre-filtered contributor list: LOS > 180 days OR contribution in top 10th percentile of current snapshot
+- Same row structure as Tab 3; same action CTAs
+- Sorted by contribution % descending
+
+**Tab 7 — Recalculation History:**
+- Table of all `cap_snapshots`: Calculated At, Utilization %, Projected %, Patient Count, Triggered By (Scheduled / Manual / Data Correction), Formula Version
+- Delta column: ▲ / ▼ vs prior snapshot (utilization % change), colored amber if +5%+ swing
+- "Compare to prior run" button on any row → side-by-side diff panel:
+  - Left: selected snapshot | Right: prior snapshot
+  - Shows: utilization % delta, patient count delta, estimatedLiability delta, list of patients added/removed since prior snapshot
+
+**Prior cap year toggle:**
+- Dropdown in widget row: "Cap Year 2025" / "Cap Year 2024" / etc.
+- Switches all 7 tabs to show historical data for that year
+- Closed cap years are read-only; "Recalculate" button hidden
+
+**Alert integration:**
+- `cap:threshold:alert` Socket.IO event triggers alert banner refresh and toasts on this page
+- `CAP_THRESHOLD_*` alert cards in the global compliance alert dashboard (§5.17) include "View Cap Dashboard" CTA button
 
 ---
 
@@ -1134,10 +1192,14 @@ Horizontal SVG timeline. Used on patient overview and `/billing/benefit-periods`
 
 Circular gauge (similar to fuel gauge, 270° arc).
 
-- 0–79%: primary fill
-- 80–99%: warning fill, amber
-- 100%+: destructive fill, red
+- 0–69%: primary fill (green)
+- 70–79%: warning fill, amber — `CAP_THRESHOLD_70` zone
+- 80–89%: warning fill, deeper amber — `CAP_THRESHOLD_80` zone
+- 90–99%: destructive fill, red — `CAP_THRESHOLD_90` zone
+- 100%+: destructive fill, red, pulsing — `CAP_PROJECTED_OVERAGE` zone
+- Tick marks at 70%, 80%, 90% (short radial lines, always visible)
 - Center: `{percent}%` in JetBrains Mono (large), "of cap used" below in muted small text
+- `projectedPercent` prop (optional): dashed arc overlay showing projected year-end position; amber if <100%, red if ≥100%
 - Used on patient overview (small, 80px) and cap dashboard (large, 200px)
 
 ### 6.10 AlertBadge (global, top bar)

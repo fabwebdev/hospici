@@ -2,7 +2,7 @@
 
 > `needs:` Tier 2 exit gate (clinical E2E suite passes). Each task is its own session.
 >
-> ⚠️ **Market Entry Blockers:** T3-1, T3-2, T3-3, T3-7 are required before any customer goes live.
+> ⚠️ **Market Entry Blockers:** T3-1a/1b, T3-2a, T3-3, T3-7a are required before any customer goes live.
 > Missing these = 2% Medicare penalty + no billing capability.
 
 ---
@@ -543,7 +543,7 @@ Reuse T3-9 `orders` table pattern. When F2F is required (period ≥ 3) and not y
 
 `read:` `backend/src/contexts/billing/schemas/hospiceCap.schema.ts`, `backend/src/utils/business-days.ts`, `DB-ARCH`
 
-> ⚠️ Market entry blocker. T3-7 and T3-12 consume `estimatedLiability` and `isCapAtRisk` flags produced here.
+> ⚠️ Market entry blocker. T3-7a and T3-12 consume `estimatedLiability` and `isCapAtRisk` flags produced here.
 
 ### DB migrations
 
@@ -1124,7 +1124,7 @@ Add to `socket.ts`: `'benefit:period:status:changed'` event.
 - Downstream recalculation preview shows correct diff; commit writes `correctionHistory` entries
 - `isReportingPeriod` partial unique index enforced (only one per patient)
 - BullMQ job transitions `recert_due → at_risk → past_due` and upserts the correct alert types
-- `billingRisk=true` surfaces on T3-12 pre-submission audit (flag only; claim blocking in T3-7/T3-12)
+- `billingRisk=true` surfaces on T3-12 pre-submission audit (flag only; claim blocking in T3-7a/T3-12)
 - 14-day F2F window computed as [recertDueDate − 30d, recertDueDate) per 42 CFR §418.22
 - `recert-queue.tsx` "Record Recertification" deep link opens `PeriodDetailDrawer` with the recertification form pre-expanded
 - `BenefitPeriodRiskWidget` renders correct at-risk/past-due counts and updates live via Socket.IO
@@ -1158,19 +1158,153 @@ Add to `socket.ts`: `'benefit:period:status:changed'` event.
 
 ---
 
-## T3-7 · EDI 837i claim generation `HIGH`
+## T3-7a · Hospice Claim Lifecycle + 837i Generation `HIGH`
 
-> Own session. Requires clearinghouse enrollment (see ⚡ Immediate Actions in MASTER_PROMPT.md).
+> Own session. Requires clearinghouse enrollment (see ⚡ Immediate Actions in MASTER_PROMPT.md). T3-7b depends on this task.
 
-`read:` `BE-SPEC` §Phase 4
+`read:` `BE-SPEC` §Phase 4, `DB-ARCH`
 
-- TypeBox claim schema
-- `POST /api/v1/claims`
-- 837i generation
-- BullMQ `claim-submission` queue → clearinghouse → DLQ alert on failure
-- ERA 835 ingestion + remittance matching
+> ⚠️ Market entry blocker. T3-7b and T3-12 both depend on this task.
 
-**Done when:** 837i validates against X12 validator; DLQ alert fires on simulated clearinghouse rejection; ERA 835 auto-posts remittance
+### DB migrations
+
+Tables + RLS for all:
+
+**`claims`**
+```typescript
+{
+  id: uuid PK;
+  patientId: uuid FK;
+  locationId: uuid FK;      // RLS
+  payerId: string;
+  benefitPeriodId: uuid FK; // T3-4
+  billType: string;         // 8X1 original | 8X7 replacement | 8X8 void
+  statementFromDate: date;
+  statementToDate: date;
+  totalCharge: numeric;
+  state: claim_state enum;  // see state machine below
+  isOnHold: boolean default false;
+  correctedFromId: uuid FK → self | null;  // replacement/void lineage
+  payloadHash: text;        // SHA-256 of canonical claim JSON before X12 encoding
+  x12Hash: text | null;     // SHA-256 of generated 837i transaction set
+  createdBy: uuid FK;
+  createdAt: timestamptz;
+  updatedAt: timestamptz;
+}
+```
+
+**`claim_revisions`** — append-only snapshot per state transition
+**`claim_submissions`** — one row per clearinghouse submission attempt (batch ID, timestamp, clearinghouse response code)
+**`claim_rejections`** — rejection detail from clearinghouse (loop/segment, error code, description)
+**`bill_holds`** — one active hold per claim (reason, placed by, placed at, released by, released at, note)
+
+**`claim_state` enum:**
+`DRAFT` | `NOT_READY` | `READY_FOR_AUDIT` | `AUDIT_FAILED` | `READY_TO_SUBMIT` | `QUEUED` | `SUBMITTED` | `ACCEPTED` | `REJECTED` | `DENIED` | `PAID` | `VOIDED`
+
+### TypeBox schemas
+
+- `ClaimSchema` · `ClaimLineSchema` · `ClaimRevisionSchema`
+- `ClaimSubmissionSchema` · `ClaimRejectionSchema` · `BillHoldSchema`
+- `CreateClaimBodySchema` · `ClaimListQuerySchema` · `ClaimDetailResponseSchema`
+- `HoldBodySchema` · `ReplaceClaimBodySchema`
+
+### Readiness engine (`claimReadiness.service.ts`)
+
+Runs on `POST /api/v1/claims` and again when transitioning to `READY_FOR_AUDIT`. Returns `{ ready: boolean; blockers: string[] }`. Blocks submission if any blocker present:
+
+- Benefit period valid and not past-due (T3-4 `billingRisk` flag)
+- NOE accepted and `isClaimBlocking = false` (T3-2a)
+- Required visits completed per frequency plan for period (T2-10)
+- Required orders and certifications signed (T3-5)
+- F2F documented if period 3+ (T3-2b `f2fStatus`)
+- No active `HARD_BLOCK` compliance alerts on patient (T2-8)
+- Claim not on manual bill hold
+
+### 837i generation (`x12.service.ts`)
+
+- UB-04 aligned institutional claim model
+- Original claim (bill type 8X1)
+- Replacement claim (8X7) — links `correctedFromId` + prior claim ICN in Loop 2300 REF
+- Void claim (8X8) — links `correctedFromId`
+- `payloadHash` and `x12Hash` written to claim row on generation
+- Export endpoint: signed download of raw 837i transaction set
+
+### BullMQ
+
+- `claim-submission` queue (3 retries, exponential backoff 2s)
+- DLQ promotion on exhausted retries → `CLAIM_SUBMISSION_FAILED` alert + Socket.IO `claim:submission:failed`
+- Clearinghouse transport metadata captured per `ClaimSubmission` row
+
+### Workbench routes (`billing.routes.ts`)
+
+- `POST /api/v1/claims` — generate claim (runs readiness check; returns NOT_READY detail if blocked)
+- `GET /api/v1/claims` — list/filter by state, payer, date range, hold status
+- `GET /api/v1/claims/:id` — claim detail + revision history + latest audit snapshot
+- `POST /api/v1/claims/:id/audit` — trigger pre-submission audit (calls T3-12 rules engine)
+- `POST /api/v1/claims/submit` — bulk submit (array of IDs; must be READY_TO_SUBMIT)
+- `POST /api/v1/claims/:id/hold` — manual hold with reason code
+- `POST /api/v1/claims/:id/unhold`
+- `POST /api/v1/claims/:id/replace` — replacement claim; creates new claim linked via `correctedFromId`
+- `POST /api/v1/claims/:id/void`
+- `POST /api/v1/claims/:id/retry` — retry REJECTED claim (re-runs readiness + audit)
+- `GET /api/v1/claims/:id/download` — signed 837i file download
+
+**Done when:** Claim generation supports original/replacement/void flows; readiness check blocks NOT_READY claims with specific blocker detail; 837i validates against X12 validator; `payloadHash` and `x12Hash` written; BullMQ submission queue + DLQ path tested; manual hold prevents submission; bulk submit accepted for READY_TO_SUBMIT claims; clearinghouse response captured per ClaimSubmission row; Socket.IO `claim:state:changed` event fires on each transition.
+
+---
+
+## T3-7b · ERA 835 + Remittance Reconciliation + Denial Management `HIGH`
+
+> Own session. Depends on T3-7a (claims).
+
+`needs:` T3-7a (claims), T1-6 (BullMQ), T1-8 (Socket.IO)
+
+### DB migrations
+
+**`remittances_835`** — one row per 835 file/batch (payer, check number, payment date, raw file hash, ingested at, status)
+
+**`remittance_postings`** — one row per matched CLP/SVC loop (remittance ID, claimId FK, paid amount, adjustment reason codes, contractual/patient responsibility amounts, posting state)
+
+**`unmatched_remittances`** — exception queue for manual resolution (remittance ID, raw CLP data, match attempt details, assigned to, resolved at)
+
+### TypeBox schemas
+
+- `Remittance835Schema` · `RemittancePostingSchema` · `UnmatchedRemittanceSchema`
+- `IngestERABodySchema` · `ManualMatchBodySchema`
+
+### ERA ingestion service (`era835.service.ts`)
+
+**Parse 835:** payer, check/EFT number, payment date, CLP loops (claim ICN, patient control number, payer claim number), SVC loops (service line adjustments, reason codes).
+
+**Auto-match strategy (in order):**
+1. ICN match — clearinghouse claim control number vs `claim_submissions.clearinghouseClaimId`
+2. Patient Medicare ID + statement dates match
+
+**Auto-post threshold:** if match confidence = exact ICN match → auto-post. Partial match → route to `unmatched_remittances`.
+
+**Auto-post action:**
+- Write `RemittancePosting` rows (one per SVC)
+- Transition claim state: if payment covers balance → `PAID`; if adjustment-only → stay `ACCEPTED` with posting note
+- Emit `claim:remittance:posted` Socket.IO event
+
+**Exception queue:** unmatched or ambiguous items → `unmatched_remittances` + `UNMATCHED_ERA` alert + `claim:remittance:unmatched` event
+
+### BullMQ
+
+- `era-ingestion` queue (triggered by clearinghouse webhook or file drop endpoint)
+- `era-reconciliation` daily scan (0 7 * * *) — flags remittances ingested >48h ago with no posting action
+
+### Routes
+
+- `POST /api/v1/remittances/ingest` — clearinghouse webhook endpoint; validates signature header
+- `GET /api/v1/remittances` — list 835 batches (filterable by payer, date, posting status)
+- `GET /api/v1/remittances/:id` — batch detail + all posting rows + unmatched items
+- `GET /api/v1/remittances/unmatched` — exception queue with aging
+- `POST /api/v1/remittances/unmatched/:id/match` — manual match to claim ID
+- `POST /api/v1/remittances/unmatched/:id/post` — manual post after match
+- `GET /api/v1/claims/:id/remittance` — all postings for a specific claim
+
+**Done when:** 835 file ingested and parsed; ICN-matched claims auto-posted to PAID; unmatched items surface in exception queue with UNMATCHED_ERA alert; manual match + post workflow completes and transitions claim; daily reconciliation scan flags stale unposted remittances; remittance view on claim detail shows payment/adjustment breakdown.
 
 ---
 
@@ -1323,39 +1457,101 @@ Drizzle table `qapi_events` + RLS.
 
 ---
 
-## T3-12 · Pre-submission claim audit (31-point validation) `MEDIUM`
+## T3-12 · Claim Audit Rules Engine + Bill-Hold Dashboard `HIGH`
 
-> Run before any 837i is transmitted. Configurable, documented validation rule set.
+> Configurable audit rule catalog and bill-hold policy engine. Called by T3-7a before submission. Upgraded from MEDIUM based on competitor research (2026-03-12).
 
-`needs:` T3-7 (837i), T3-2 (NOE/NOTR), T3-4 (benefit periods), T3-5 (signatures)
+`needs:` T3-7a (claims), T3-2a (NOE/NOTR), T3-4 (benefit periods), T3-5 (signatures)
 
 **New service:** `backend/src/contexts/billing/services/claimAudit.service.ts`
 
-Runs before the `claim-submission` BullMQ job enqueues.
+Called by T3-7a `POST /api/v1/claims/:id/audit` — runs after readiness check passes, before state transitions to `READY_TO_SUBMIT`.
 
-**10 rule categories:**
-1. Patient eligibility fields complete (Medicare ID, benefit period, election date)
-2. NOE accepted and within window
-3. All required visits completed per physician orders (frequency compliance)
-4. IDG meeting held within 15-day window
-5. HOPE assessment filed if admission claim
-6. F2F documented if period 3+
-7. Aide supervision completed within 14 days
-8. Signatures obtained on all required documents
-9. Physician orders signed (no unsigned verbals)
-10. No duplicate claim for same period
+### DB migration
 
-**Return type:**
+**`claim_audit_snapshots`** — one row per audit run per claim revision:
 ```typescript
 {
+  id: uuid PK;
+  claimId: uuid FK;
+  claimRevisionId: uuid FK;
+  auditedAt: timestamptz;
   passed: boolean;
-  failures: { rule: string; severity: 'BLOCK' | 'WARN'; detail: string }[]
+  failures: jsonb;   // AuditFailure[] — see type below
+  auditedBy: uuid FK | null;   // null = system
 }
 ```
-- `BLOCK` failures prevent submission
-- `WARN` failures require supervisor override with reason logged to `audit_log`
 
-**Done when:** Claim with missing F2F returns BLOCK failure; claim with WARN issue requires supervisor override; all 10 rule categories produce failures on seeded test data
+### Rule catalog (12 groups)
+
+Rules are version-locked in code (not DB-configurable at runtime — avoids silent rule drift). Each rule group maps to a well-known clinical or billing prerequisite:
+
+1. **Patient eligibility** — Medicare ID present, benefit period assigned, election date valid, payer config on file
+2. **NOE/NOTR validity** — NOE accepted, NOTR not claim-blocking, filing within CMS window (T3-2a `isClaimBlocking`)
+3. **Visit frequency compliance** — required visits per frequency plan completed for the billing period (T2-10)
+4. **IDG meeting** — IDG held within 15-day window for period
+5. **HOPE assessment** — HOPE-A filed if admission claim; HOPE-D filed if discharge claim (T3-1a)
+6. **F2F timing** — documented before recert date and within 30-day window, required period 3+ (T3-2b)
+7. **Aide supervision** — completed within 14 days (42 CFR §418.76)
+8. **Signature completeness** — all required documents signed (T3-5)
+9. **Order completeness** — no unsigned verbal orders pending (T3-9)
+10. **Duplicate/sequencing protection** — no duplicate claim for same period; correct bill-type sequence (8X1 before 8X7/8X8)
+11. **Revenue code / HCPCS / modifier consistency** — routine home care vs continuous care codes match level-of-care data
+12. **Payer-specific constraints** — room-and-board payer logic, concurrent care sub-state, payer-specific bill-type rules
+
+### Audit result type
+
+```typescript
+type AuditFailure = {
+  ruleGroup: string;           // e.g. 'F2F_TIMING'
+  rule: string;                // e.g. 'F2F_DOC_BEFORE_RECERT_DATE'
+  severity: 'BLOCK' | 'WARN';
+  detail: string;              // human-readable explanation
+  sourceObject: string;        // e.g. 'benefit_periods', 'notice_of_election'
+  sourceField?: string;        // e.g. 'f2fDocumentedAt'
+  remediationOwner: 'clinician' | 'supervisor' | 'billing';
+  remediationCTA: string;      // e.g. 'Record F2F documentation in Benefit Periods'
+};
+
+type AuditResult = {
+  passed: boolean;
+  claimAuditSnapshotId: string;
+  failures: AuditFailure[];
+};
+```
+
+- `BLOCK` failures → claim stays at `AUDIT_FAILED`; submission blocked
+- `WARN` failures → supervisor override required with reason → logged to `audit_log`; then claim advances to `READY_TO_SUBMIT`
+
+### Bill-hold policy engine
+
+Auto-hold rules (applied on audit completion, independent of BLOCK/WARN):
+- NOE `isClaimBlocking = true` → auto-place hold with `COMPLIANCE_BLOCK` reason
+- T3-4 `billingRisk = true` → auto-place hold with `COMPLIANCE_BLOCK`
+- Manual holds via `POST /api/v1/claims/:id/hold` (billing staff)
+
+**Hold reason taxonomy (enum):** `MISSING_DOC` | `PAYER_ISSUE` | `MANUAL_REVIEW` | `COMPLIANCE_BLOCK` | `LATE_SUBMISSION` | `DUPLICATE_RISK`
+
+### Billing alert dashboard
+
+Extends the alert types already established in T2-8:
+- `CLAIM_VALIDATION_ERROR` — BLOCK-level audit failure surfaced as alert
+- `CLAIM_REJECTION_STATUS` — claim rejected by clearinghouse
+- `BILL_HOLD_COMPLIANCE_BLOCK` / `BILL_HOLD_MISSING_DOC` / `BILL_HOLD_MANUAL_REVIEW`
+
+Dashboard route: `GET /api/v1/billing/audit-dashboard`
+- Aggregate failures by rule group with claim counts
+- Aging: days since audit failure, binned (0–2d / 3–7d / 8–14d / 14d+)
+- Remediation owner lanes: clinician / supervisor / billing staff
+
+### Routes
+
+- `GET /api/v1/claims/:id/audit` — latest audit snapshot for claim
+- `GET /api/v1/claims/:id/audit/history` — all snapshots across revisions
+- `POST /api/v1/claims/:id/audit/override` — supervisor WARN override (requires reason; logs to `audit_log`)
+- `GET /api/v1/billing/audit-dashboard` — aggregate by rule group + aging + owner lane
+
+**Done when:** Claim with missing F2F returns BLOCK failure and stays at AUDIT_FAILED; claim with WARN failure requires supervisor override before advancing; all 12 rule groups produce correctly typed failures on seeded test data; audit snapshot stored per revision; auto-hold placed on claim-blocking NOE; WARN override logged to audit_log; billing dashboard aggregates aging by rule group correctly.
 
 ---
 
