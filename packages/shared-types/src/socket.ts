@@ -132,6 +132,13 @@ export interface ServerToClientEvents {
 		checkedAt: string;
 	}) => void;
 
+	// Visit scheduling (T2-10)
+	"visit:missed": (data: {
+		missedCount: number;
+		varianceCount: number;
+		checkedAt: string;
+	}) => void;
+
 	// Security
 	"break:glass:access": (data: {
 		userId: string;

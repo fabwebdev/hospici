@@ -11,6 +11,7 @@ import { Route as authedReviewQueueIndexRoute } from "./routes/_authed/review-qu
 import { Route as authedPatientsPatientIdRoute } from "./routes/_authed/patients/$patientId";
 import { Route as authedPatientsPatientIdIdgScheduleRoute } from "./routes/_authed/patients/$patientId/idg/schedule";
 import { Route as authedPatientsPatientIdEncountersEncounterIdVantageChartRoute } from "./routes/_authed/patients/$patientId/encounters/$encounterId/vantage-chart";
+import { Route as authedPatientsPatientIdVisitsIndexRoute } from "./routes/_authed/patients/$patientId/visits/index";
 import { Route as authedPatientsIndexRoute } from "./routes/_authed/patients/index";
 import { Route as IndexRoute } from "./routes/index";
 import { Route as LoginRoute } from "./routes/login";
@@ -19,6 +20,7 @@ import { Route as LoginRoute } from "./routes/login";
 const authedPatientsPatientIdRouteWithChildren = authedPatientsPatientIdRoute.addChildren({
   authedPatientsPatientIdIdgScheduleRoute,
   authedPatientsPatientIdEncountersEncounterIdVantageChartRoute,
+  authedPatientsPatientIdVisitsIndexRoute,
 });
 
 const authedRouteWithChildren = authedRoute.addChildren({
@@ -106,6 +108,13 @@ declare module "@tanstack/react-router" {
       path: "/encounters/$encounterId/vantage-chart";
       fullPath: "/patients/$patientId/encounters/$encounterId/vantage-chart";
       preLoaderRoute: typeof authedPatientsPatientIdEncountersEncounterIdVantageChartRoute;
+      parentRoute: typeof authedPatientsPatientIdRoute;
+    };
+    "/_authed/patients/$patientId/visits/": {
+      id: "/_authed/patients/$patientId/visits/";
+      path: "/visits";
+      fullPath: "/patients/$patientId/visits";
+      preLoaderRoute: typeof authedPatientsPatientIdVisitsIndexRoute;
       parentRoute: typeof authedPatientsPatientIdRoute;
     };
   }

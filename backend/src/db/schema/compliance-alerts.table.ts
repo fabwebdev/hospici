@@ -18,6 +18,9 @@ export const alertTypeEnum = pgEnum("alert_type_enum", [
 	"NOTE_REVIEW_REQUIRED",
 	"NOTE_INCOMPLETE",
 	"NOTE_OVERDUE_REVIEW",
+	// T2-10 visit scheduling alert types
+	"MISSED_VISIT",
+	"VISIT_FREQUENCY_VARIANCE",
 ]);
 
 export const alertSeverityEnum = pgEnum("alert_severity_enum", ["critical", "warning", "info"]);

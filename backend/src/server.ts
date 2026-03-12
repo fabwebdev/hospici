@@ -19,6 +19,8 @@ import { closeQueues, scheduleDailyJobs } from "@/jobs/queue.js";
 import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.worker.js";
 import { createCapRecalculationWorker } from "@/jobs/workers/cap-recalculation.worker.js";
 import { createNoteReviewDeadlineWorker } from "@/jobs/workers/note-review-deadline.worker.js";
+import { createMissedVisitCheckWorker } from "@/jobs/workers/missed-visit-check.worker.js";
+import visitSchedulePatientRoutes, { visitScheduleStandaloneRoutes } from "@/contexts/scheduling/routes/visitSchedule.routes.js";
 import { createHopeDeadlineCheckWorker } from "@/jobs/workers/hope-deadline-check.worker.js";
 import { createHopeSubmissionWorker } from "@/jobs/workers/hope-submission.worker.js";
 import { createHqrpPeriodCloseWorker } from "@/jobs/workers/hqrp-period-close.worker.js";
@@ -154,6 +156,8 @@ export async function buildApp() {
   await fastify.register(hopeRoutes, { prefix: "/api/v1/hope" });
   await fastify.register(alertRoutes, { prefix: "/api/v1/alerts" });
   await fastify.register(noteReviewRoutes, { prefix: "/api/v1" });
+  await fastify.register(visitSchedulePatientRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(visitScheduleStandaloneRoutes, { prefix: "/api/v1/scheduled-visits" });
 
   // ── BullMQ Workers ────────────────────────────────────────────────────────────
   // Workers are created after Fastify is fully configured so the logger is ready.
@@ -164,6 +168,7 @@ export async function buildApp() {
   const hqrpPeriodCloseWorker = createHqrpPeriodCloseWorker();
   const capRecalculationWorker = createCapRecalculationWorker();
   const noteReviewDeadlineWorker = createNoteReviewDeadlineWorker(fastify.valkey);
+  const missedVisitCheckWorker = createMissedVisitCheckWorker(fastify.valkey);
 
   fastify.addHook("onClose", async () => {
     await noeWorker.close();
@@ -173,6 +178,7 @@ export async function buildApp() {
     await hqrpPeriodCloseWorker.close();
     await capRecalculationWorker.close();
     await noteReviewDeadlineWorker.close();
+    await missedVisitCheckWorker.close();
     await closeQueues();
     fastify.log.info("BullMQ workers and queues closed");
   });

@@ -65,6 +65,12 @@ import {
 	AlertStatusPatchBodySchema,
 } from "@/contexts/compliance/schemas/alert.schema.js";
 import {
+  CreateScheduledVisitBodySchema,
+  PatchScheduledVisitStatusBodySchema,
+  ScheduledVisitListResponseSchema,
+  ScheduledVisitResponseSchema,
+} from "@/contexts/scheduling/schemas/visitSchedule.schema.js";
+import {
   AssignReviewBodySchema,
   BulkAcknowledgeBodySchema,
   EscalateReviewBodySchema,
@@ -157,6 +163,12 @@ export const Validators = {
   // Compliance alerts
   AlertListResponse: TypeCompiler.Compile(AlertListResponseSchema),
   AlertStatusPatchBody: TypeCompiler.Compile(AlertStatusPatchBodySchema),
+
+  // Scheduling — visit scheduling (T2-10)
+  CreateScheduledVisitBody: TypeCompiler.Compile(CreateScheduledVisitBodySchema),
+  PatchScheduledVisitStatusBody: TypeCompiler.Compile(PatchScheduledVisitStatusBodySchema),
+  ScheduledVisitResponse: TypeCompiler.Compile(ScheduledVisitResponseSchema),
+  ScheduledVisitListResponse: TypeCompiler.Compile(ScheduledVisitListResponseSchema),
 
   // Clinical — note review (T2-9)
   SubmitReviewBody: TypeCompiler.Compile(SubmitReviewBodySchema),

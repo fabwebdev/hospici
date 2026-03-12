@@ -20,3 +20,4 @@ export * from "./medication-administrations.table.js";
 export * from "./patient-allergies.table.js";
 export * from "./encounters.table.js";
 export * from "./compliance-alerts.table.js";
+export * from "./scheduled-visits.table.js";

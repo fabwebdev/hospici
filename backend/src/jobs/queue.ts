@@ -23,6 +23,7 @@ export const QUEUE_NAMES = {
   HQRP_PERIOD_CLOSE: "hqrp-period-close",
   CAP_RECALCULATION: "cap-recalculation",
   NOTE_REVIEW_DEADLINE_CHECK: "note-review-deadline-check",
+  MISSED_VISIT_CHECK: "missed-visit-check",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -109,6 +110,11 @@ export const noteReviewDeadlineQueue = new Queue(QUEUE_NAMES.NOTE_REVIEW_DEADLIN
   defaultJobOptions,
 });
 
+export const missedVisitCheckQueue = new Queue(QUEUE_NAMES.MISSED_VISIT_CHECK, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
 // ── Daily schedule registration ───────────────────────────────────────────────
 
 /**
@@ -175,6 +181,16 @@ export async function scheduleDailyJobs(): Promise<void> {
       jobId: "note-review-daily-check",
     },
   );
+
+  // Missed visit check — daily at 07:00 UTC (after other morning checks)
+  await missedVisitCheckQueue.add(
+    "daily-check",
+    {},
+    {
+      repeat: { pattern: "0 7 * * *" },
+      jobId: "missed-visit-daily-check",
+    },
+  );
 }
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
@@ -188,4 +204,5 @@ export async function closeQueues(): Promise<void> {
   await hqrpPeriodCloseQueue.close();
   await capRecalculationQueue.close();
   await noteReviewDeadlineQueue.close();
+  await missedVisitCheckQueue.close();
 }

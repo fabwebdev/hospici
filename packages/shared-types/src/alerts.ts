@@ -17,6 +17,9 @@ export const AlertType = {
 	NOTE_REVIEW_REQUIRED: "NOTE_REVIEW_REQUIRED", // note submitted, awaiting supervisor
 	NOTE_INCOMPLETE: "NOTE_INCOMPLETE", // note missing required sections
 	NOTE_OVERDUE_REVIEW: "NOTE_OVERDUE_REVIEW", // review SLA exceeded (dueBy passed)
+	// T2-10 — visit scheduling
+	MISSED_VISIT: "MISSED_VISIT", // scheduled visit passed with no completion
+	VISIT_FREQUENCY_VARIANCE: "VISIT_FREQUENCY_VARIANCE", // actual < planned frequency
 } as const;
 
 export type AlertType = (typeof AlertType)[keyof typeof AlertType];

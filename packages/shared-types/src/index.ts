@@ -88,6 +88,15 @@ export type {
 } from "./idg.js";
 export { DeficiencyType, NOTE_REVIEW_TRANSITIONS } from "./noteReview.js";
 export type {
+  VisitStatus,
+  VisitScheduleDiscipline,
+  FrequencyPlan,
+  ScheduledVisitResponse,
+  ScheduledVisitListResponse,
+  CreateScheduledVisitInput,
+  PatchScheduledVisitStatusInput,
+} from "./visitSchedule.js";
+export type {
   NoteReviewStatus,
   RevisionRequest,
   ReviewQueueItem,

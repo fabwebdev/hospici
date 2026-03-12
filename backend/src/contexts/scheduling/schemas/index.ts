@@ -28,6 +28,19 @@ export {
 } from "./idgMeeting.schema.js";
 
 export {
+  VisitStatusSchema,
+  VisitScheduleDisciplineSchema,
+  FrequencyPlanSchema,
+  ScheduledVisitResponseSchema,
+  ScheduledVisitListResponseSchema,
+  CreateScheduledVisitBodySchema,
+  PatchScheduledVisitStatusBodySchema,
+  type ScheduledVisitResponseType,
+  type CreateScheduledVisitBodyType,
+  type PatchScheduledVisitStatusBodyType,
+} from "./visitSchedule.schema.js";
+
+export {
   AideSupervisionSchema,
   SupervisionMethodSchema,
   calculateNextSupervisionDue,
