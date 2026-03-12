@@ -213,8 +213,8 @@ export async function seedFixtures(client: PoolClient): Promise<void> {
     `INSERT INTO pain_assessments
        (id, patient_id, location_id, assessment_type, assessed_at, assessed_by, total_score, data)
      VALUES
-       ($1, $2, $3, 'numeric', NOW(), $4, 7,
-        '{"scale":"numeric","notes":"test assessment"}')
+       ($1, $2, $3, 'NRS', NOW(), $4, 7,
+        '{"score":7,"description":"test assessment"}')
      ON CONFLICT (id) DO NOTHING`,
     [TEST_IDS.painAssessmentA, TEST_IDS.patientA, TEST_IDS.locationA, TEST_IDS.userA],
   );

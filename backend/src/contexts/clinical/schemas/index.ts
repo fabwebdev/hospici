@@ -5,7 +5,6 @@ export {
   HumanNameSchema,
   AddressSchema,
   IdentifierSchema,
-  PatientValidator,
   CareModelSchema,
   CreatePatientBodySchema,
   PatchPatientBodySchema,
@@ -23,8 +22,22 @@ export {
   type PatientListQuery,
 } from "./patient.schema";
 
+export { FlaccScaleSchema, type FlaccScale } from "./flaccScale.schema";
+export { PainadScaleSchema, type PainadScale } from "./painadScale.schema";
+export { NrsScaleSchema, type NrsScale } from "./nrsScale.schema";
+export { WongBakerScaleSchema, type WongBakerScale } from "./wongBakerScale.schema";
+export { EsasScaleSchema, type EsasScale } from "./esasScale.schema";
 export {
-  FlaccScaleSchema,
-  FlaccScaleValidator,
-  type FlaccScale,
-} from "./flaccScale.schema";
+  AssessmentTypeSchema,
+  CreateAssessmentBodySchema,
+  AssessmentResponseSchema,
+  AssessmentListResponseSchema,
+  TrajectoryDataPointSchema,
+  TrajectoryResponseSchema,
+  type AssessmentType,
+  type CreateAssessmentBody,
+  type AssessmentResponse,
+  type AssessmentListResponse,
+  type TrajectoryDataPoint,
+  type TrajectoryResponse,
+} from "./assessment.schema";

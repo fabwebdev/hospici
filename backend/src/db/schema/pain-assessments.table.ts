@@ -1,7 +1,15 @@
-import { integer, jsonb, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgEnum, pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 import { locations } from "./locations.table.js";
 import { patients } from "./patients.table.js";
 import { users } from "./users.table.js";
+
+export const assessmentScaleTypeEnum = pgEnum("assessment_scale_type", [
+  "FLACC",
+  "PAINAD",
+  "NRS",
+  "WONG_BAKER",
+  "ESAS",
+]);
 
 export const painAssessments = pgTable("pain_assessments", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -11,7 +19,7 @@ export const painAssessments = pgTable("pain_assessments", {
   locationId: uuid("location_id")
     .references(() => locations.id)
     .notNull(),
-  assessmentType: varchar("assessment_type", { length: 50 }).notNull(),
+  assessmentType: assessmentScaleTypeEnum("assessment_type").notNull(),
   assessedAt: timestamp("assessed_at", { withTimezone: true }).notNull(),
   assessedBy: uuid("assessed_by")
     .references(() => users.id)

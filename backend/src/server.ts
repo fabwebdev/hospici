@@ -5,6 +5,7 @@ import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
 import hopeRoutes from "@/contexts/analytics/routes/hope.routes.js";
 import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
+import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
 import authRoutes from "@/contexts/identity/routes/auth.routes.js";
 import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
@@ -135,6 +136,7 @@ export async function buildApp() {
     config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
   });
   await fastify.register(patientRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(assessmentRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(billingRoutes, { prefix: "/api/v1/billing" });
   await fastify.register(schedulingRoutes, { prefix: "/api/v1/scheduling" });
   await fastify.register(hopeRoutes, { prefix: "/api/v1/hope" });

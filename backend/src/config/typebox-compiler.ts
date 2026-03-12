@@ -1,7 +1,7 @@
 // config/typebox-compiler.ts
-// Central registry for ALL AOT-compiled TypeBox validators
-// ⚠️  CRITICAL: All TypeCompiler.Compile() calls must be in this file only
-// Never call TypeCompiler.Compile() inside functions or request handlers
+// Central registry for ALL AOT-compiled TypeBox validators.
+// ⚠️  CRITICAL: Never call TypeCompiler.Compile() inside functions, class methods,
+// request handlers, or loops. Module-level only (here or in schema files).
 
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
@@ -19,6 +19,16 @@ import {
   HOPETreatmentPreferencesMeasureSchema,
 } from "@/contexts/analytics/schemas/hopeQualityMeasures.schema";
 import { BenefitPeriodSchema, CapCalculationSchema, NOESchema } from "@/contexts/billing/schemas";
+import {
+  AssessmentListResponseSchema,
+  AssessmentResponseSchema,
+  CreateAssessmentBodySchema,
+  TrajectoryResponseSchema,
+} from "@/contexts/clinical/schemas/assessment.schema";
+import { EsasScaleSchema } from "@/contexts/clinical/schemas/esasScale.schema";
+import { NrsScaleSchema } from "@/contexts/clinical/schemas/nrsScale.schema";
+import { PainadScaleSchema } from "@/contexts/clinical/schemas/painadScale.schema";
+import { WongBakerScaleSchema } from "@/contexts/clinical/schemas/wongBakerScale.schema";
 import {
   CreatePatientBodySchema,
   FlaccScaleSchema,
@@ -42,12 +52,24 @@ export const Validators = {
   BreakGlass: TypeCompiler.Compile(BreakGlassSchema),
   AuditLog: TypeCompiler.Compile(AuditLogSchema),
 
-  // Clinical
+  // Clinical — patients
   Patient: TypeCompiler.Compile(PatientSchema),
-  FlaccScale: TypeCompiler.Compile(FlaccScaleSchema),
   CreatePatientBody: TypeCompiler.Compile(CreatePatientBodySchema),
   PatchPatientBody: TypeCompiler.Compile(PatchPatientBodySchema),
   PatientListQuery: TypeCompiler.Compile(PatientListQuerySchema),
+
+  // Clinical — pain/symptom assessment scales
+  FlaccScale: TypeCompiler.Compile(FlaccScaleSchema),
+  PainadScale: TypeCompiler.Compile(PainadScaleSchema),
+  NrsScale: TypeCompiler.Compile(NrsScaleSchema),
+  WongBakerScale: TypeCompiler.Compile(WongBakerScaleSchema),
+  EsasScale: TypeCompiler.Compile(EsasScaleSchema),
+
+  // Clinical — assessment CRUD + trajectory
+  CreateAssessmentBody: TypeCompiler.Compile(CreateAssessmentBodySchema),
+  AssessmentResponse: TypeCompiler.Compile(AssessmentResponseSchema),
+  AssessmentListResponse: TypeCompiler.Compile(AssessmentListResponseSchema),
+  TrajectoryResponse: TypeCompiler.Compile(TrajectoryResponseSchema),
 
   // Billing
   NOE: TypeCompiler.Compile(NOESchema),

@@ -243,8 +243,8 @@ describe("registered_nurse role", () => {
             `INSERT INTO pain_assessments
                (id, patient_id, location_id, assessment_type, assessed_at, assessed_by, total_score, data)
              VALUES
-               (gen_random_uuid(), $1, $2, 'numeric', NOW(), $3, 5,
-                '{"scale":"numeric","notes":"rls insert test"}')`,
+               (gen_random_uuid(), $1, $2, 'NRS', NOW(), $3, 5,
+                '{"score":5,"description":"rls insert test"}')`,
             [TEST_IDS.patientA, TEST_IDS.locationA, TEST_IDS.userA],
           ),
         ).resolves.toBeDefined();
@@ -265,8 +265,8 @@ describe("registered_nurse role", () => {
           `INSERT INTO pain_assessments
              (id, patient_id, location_id, assessment_type, assessed_at, assessed_by, total_score, data)
            VALUES
-             (gen_random_uuid(), $1, $2, 'numeric', NOW(), $3, 5,
-              '{"scale":"numeric","notes":"rls insert mismatch"}')`,
+             (gen_random_uuid(), $1, $2, 'NRS', NOW(), $3, 5,
+              '{"score":5,"description":"rls insert mismatch"}')`,
           [
             TEST_IDS.patientA,
             TEST_IDS.locationA,
