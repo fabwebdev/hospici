@@ -1,0 +1,24 @@
+{
+  "name": "hospici",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hospici — Cloud-native hospice EHR monorepo",
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r clean && rm -rf node_modules"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "zod": "^4.0.0",
+      "drizzle-orm": "^0.41.0"
+    }
+  }
+}
