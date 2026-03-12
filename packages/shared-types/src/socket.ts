@@ -79,6 +79,15 @@ export interface ServerToClientEvents {
 	}) => void;
 
 	"session:expiring": (data: { expiresInSeconds: number }) => void;
+
+	// Security
+	"break:glass:access": (data: {
+		userId: string;
+		userName: string;
+		patientId: string;
+		reason: string;
+		expiresAt: string;
+	}) => void;
 }
 
 /**

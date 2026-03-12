@@ -76,9 +76,9 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | T1-4 | AuditService | ✅ | MEDIUM |
 | T1-5 | PHI encryption service | ✅ | MEDIUM |
 | T1-6 | BullMQ foundation + compliance queues | ✅ | MEDIUM |
-| T1-7 | HOPE + cap BullMQ queues | ⬜ | MEDIUM |
-| T1-8 | Socket.IO server | ⬜ | MEDIUM |
-| T1-9 | Integration tests + RLS suite | ⬜ | MEDIUM |
+| T1-7 | HOPE + cap BullMQ queues | ✅ | MEDIUM |
+| T1-8 | Socket.IO server | ✅ | MEDIUM |
+| T1-9 | Integration tests + RLS suite | ✅ | MEDIUM |
 | T1-10 | CI/CD pipeline | ⬜ | LOW |
 | T1-11 | Valkey password + pool hardening | ⬜ | LOW |
 
@@ -201,6 +201,9 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | 2026-03-12 | T1-4 AuditService | `audit.service.ts`: `AuditService.log(action, userId, patientId|null, metadata)` — append-only db.insert, fallback resourceId logic (patientId → metadata.resourceId → userId). 7 unit tests (vi.hoisted mock pattern). 0 TS errors, 16/16 tests. Route wiring deferred to T2-1+ when real handlers exist. | T1-5 |
 | 2026-03-12 | T1-5 PHI encryption | `phi-encryption.service.ts`: `PHI_FIELDS` set (19 field names covering all 18 HIPAA Safe Harbor classes). `encrypt/decrypt` via pgp_sym_encrypt/pgp_sym_decrypt with base64 transport. `encryptFields/decryptFields` for flat record objects. Key from `env.phiEncryptionKey`. 9 unit tests. 0 TS errors, 25/25 tests. | T1-6 |
 | 2026-03-12 | T1-6 BullMQ foundation | `queue.ts`: `createBullMQConnection()` (raw opts, `maxRetriesPerRequest:null`), `noeDeadlineQueue` + `aideSupervisionQueue`, `scheduleDailyJobs()` (0 6 * * *), `closeQueues()`. `noe-deadline.worker.ts`: queries `notice_of_election` for upcoming/overdue NOEs, logs + TODO T1-8. `aide-supervision.worker.ts`: queries `aide_supervisions`, marks `isOverdue=true`, logs + TODO T1-8. Workers registered + shutdown in `server.ts`. 5 unit tests. 0 TS errors, 30/30 tests. | T1-7 |
+| 2026-03-12 | T1-7 HOPE + cap queues | Added 5 queues: `hope-submission` (removeOnFail:false, 3 retries, exp backoff 2s), `hope-submission-dlq`, `hope-deadline-check` (daily), `hqrp-period-close` (quarterly 0 6 15 2,5,8,11 *), `cap-recalculation` (0 6 2 11 * — Nov 2 annually). 4 workers: `hope-submission` (DLQ promotion + P1 log on exhausted retries), `hope-deadline-check`, `hqrp-period-close` (getClosingQuarter), `cap-recalculation` (getCapYear + calculateCapLiability). `iqiesApiUrl` in env. All wired in server.ts. 0 TS errors, 52/52 tests. | T1-8 |
+| 2026-03-12 | T1-8 Socket.IO server | `socket.plugin.ts`: fp-wrapped Server on `fastify.server`, Better Auth auth guard (TOTP check), location rooms (`location:{id}`), `session:expiring` at 25 min (5 min warning timer). `compliance-events.ts`: typed `ComplianceEventBus extends EventEmitter` bridging workers→Socket.IO. `shared-types/socket.ts`: added `break:glass:access` event. Wired `noe:deadline:warning` + `aide:supervision:overdue` emits in workers. `fastify.io` decorated. 0 TS errors, 62/62 tests. | T1-9 |
+| 2026-03-12 | T1-9 Integration tests + RLS suite | Phase 1 exit gate. `tests/integration/setup.ts`: migrations runner, `hospici_app` non-superuser role creation, fixtures (2 locations, 6 users, 2 patients, 1 pain assessment), `withRlsContext()` (SET LOCAL ROLE + SET LOCAL app.*). 28 RLS tests across 3 files: user-isolation (9), role-access (11), super-admin (8). `tests/integration/noe-deadline.test.ts` (9): Friday/Monday deadline edge cases + DB round-trip + worker query logic. `.env.test` added. `pnpm test:rls` command confirmed (requires test DB). 0 TS errors, 9/9 unit tests. | T1-10 |
 
 ---
 

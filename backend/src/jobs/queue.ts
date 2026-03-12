@@ -17,6 +17,11 @@ import { Queue } from "bullmq";
 export const QUEUE_NAMES = {
   NOE_DEADLINE_CHECK: "noe-deadline-check",
   AIDE_SUPERVISION_CHECK: "aide-supervision-check",
+  HOPE_SUBMISSION: "hope-submission",
+  HOPE_SUBMISSION_DLQ: "hope-submission-dlq",
+  HOPE_DEADLINE_CHECK: "hope-deadline-check",
+  HQRP_PERIOD_CLOSE: "hqrp-period-close",
+  CAP_RECALCULATION: "cap-recalculation",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -59,6 +64,45 @@ export const aideSupervisionQueue = new Queue(QUEUE_NAMES.AIDE_SUPERVISION_CHECK
   defaultJobOptions,
 });
 
+// ── HOPE submission queue (event-driven, not scheduled) ───────────────────────
+
+/**
+ * Per HOPE-DOC: 3 retries with exponential backoff, removeOnFail: false for DLQ review.
+ * DLQ: hope-submission-dlq — triggered when all 3 attempts are exhausted.
+ */
+export const hopeSubmissionQueue = new Queue(QUEUE_NAMES.HOPE_SUBMISSION, {
+  connection: createBullMQConnection(),
+  defaultJobOptions: {
+    removeOnComplete: { count: 100 },
+    removeOnFail: false, // Keep failed jobs for DLQ review
+    attempts: 3,
+    backoff: { type: "exponential" as const, delay: 2000 },
+  },
+});
+
+export const hopeSubmissionDlq = new Queue(QUEUE_NAMES.HOPE_SUBMISSION_DLQ, {
+  connection: createBullMQConnection(),
+  defaultJobOptions: {
+    removeOnComplete: { count: 50 },
+    removeOnFail: { count: 500 },
+  },
+});
+
+export const hopeDeadlineCheckQueue = new Queue(QUEUE_NAMES.HOPE_DEADLINE_CHECK, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
+export const hqrpPeriodCloseQueue = new Queue(QUEUE_NAMES.HQRP_PERIOD_CLOSE, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
+export const capRecalculationQueue = new Queue(QUEUE_NAMES.CAP_RECALCULATION, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
 // ── Daily schedule registration ───────────────────────────────────────────────
 
 /**
@@ -84,6 +128,37 @@ export async function scheduleDailyJobs(): Promise<void> {
       jobId: "aide-daily-check",
     },
   );
+
+  // HOPE deadline check — daily at 06:00 UTC
+  await hopeDeadlineCheckQueue.add(
+    "daily-check",
+    {},
+    {
+      repeat: { pattern: "0 6 * * *" },
+      jobId: "hope-daily-check",
+    },
+  );
+
+  // HQRP period close — quarterly on the 15th of Feb, May, Aug, Nov (submission deadlines)
+  // Q1 (Jan–Mar) → Aug 15 | Q2 (Apr–Jun) → Nov 15 | Q3 (Jul–Sep) → Feb 15 | Q4 (Oct–Dec) → May 15
+  await hqrpPeriodCloseQueue.add(
+    "quarterly-close",
+    {},
+    {
+      repeat: { pattern: "0 6 15 2,5,8,11 *" },
+      jobId: "hqrp-quarterly-close",
+    },
+  );
+
+  // Cap recalculation — Nov 2 annually (day after cap year starts Nov 1), 06:00 UTC
+  await capRecalculationQueue.add(
+    "annual-recalculation",
+    {},
+    {
+      repeat: { pattern: "0 6 2 11 *" },
+      jobId: "cap-annual-recalculation",
+    },
+  );
 }
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
@@ -91,4 +166,9 @@ export async function scheduleDailyJobs(): Promise<void> {
 export async function closeQueues(): Promise<void> {
   await noeDeadlineQueue.close();
   await aideSupervisionQueue.close();
+  await hopeSubmissionQueue.close();
+  await hopeSubmissionDlq.close();
+  await hopeDeadlineCheckQueue.close();
+  await hqrpPeriodCloseQueue.close();
+  await capRecalculationQueue.close();
 }

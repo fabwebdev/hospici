@@ -8,13 +8,14 @@
  *  - Warns at day 12 (2 days before deadline)
  *  - Marks `isOverdue = true` once the 14-day window has passed
  *
- * TODO (T1-8): Emit Socket.IO `supervision:due` events per aide.
+ * Emits `aide:supervision:overdue` via Socket.IO for each overdue aide.
  */
 
 import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
 import { db } from "@/db/client.js";
 import { aideSupervisions } from "@/db/schema/aide-supervisions.table.js";
+import { complianceEvents } from "@/events/compliance-events.js";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
 import { and, lte, eq, not } from "drizzle-orm";
@@ -56,7 +57,12 @@ export async function aideSupervisionHandler(_job: Job): Promise<AideSupervision
       ),
     // Already past due — not yet marked
     db
-      .select({ id: aideSupervisions.id, aideId: aideSupervisions.aideId })
+      .select({
+        id: aideSupervisions.id,
+        aideId: aideSupervisions.aideId,
+        patientId: aideSupervisions.patientId,
+        nextSupervisionDue: aideSupervisions.nextSupervisionDue,
+      })
       .from(aideSupervisions)
       .where(
         and(
@@ -91,6 +97,19 @@ export async function aideSupervisionHandler(_job: Job): Promise<AideSupervision
       { count: overdue.length, aideIds: overdue.map((r) => r.aideId) },
       "Aide supervision OVERDUE — 42 CFR §418.76 violation",
     );
+
+    for (const supervision of overdue) {
+      const dueDate = supervision.nextSupervisionDue ?? todayStr;
+      const daysOverdue = Math.floor(
+        (today.getTime() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24),
+      );
+      complianceEvents.emit("aide:supervision:overdue", {
+        aideId: supervision.aideId,
+        aideName: "", // TODO (T2-1): join with users table for name
+        patientId: supervision.patientId,
+        daysOverdue: Math.max(0, daysOverdue),
+      });
+    }
   }
 
   return {

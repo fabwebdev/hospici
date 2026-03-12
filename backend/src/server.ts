@@ -10,8 +10,13 @@ import authRoutes from "@/contexts/identity/routes/auth.routes.js";
 import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
 import { closeQueues, scheduleDailyJobs } from "@/jobs/queue.js";
 import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.worker.js";
+import { createCapRecalculationWorker } from "@/jobs/workers/cap-recalculation.worker.js";
+import { createHopeDeadlineCheckWorker } from "@/jobs/workers/hope-deadline-check.worker.js";
+import { createHopeSubmissionWorker } from "@/jobs/workers/hope-submission.worker.js";
+import { createHqrpPeriodCloseWorker } from "@/jobs/workers/hqrp-period-close.worker.js";
 import { createNoeDeadlineWorker } from "@/jobs/workers/noe-deadline.worker.js";
 import { registerRLSMiddleware } from "@/middleware/rls.middleware.js";
+import socketPlugin from "@/plugins/socket.plugin.js";
 import valkeyPlugin from "@/plugins/valkey.plugin.js";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
@@ -87,6 +92,7 @@ export async function buildApp() {
 
   // ── Infrastructure Plugins ──────────────────────────────────────────────────
   await fastify.register(valkeyPlugin);
+  await fastify.register(socketPlugin);
 
   // ── RLS Middleware (Parameterized - Safe) ───────────────────────────────────
   registerRLSMiddleware(fastify);
@@ -137,10 +143,18 @@ export async function buildApp() {
   // Workers are created after Fastify is fully configured so the logger is ready.
   const noeWorker = createNoeDeadlineWorker();
   const aideWorker = createAideSupervisionWorker();
+  const hopeSubmissionWorker = createHopeSubmissionWorker();
+  const hopeDeadlineWorker = createHopeDeadlineCheckWorker();
+  const hqrpPeriodCloseWorker = createHqrpPeriodCloseWorker();
+  const capRecalculationWorker = createCapRecalculationWorker();
 
   fastify.addHook("onClose", async () => {
     await noeWorker.close();
     await aideWorker.close();
+    await hopeSubmissionWorker.close();
+    await hopeDeadlineWorker.close();
+    await hqrpPeriodCloseWorker.close();
+    await capRecalculationWorker.close();
     await closeQueues();
     fastify.log.info("BullMQ workers and queues closed");
   });

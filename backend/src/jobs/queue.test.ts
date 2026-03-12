@@ -31,6 +31,31 @@ describe("QUEUE_NAMES", () => {
     const { QUEUE_NAMES } = await import("./queue.js");
     expect(QUEUE_NAMES.AIDE_SUPERVISION_CHECK).toBe("aide-supervision-check");
   });
+
+  it("defines hope-submission", async () => {
+    const { QUEUE_NAMES } = await import("./queue.js");
+    expect(QUEUE_NAMES.HOPE_SUBMISSION).toBe("hope-submission");
+  });
+
+  it("defines hope-submission-dlq", async () => {
+    const { QUEUE_NAMES } = await import("./queue.js");
+    expect(QUEUE_NAMES.HOPE_SUBMISSION_DLQ).toBe("hope-submission-dlq");
+  });
+
+  it("defines hope-deadline-check", async () => {
+    const { QUEUE_NAMES } = await import("./queue.js");
+    expect(QUEUE_NAMES.HOPE_DEADLINE_CHECK).toBe("hope-deadline-check");
+  });
+
+  it("defines hqrp-period-close", async () => {
+    const { QUEUE_NAMES } = await import("./queue.js");
+    expect(QUEUE_NAMES.HQRP_PERIOD_CLOSE).toBe("hqrp-period-close");
+  });
+
+  it("defines cap-recalculation (Nov 2 annual job)", async () => {
+    const { QUEUE_NAMES } = await import("./queue.js");
+    expect(QUEUE_NAMES.CAP_RECALCULATION).toBe("cap-recalculation");
+  });
 });
 
 describe("createBullMQConnection()", () => {
@@ -50,5 +75,31 @@ describe("createBullMQConnection()", () => {
     const { createBullMQConnection } = await import("./queue.js");
     const opts = createBullMQConnection() as Record<string, unknown>;
     expect(opts.password).toBeUndefined();
+  });
+});
+
+describe("getClosingQuarter() — HQRP quarterly cron mapping", () => {
+  it("Aug 15 closes Q1 of the same year", async () => {
+    const { getClosingQuarter } = await import("./workers/hqrp-period-close.worker.js");
+    const result = getClosingQuarter(new Date(Date.UTC(2026, 7, 15))); // Aug 15
+    expect(result).toEqual({ year: 2026, quarter: 1 });
+  });
+
+  it("Nov 15 closes Q2 of the same year", async () => {
+    const { getClosingQuarter } = await import("./workers/hqrp-period-close.worker.js");
+    const result = getClosingQuarter(new Date(Date.UTC(2026, 10, 15))); // Nov 15
+    expect(result).toEqual({ year: 2026, quarter: 2 });
+  });
+
+  it("Feb 15 closes Q3 of the prior year", async () => {
+    const { getClosingQuarter } = await import("./workers/hqrp-period-close.worker.js");
+    const result = getClosingQuarter(new Date(Date.UTC(2027, 1, 15))); // Feb 15, 2027
+    expect(result).toEqual({ year: 2026, quarter: 3 });
+  });
+
+  it("May 15 closes Q4 of the prior year", async () => {
+    const { getClosingQuarter } = await import("./workers/hqrp-period-close.worker.js");
+    const result = getClosingQuarter(new Date(Date.UTC(2027, 4, 15))); // May 15, 2027
+    expect(result).toEqual({ year: 2026, quarter: 4 });
   });
 });

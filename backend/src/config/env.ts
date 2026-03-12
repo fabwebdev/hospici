@@ -47,6 +47,8 @@ export const env = {
   smtpPass: optional("SMTP_PASS", ""),
   smtpFrom: optional("SMTP_FROM", "noreply@hospici.local"),
 
+  iqiesApiUrl: optional("IQIES_API_URL", "https://iqies.cms.gov/api"),
+
   features: {
     fhirR6: optional("FEATURE_FHIR_R6_ENABLED", "false") === "true",
     bulkExport: optional("FEATURE_BULK_EXPORT_ENABLED", "false") === "true",
