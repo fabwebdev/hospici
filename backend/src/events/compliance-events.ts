@@ -12,9 +12,7 @@
 import { EventEmitter } from "node:events";
 import type { ServerToClientEvents } from "@hospici/shared-types";
 
-type EventPayload<K extends keyof ServerToClientEvents> = Parameters<
-  ServerToClientEvents[K]
->[0];
+type EventPayload<K extends keyof ServerToClientEvents> = Parameters<ServerToClientEvents[K]>[0];
 
 class ComplianceEventBus extends EventEmitter {
   override emit<K extends keyof ServerToClientEvents>(event: K, data: EventPayload<K>): boolean {

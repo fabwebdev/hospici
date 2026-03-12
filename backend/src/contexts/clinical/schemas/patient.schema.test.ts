@@ -4,8 +4,8 @@
  * Covers: CreatePatientBodySchema, PatchPatientBodySchema, PatientListQuerySchema
  */
 
-import { describe, expect, it } from "vitest";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
+import { describe, expect, it } from "vitest";
 import {
   CreatePatientBodySchema,
   PatchPatientBodySchema,
@@ -32,7 +32,15 @@ describe("CreatePatientBodySchema", () => {
     const full = {
       ...validCreate,
       gender: "female",
-      address: [{ line: ["123 Main St"], city: "Portland", state: "OR", postalCode: "97201", country: "US" }],
+      address: [
+        {
+          line: ["123 Main St"],
+          city: "Portland",
+          state: "OR",
+          postalCode: "97201",
+          country: "US",
+        },
+      ],
       admissionDate: "2026-01-01",
       dischargeDate: "2026-03-01",
       careModel: "HOSPICE",
@@ -73,7 +81,9 @@ describe("PatchPatientBodySchema", () => {
   });
 
   it("accepts partial update — name only", () => {
-    expect(PatchPatientValidator.Check({ name: [{ family: "Smith", given: ["Jane"] }] })).toBe(true);
+    expect(PatchPatientValidator.Check({ name: [{ family: "Smith", given: ["Jane"] }] })).toBe(
+      true,
+    );
   });
 
   it("accepts partial update — careModel only", () => {

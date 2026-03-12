@@ -16,9 +16,9 @@ import { noticeOfElection } from "@/db/schema/noe.table.js";
 import { complianceEvents } from "@/events/compliance-events.js";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
-import { and, lte, not, eq } from "drizzle-orm";
+import { and, eq, lte, not } from "drizzle-orm";
 import pino from "pino";
-import { createBullMQConnection, QUEUE_NAMES } from "../queue.js";
+import { QUEUE_NAMES, createBullMQConnection } from "../queue.js";
 
 const log = pino(createLoggingConfig({ logLevel: env.logLevel, isDev: env.isDev }));
 

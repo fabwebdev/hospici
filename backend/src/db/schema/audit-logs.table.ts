@@ -1,4 +1,13 @@
-import { customType, jsonb, pgTable, primaryKey, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import {
+  customType,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { locations } from "./locations.table.js";
 import { users } from "./users.table.js";
 

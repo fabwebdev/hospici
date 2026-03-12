@@ -6,8 +6,8 @@
  *   2. On logout:   destroySocket(); clearSocketToken();
  */
 
-import { io, type Socket } from "socket.io-client";
 import { clientEnv } from "@/lib/env.client";
+import { type Socket, io } from "socket.io-client";
 
 // ── Memory-only token store ──────────────────────────────────────────────────
 // NEVER write this to localStorage or sessionStorage — PHI risk.

@@ -61,60 +61,69 @@ export const PHI_FIELDS: ReadonlySet<string> = new Set([
   "emergencyContact",
 ]);
 
-export class PhiEncryptionService {
-  /**
-   * Encrypt a single PHI string value.
-   * Returns a base64-encoded pgp_sym_encrypt ciphertext.
-   */
-  static async encrypt(value: string): Promise<string> {
-    const result = await db.execute(
-      sql`SELECT encode(pgp_sym_encrypt(${value}, ${env.phiEncryptionKey}), 'base64') AS ciphertext`,
-    );
-    return (result.rows[0] as { ciphertext: string }).ciphertext;
-  }
-
-  /**
-   * Decrypt a base64-encoded pgp_sym_encrypt ciphertext.
-   * Returns the original plaintext string.
-   */
-  static async decrypt(ciphertext: string): Promise<string> {
-    const result = await db.execute(
-      sql`SELECT pgp_sym_decrypt(decode(${ciphertext}, 'base64'), ${env.phiEncryptionKey}) AS plaintext`,
-    );
-    return (result.rows[0] as { plaintext: string }).plaintext;
-  }
-
-  /**
-   * Encrypt all PHI fields in a flat record.
-   * Fields not in PHI_FIELDS are returned unchanged.
-   * Null/undefined values are left as-is.
-   */
-  static async encryptFields(
-    record: Record<string, string | null | undefined>,
-  ): Promise<Record<string, string | null | undefined>> {
-    const result: Record<string, string | null | undefined> = { ...record };
-    for (const key of Object.keys(record)) {
-      if (PHI_FIELDS.has(key) && typeof record[key] === "string") {
-        result[key] = await PhiEncryptionService.encrypt(record[key] as string);
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Decrypt all PHI fields in a flat record.
-   * Fields not in PHI_FIELDS are returned unchanged.
-   * Null/undefined values are left as-is.
-   */
-  static async decryptFields(
-    record: Record<string, string | null | undefined>,
-  ): Promise<Record<string, string | null | undefined>> {
-    const result: Record<string, string | null | undefined> = { ...record };
-    for (const key of Object.keys(record)) {
-      if (PHI_FIELDS.has(key) && typeof record[key] === "string") {
-        result[key] = await PhiEncryptionService.decrypt(record[key] as string);
-      }
-    }
-    return result;
-  }
+/**
+ * Encrypt a single PHI string value.
+ * Returns a base64-encoded pgp_sym_encrypt ciphertext.
+ */
+export async function encryptPhi(value: string): Promise<string> {
+  const result = await db.execute(
+    sql`SELECT encode(pgp_sym_encrypt(${value}, ${env.phiEncryptionKey}), 'base64') AS ciphertext`,
+  );
+  return (result.rows[0] as { ciphertext: string }).ciphertext;
 }
+
+/**
+ * Decrypt a base64-encoded pgp_sym_encrypt ciphertext.
+ * Returns the original plaintext string.
+ */
+export async function decryptPhi(ciphertext: string): Promise<string> {
+  const result = await db.execute(
+    sql`SELECT pgp_sym_decrypt(decode(${ciphertext}, 'base64'), ${env.phiEncryptionKey}) AS plaintext`,
+  );
+  return (result.rows[0] as { plaintext: string }).plaintext;
+}
+
+/**
+ * Encrypt all PHI fields in a flat record.
+ * Fields not in PHI_FIELDS are returned unchanged.
+ * Null/undefined values are left as-is.
+ */
+export async function encryptPhiFields(
+  record: Record<string, string | null | undefined>,
+): Promise<Record<string, string | null | undefined>> {
+  const result: Record<string, string | null | undefined> = { ...record };
+  for (const key of Object.keys(record)) {
+    if (PHI_FIELDS.has(key) && typeof record[key] === "string") {
+      result[key] = await encryptPhi(record[key] as string);
+    }
+  }
+  return result;
+}
+
+/**
+ * Decrypt all PHI fields in a flat record.
+ * Fields not in PHI_FIELDS are returned unchanged.
+ * Null/undefined values are left as-is.
+ */
+export async function decryptPhiFields(
+  record: Record<string, string | null | undefined>,
+): Promise<Record<string, string | null | undefined>> {
+  const result: Record<string, string | null | undefined> = { ...record };
+  for (const key of Object.keys(record)) {
+    if (PHI_FIELDS.has(key) && typeof record[key] === "string") {
+      result[key] = await decryptPhi(record[key] as string);
+    }
+  }
+  return result;
+}
+
+/**
+ * PhiEncryptionService namespace — exposes encrypt/decrypt functions.
+ * All functions are standalone; this namespace just groups the API.
+ */
+export const PhiEncryptionService = {
+  encrypt: encryptPhi,
+  decrypt: decryptPhi,
+  encryptFields: encryptPhiFields,
+  decryptFields: decryptPhiFields,
+};

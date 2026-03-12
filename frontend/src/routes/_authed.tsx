@@ -1,7 +1,7 @@
 // routes/_authed.tsx
 // Protected layout route — all children require authentication
 
-import { createFileRoute, redirect, Outlet, Link } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed")({
   beforeLoad: ({ context }) => {
@@ -24,16 +24,10 @@ function AuthedLayout() {
             <div className="flex items-center">
               <span className="text-xl font-bold text-blue-600">Hospici</span>
               <div className="ml-10 flex space-x-4">
-                <Link
-                  to="/dashboard"
-                  className="px-3 py-2 text-gray-700 hover:text-blue-600"
-                >
+                <Link to="/dashboard" className="px-3 py-2 text-gray-700 hover:text-blue-600">
                   Dashboard
                 </Link>
-                <Link
-                  to="/patients"
-                  className="px-3 py-2 text-gray-700 hover:text-blue-600"
-                >
+                <Link to="/patients" className="px-3 py-2 text-gray-700 hover:text-blue-600">
                   Patients
                 </Link>
                 {/* TODO T2-4: replace with <Link> once route is implemented */}

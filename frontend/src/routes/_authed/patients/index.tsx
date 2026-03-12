@@ -1,11 +1,11 @@
 // routes/_authed/patients/index.tsx
 // Patient list view — fetches real data from backend API
 
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import type { HumanName, PatientListResponse } from "@hospici/shared-types";
-import { patientKeys } from "@/lib/query/keys.js";
 import { getPatientsFn } from "@/functions/patient.functions.js";
+import { patientKeys } from "@/lib/query/keys.js";
+import type { HumanName, PatientListResponse } from "@hospici/shared-types";
+import { useQuery } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/patients/")({
   loader: ({ context: { queryClient } }) =>
@@ -35,8 +35,7 @@ function PatientsListPage() {
   if (error) {
     return (
       <div className="text-red-600 py-8">
-        Error loading patients:{" "}
-        {error instanceof Error ? error.message : "Unknown error"}
+        Error loading patients: {error instanceof Error ? error.message : "Unknown error"}
       </div>
     );
   }
@@ -47,7 +46,10 @@ function PatientsListPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+        <button
+          type="button"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
           + Admit Patient
         </button>
       </div>
@@ -76,10 +78,7 @@ function PatientsListPage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {patients.length === 0 ? (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-6 py-8 text-center text-sm text-gray-500"
-                >
+                <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
                   No patients found
                 </td>
               </tr>
@@ -95,9 +94,7 @@ function PatientsListPage() {
                     <div className="text-sm text-gray-500">{patient.birthDate}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">
-                      {patient.admissionDate ?? "—"}
-                    </div>
+                    <div className="text-sm text-gray-500">{patient.admissionDate ?? "—"}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">

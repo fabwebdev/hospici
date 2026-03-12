@@ -20,7 +20,7 @@ import { createLoggingConfig } from "@/config/logging.config.js";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
 import pino from "pino";
-import { createBullMQConnection, QUEUE_NAMES } from "../queue.js";
+import { QUEUE_NAMES, createBullMQConnection } from "../queue.js";
 
 const log = pino(createLoggingConfig({ logLevel: env.logLevel, isDev: env.isDev }));
 
@@ -39,7 +39,7 @@ export function getClosingQuarter(date: Date): { year: number; quarter: number }
   const month = date.getUTCMonth() + 1; // 1-indexed
   const year = date.getUTCFullYear();
 
-  if (month === 8) return { year, quarter: 1 };  // Aug 15 → Q1 of same year
+  if (month === 8) return { year, quarter: 1 }; // Aug 15 → Q1 of same year
   if (month === 11) return { year, quarter: 2 }; // Nov 15 → Q2 of same year
   if (month === 2) return { year: year - 1, quarter: 3 }; // Feb 15 → Q3 of prior year
   if (month === 5) return { year: year - 1, quarter: 4 }; // May 15 → Q4 of prior year
@@ -86,7 +86,7 @@ export async function hqrpPeriodCloseHandler(_job: Job): Promise<HqrpPeriodClose
     closedAt: today.toISOString(),
     closingQuarter,
     penaltyApplied: false, // TODO (T3-1)
-    locationsAffected: 0,  // TODO (T3-1)
+    locationsAffected: 0, // TODO (T3-1)
   };
 }
 
@@ -99,7 +99,10 @@ export function createHqrpPeriodCloseWorker(): Worker<object, HqrpPeriodCloseJob
   });
 
   worker.on("completed", (job, result) => {
-    log.info({ jobId: job.id, closingQuarter: result.closingQuarter }, "hqrp-period-close completed");
+    log.info(
+      { jobId: job.id, closingQuarter: result.closingQuarter },
+      "hqrp-period-close completed",
+    );
   });
 
   worker.on("failed", (job, err) => {

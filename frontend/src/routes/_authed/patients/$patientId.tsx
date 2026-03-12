@@ -1,11 +1,11 @@
 // routes/_authed/patients/$patientId.tsx
 // Patient detail view
 
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import type { HumanName, PatientResponse } from "@hospici/shared-types";
-import { patientKeys } from "@/lib/query/keys.js";
 import { getPatientFn } from "@/functions/patient.functions.js";
+import { patientKeys } from "@/lib/query/keys.js";
+import type { HumanName, PatientResponse } from "@hospici/shared-types";
+import { useQuery } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/patients/$patientId")({
   loader: ({ context: { queryClient }, params: { patientId } }) =>
@@ -25,7 +25,11 @@ function formatName(names: HumanName[]): string {
 function PatientDetailPage() {
   const { patientId } = Route.useParams();
 
-  const { data: patient, isLoading, error } = useQuery<PatientResponse>({
+  const {
+    data: patient,
+    isLoading,
+    error,
+  } = useQuery<PatientResponse>({
     queryKey: patientKeys.detail(patientId),
     queryFn: () => getPatientFn({ data: { patientId } }) as Promise<PatientResponse>,
   });
@@ -52,9 +56,7 @@ function PatientDetailPage() {
         <Link to="/patients" className="text-blue-600 hover:text-blue-900 text-sm">
           ← Patients
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">
-          {formatName(patient.name)}
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900">{formatName(patient.name)}</h1>
         <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
           {patient.careModel}
         </span>
@@ -76,9 +78,7 @@ function PatientDetailPage() {
                 <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Gender
                 </dt>
-                <dd className="mt-1 text-sm text-gray-900 capitalize">
-                  {patient.gender}
-                </dd>
+                <dd className="mt-1 text-sm text-gray-900 capitalize">{patient.gender}</dd>
               </div>
             )}
             {primaryAddress && (
@@ -87,8 +87,8 @@ function PatientDetailPage() {
                   Address
                 </dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {primaryAddress.line.join(", ")}, {primaryAddress.city},{" "}
-                  {primaryAddress.state} {primaryAddress.postalCode}
+                  {primaryAddress.line.join(", ")}, {primaryAddress.city}, {primaryAddress.state}{" "}
+                  {primaryAddress.postalCode}
                 </dd>
               </div>
             )}
@@ -103,18 +103,14 @@ function PatientDetailPage() {
               <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Admission Date
               </dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {patient.admissionDate ?? "—"}
-              </dd>
+              <dd className="mt-1 text-sm text-gray-900">{patient.admissionDate ?? "—"}</dd>
             </div>
             {patient.dischargeDate && (
               <div>
                 <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Discharge Date
                 </dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {patient.dischargeDate}
-                </dd>
+                <dd className="mt-1 text-sm text-gray-900">{patient.dischargeDate}</dd>
               </div>
             )}
             {patient.identifier.length > 0 && (

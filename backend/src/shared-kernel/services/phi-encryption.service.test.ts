@@ -106,7 +106,7 @@ describe("PhiEncryptionService.encryptFields()", () => {
       firstName: "John",
       lastName: "Smith",
       resourceType: "Patient", // non-PHI — must not be encrypted
-      locationId: "uuid-123",  // non-PHI — must not be encrypted
+      locationId: "uuid-123", // non-PHI — must not be encrypted
     };
 
     const result = await PhiEncryptionService.encryptFields(record);

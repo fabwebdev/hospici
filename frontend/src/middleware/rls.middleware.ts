@@ -13,14 +13,14 @@ import { authMiddleware } from "./auth.middleware";
  * headers to prevent client-forgery attacks (T1-3).
  */
 export const rlsMiddleware = createMiddleware({ type: "function" })
-	.middleware([authMiddleware])
-	.server(async ({ next, context }) => {
-		return next({
-			context: {
-				...(context ?? {}),
-				backendHeaders: {
-					"X-Request-ID": crypto.randomUUID(),
-				},
-			},
-		});
-	});
+  .middleware([authMiddleware])
+  .server(async ({ next, context }) => {
+    return next({
+      context: {
+        ...(context ?? {}),
+        backendHeaders: {
+          "X-Request-ID": crypto.randomUUID(),
+        },
+      },
+    });
+  });

@@ -18,6 +18,8 @@
  */
 
 import { Validators } from "@/config/typebox-compiler.js";
+import { Type } from "@sinclair/typebox";
+import type { FastifyInstance } from "fastify";
 import {
   CreatePatientBodySchema,
   PatchPatientBodySchema,
@@ -26,8 +28,6 @@ import {
   PatientResponseSchema,
 } from "../schemas/patient.schema.js";
 import { PatientService } from "../services/patient.service.js";
-import { Type } from "@sinclair/typebox";
-import type { FastifyInstance } from "fastify";
 
 const ErrorResponseSchema = Type.Object({
   success: Type.Boolean(),
@@ -71,7 +71,9 @@ export default async function patientRoutes(fastify: FastifyInstance): Promise<v
     },
     async (request, reply) => {
       if (!request.user) {
-        return reply.code(401).send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+        return reply
+          .code(401)
+          .send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
       }
       const query = request.query as {
         page?: number;
@@ -113,7 +115,9 @@ export default async function patientRoutes(fastify: FastifyInstance): Promise<v
     },
     async (request, reply) => {
       if (!request.user) {
-        return reply.code(401).send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+        return reply
+          .code(401)
+          .send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
       }
       const patient = await PatientService.create(
         request.body as Parameters<typeof PatientService.create>[0],
@@ -144,7 +148,9 @@ export default async function patientRoutes(fastify: FastifyInstance): Promise<v
     },
     async (request, reply) => {
       if (!request.user) {
-        return reply.code(401).send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+        return reply
+          .code(401)
+          .send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
       }
       const { id } = request.params as { id: string };
       const patient = await PatientService.getById(id, request.user);
@@ -194,7 +200,9 @@ export default async function patientRoutes(fastify: FastifyInstance): Promise<v
     },
     async (request, reply) => {
       if (!request.user) {
-        return reply.code(401).send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+        return reply
+          .code(401)
+          .send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
       }
       const { id } = request.params as { id: string };
       const patient = await PatientService.patch(

@@ -1,13 +1,10 @@
 // functions/patient.functions.ts
 // Patient server functions — wired to the backend patient API
 
+import { env } from "@/lib/env.server.js";
+import type { PatientListResponse, PatientResponse } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import type {
-  PatientListResponse,
-  PatientResponse,
-} from "@hospici/shared-types";
-import { env } from "@/lib/env.server.js";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -50,12 +47,10 @@ export async function fetchPatient(
 
 // ── Server functions ──────────────────────────────────────────────────────────
 
-export const getPatientsFn = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const request = getRequest();
-    return fetchPatients(request.headers.get("cookie") ?? "");
-  },
-);
+export const getPatientsFn = createServerFn({ method: "GET" }).handler(async () => {
+  const request = getRequest();
+  return fetchPatients(request.headers.get("cookie") ?? "");
+});
 
 export const getPatientFn = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => data as { patientId: string })

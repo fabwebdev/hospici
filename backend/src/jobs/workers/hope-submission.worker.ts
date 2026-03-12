@@ -20,7 +20,7 @@ import { createLoggingConfig } from "@/config/logging.config.js";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
 import pino from "pino";
-import { createBullMQConnection, hopeSubmissionDlq, QUEUE_NAMES } from "../queue.js";
+import { QUEUE_NAMES, createBullMQConnection, hopeSubmissionDlq } from "../queue.js";
 
 const log = pino(createLoggingConfig({ logLevel: env.logLevel, isDev: env.isDev }));
 
@@ -119,7 +119,14 @@ export function createHopeSubmissionWorker(): Worker<
     const exhausted = isAllAttemptsExhausted(job.attemptsMade, maxAttempts);
 
     log.error(
-      { jobId: job.id, assessmentId: job.data.assessmentId, attempt: job.attemptsMade, maxAttempts, exhausted, err },
+      {
+        jobId: job.id,
+        assessmentId: job.data.assessmentId,
+        attempt: job.attemptsMade,
+        maxAttempts,
+        exhausted,
+        err,
+      },
       "hope-submission failed",
     );
 

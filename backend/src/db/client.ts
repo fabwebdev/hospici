@@ -22,7 +22,7 @@ pool.on("acquire", () => {
   const active = pool.totalCount - pool.idleCount;
   if (active > 15) {
     process.stderr.write(
-      `[pg pool warn] High active connections: ${active}/${pool.options.max ?? 20}\n`
+      `[pg pool warn] High active connections: ${active}/${pool.options.max ?? 20}\n`,
     );
   }
 });

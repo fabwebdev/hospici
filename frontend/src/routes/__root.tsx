@@ -1,14 +1,9 @@
 // routes/__root.tsx
 // Root route — providers, head content, session initialization
 
-import {
-  createRootRouteWithContext,
-  Outlet,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
-import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { getCurrentSessionFn } from "@/functions/auth.functions.js";
+import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 
 // Router context type
 export interface RouterContext {

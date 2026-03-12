@@ -37,37 +37,43 @@ export type AuditLogMetadata = {
   details?: Record<string, unknown>;
 };
 
-export class AuditService {
-  /**
-   * Append one audit log entry.
-   *
-   * @param action    - The action being audited
-   * @param userId    - UUID of the authenticated user performing the action
-   * @param patientId - UUID of the affected patient, or null for non-patient actions
-   * @param metadata  - Role, location, resource context, and optional details
-   */
-  static async log(
-    action: AuditAction,
-    userId: string,
-    patientId: string | null,
-    metadata: AuditLogMetadata,
-    /** Optional Drizzle transaction — pass when logging within a db.transaction() for atomicity */
-    tx?: AuditDbCtx,
-  ): Promise<void> {
-    // For non-patient events (login, logout, break-glass) the resource is the user themselves.
-    const resourceId = patientId ?? metadata.resourceId ?? userId;
-    const dbCtx = tx ?? db;
+/**
+ * Append one audit log entry.
+ *
+ * @param action    - The action being audited
+ * @param userId    - UUID of the authenticated user performing the action
+ * @param patientId - UUID of the affected patient, or null for non-patient actions
+ * @param metadata  - Role, location, resource context, and optional details
+ * @param tx        - Optional Drizzle transaction — pass when logging within a db.transaction() for atomicity
+ */
+export async function logAudit(
+  action: AuditAction,
+  userId: string,
+  patientId: string | null,
+  metadata: AuditLogMetadata,
+  tx?: AuditDbCtx,
+): Promise<void> {
+  // For non-patient events (login, logout, break-glass) the resource is the user themselves.
+  const resourceId = patientId ?? metadata.resourceId ?? userId;
+  const dbCtx = tx ?? db;
 
-    await dbCtx.insert(auditLogs).values({
-      userId,
-      userRole: metadata.userRole,
-      locationId: metadata.locationId,
-      action,
-      resourceType: metadata.resourceType,
-      resourceId,
-      ipAddress: metadata.ipAddress,
-      userAgent: metadata.userAgent,
-      details: metadata.details ?? null,
-    });
-  }
+  await dbCtx.insert(auditLogs).values({
+    userId,
+    userRole: metadata.userRole,
+    locationId: metadata.locationId,
+    action,
+    resourceType: metadata.resourceType,
+    resourceId,
+    ipAddress: metadata.ipAddress,
+    userAgent: metadata.userAgent,
+    details: metadata.details ?? null,
+  });
 }
+
+/**
+ * AuditService namespace — exposes log() for backward compatibility.
+ * All functions are standalone; this namespace just groups the API.
+ */
+export const AuditService = {
+  log: logAudit,
+};

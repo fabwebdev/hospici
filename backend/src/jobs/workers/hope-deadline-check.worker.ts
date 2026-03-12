@@ -18,7 +18,7 @@ import { createLoggingConfig } from "@/config/logging.config.js";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
 import pino from "pino";
-import { createBullMQConnection, QUEUE_NAMES } from "../queue.js";
+import { QUEUE_NAMES, createBullMQConnection } from "../queue.js";
 
 const log = pino(createLoggingConfig({ logLevel: env.logLevel, isDev: env.isDev }));
 
@@ -70,7 +70,7 @@ export async function hopeDeadlineHandler(_job: Job): Promise<HopeDeadlineJobRes
   return {
     checkedAt: today.toISOString(),
     upcomingCount: 0, // TODO (T3-1)
-    overdueCount: 0,  // TODO (T3-1)
+    overdueCount: 0, // TODO (T3-1)
   };
 }
 

@@ -15,18 +15,18 @@
  * HIPAA §164.312(b): audit log emitted on every PHI read/write via AuditService.
  */
 
+import { logAudit } from "@/contexts/identity/services/audit.service.js";
 import { db } from "@/db/client.js";
 import { patients } from "@/db/schema/patients.table.js";
-import { AuditService } from "@/contexts/identity/services/audit.service.js";
-import { PhiEncryptionService } from "@/shared-kernel/services/phi-encryption.service.js";
+import { decryptPhi, encryptPhi } from "@/shared-kernel/services/phi-encryption.service.js";
+import { and, count, eq, sql } from "drizzle-orm";
+import type { FastifyRequest } from "fastify";
 import type {
   CareModel,
   CreatePatientBody,
   PatchPatientBody,
   PatientResponse,
 } from "../schemas/patient.schema.js";
-import { and, count, eq, sql } from "drizzle-orm";
-import type { FastifyRequest } from "fastify";
 
 type UserCtx = NonNullable<FastifyRequest["user"]>;
 
@@ -42,7 +42,10 @@ type DrizzleRow = typeof patients.$inferSelect;
  * Apply RLS context LOCAL to the current transaction.
  * Must be called at the start of every db.transaction() in this service.
  */
-async function applyRlsContext(tx: { execute: (typeof db)["execute"] }, user: UserCtx): Promise<void> {
+async function applyRlsContext(
+  tx: { execute: (typeof db)["execute"] },
+  user: UserCtx,
+): Promise<void> {
   await tx.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`);
   await tx.execute(sql`SELECT set_config('app.current_location_id', ${user.locationId}, true)`);
   await tx.execute(sql`SELECT set_config('app.current_role', ${user.role}, true)`);
@@ -51,7 +54,7 @@ async function applyRlsContext(tx: { execute: (typeof db)["execute"] }, user: Us
 /** Decrypt the `data` JSONB blob and merge with promoted columns to form the response. */
 async function toPatientResponse(row: DrizzleRow): Promise<PatientResponse> {
   const encryptedData = row.data as string;
-  const plaintext = await PhiEncryptionService.decrypt(encryptedData);
+  const plaintext = await decryptPhi(encryptedData);
   const fhirData = JSON.parse(plaintext) as PatientFhirData;
 
   const response: PatientResponse = {
@@ -76,180 +79,206 @@ async function toPatientResponse(row: DrizzleRow): Promise<PatientResponse> {
   return response;
 }
 
-export class PatientService {
-  /**
-   * List patients for the caller's location (RLS-enforced), with optional
-   * careModel filter and cursor-style pagination.
-   */
-  static async list(
-    user: UserCtx,
-    query: { page?: number; limit?: number; careModel?: CareModel },
-  ): Promise<{ patients: PatientResponse[]; total: number; page: number; limit: number }> {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const offset = (page - 1) * limit;
+/**
+ * List patients for the caller's location (RLS-enforced), with optional
+ * careModel filter and cursor-style pagination.
+ */
+export async function listPatients(
+  user: UserCtx,
+  query: { page?: number; limit?: number; careModel?: CareModel },
+): Promise<{ patients: PatientResponse[]; total: number; page: number; limit: number }> {
+  const page = query.page ?? 1;
+  const limit = query.limit ?? 20;
+  const offset = (page - 1) * limit;
 
-    return db.transaction(async (tx) => {
-      await applyRlsContext(tx, user);
+  return db.transaction(async (tx) => {
+    await applyRlsContext(tx, user);
 
-      const whereClause = query.careModel
-        ? eq(patients.careModel, query.careModel)
-        : undefined;
+    const whereClause = query.careModel ? eq(patients.careModel, query.careModel) : undefined;
 
-      const [rows, countRows] = await Promise.all([
-        tx.select().from(patients).where(whereClause).limit(limit).offset(offset),
-        tx.select({ value: count() }).from(patients).where(whereClause),
-      ]);
+    const [rows, countRows] = await Promise.all([
+      tx.select().from(patients).where(whereClause).limit(limit).offset(offset),
+      tx.select({ value: count() }).from(patients).where(whereClause),
+    ]);
 
-      const total = countRows[0]?.value ?? 0;
-      const decrypted = await Promise.all(rows.map(toPatientResponse));
+    const total = countRows[0]?.value ?? 0;
+    const decrypted = await Promise.all(rows.map(toPatientResponse));
 
-      await AuditService.log(
-        "view",
-        user.id,
-        null,
-        {
-          userRole: user.role,
-          locationId: user.locationId,
-          resourceType: "patient",
-          resourceId: user.locationId,
-          details: { action: "list", count: decrypted.length },
-        },
-        tx as unknown as AuditDbCtx,
-      );
-
-      return { patients: decrypted, total: Number(total), page, limit };
-    });
-  }
-
-  /**
-   * Fetch a single patient by ID. Returns null if not found (or not visible to caller via RLS).
-   */
-  static async getById(id: string, user: UserCtx): Promise<PatientResponse | null> {
-    return db.transaction(async (tx) => {
-      await applyRlsContext(tx, user);
-
-      const rows = await tx.select().from(patients).where(eq(patients.id, id));
-      const row = rows[0];
-      if (!row) return null;
-
-      const patient = await toPatientResponse(row);
-
-      await AuditService.log("view", user.id, id, {
+    await logAudit(
+      "view",
+      user.id,
+      null,
+      {
         userRole: user.role,
         locationId: user.locationId,
         resourceType: "patient",
-      }, tx as unknown as AuditDbCtx);
+        resourceId: user.locationId,
+        details: { action: "list", count: decrypted.length },
+      },
+      tx as unknown as AuditDbCtx,
+    );
 
-      return patient;
-    });
-  }
+    return { patients: decrypted, total: Number(total), page, limit };
+  });
+}
 
-  /**
-   * Create a new patient. Encrypts PHI, inserts into patients table, emits audit log.
-   * The caller's locationId overrides the body's hospiceLocationId for RLS safety.
-   */
-  static async create(body: CreatePatientBody, user: UserCtx): Promise<PatientResponse> {
-    // Separate promoted DB columns from FHIR data
-    const { careModel, admissionDate, dischargeDate, ...fhirFields } = body;
+/**
+ * Fetch a single patient by ID. Returns null if not found (or not visible to caller via RLS).
+ */
+export async function getPatientById(id: string, user: UserCtx): Promise<PatientResponse | null> {
+  return db.transaction(async (tx) => {
+    await applyRlsContext(tx, user);
 
-    // Always trust the session locationId — prevents cross-location patient creation
-    const fhirData: PatientFhirData = {
-      ...fhirFields,
-      hospiceLocationId: user.locationId,
-    };
+    const rows = await tx.select().from(patients).where(eq(patients.id, id));
+    const row = rows[0];
+    if (!row) return null;
 
-    const encryptedData = await PhiEncryptionService.encrypt(JSON.stringify(fhirData));
+    const patient = await toPatientResponse(row);
 
-    return db.transaction(async (tx) => {
-      await applyRlsContext(tx, user);
-
-      const insertValues: typeof patients.$inferInsert = {
+    await logAudit(
+      "view",
+      user.id,
+      id,
+      {
+        userRole: user.role,
         locationId: user.locationId,
-        careModel: careModel ?? "HOSPICE",
-        data: encryptedData,
-      };
-      if (admissionDate != null) insertValues.admissionDate = admissionDate;
-      if (dischargeDate != null) insertValues.dischargeDate = dischargeDate;
+        resourceType: "patient",
+      },
+      tx as unknown as AuditDbCtx,
+    );
 
-      const rows = await tx.insert(patients).values(insertValues).returning();
-      const row = rows[0];
-      if (!row) throw new Error("Insert returned no rows");
+    return patient;
+  });
+}
 
-      const patient = await toPatientResponse(row);
+/**
+ * Create a new patient. Encrypts PHI, inserts into patients table, emits audit log.
+ * The caller's locationId overrides the body's hospiceLocationId for RLS safety.
+ */
+export async function createPatient(
+  body: CreatePatientBody,
+  user: UserCtx,
+): Promise<PatientResponse> {
+  // Separate promoted DB columns from FHIR data
+  const { careModel, admissionDate, dischargeDate, ...fhirFields } = body;
 
-      await AuditService.log("create", user.id, row.id, {
+  // Always trust the session locationId — prevents cross-location patient creation
+  const fhirData: PatientFhirData = {
+    ...fhirFields,
+    hospiceLocationId: user.locationId,
+  };
+
+  const encryptedData = await encryptPhi(JSON.stringify(fhirData));
+
+  return db.transaction(async (tx) => {
+    await applyRlsContext(tx, user);
+
+    const insertValues: typeof patients.$inferInsert = {
+      locationId: user.locationId,
+      careModel: careModel ?? "HOSPICE",
+      data: encryptedData,
+    };
+    if (admissionDate != null) insertValues.admissionDate = admissionDate;
+    if (dischargeDate != null) insertValues.dischargeDate = dischargeDate;
+
+    const rows = await tx.insert(patients).values(insertValues).returning();
+    const row = rows[0];
+    if (!row) throw new Error("Insert returned no rows");
+
+    const patient = await toPatientResponse(row);
+
+    await logAudit(
+      "create",
+      user.id,
+      row.id,
+      {
         userRole: user.role,
         locationId: user.locationId,
         resourceType: "patient",
         details: { careModel: row.careModel },
-      }, tx as unknown as AuditDbCtx);
+      },
+      tx as unknown as AuditDbCtx,
+    );
 
-      return patient;
-    });
-  }
+    return patient;
+  });
+}
 
-  /**
-   * Partially update a patient. Merges patch onto existing FHIR data, re-encrypts,
-   * updates promoted columns. Returns null if patient not found.
-   */
-  static async patch(
-    id: string,
-    body: PatchPatientBody,
-    user: UserCtx,
-  ): Promise<PatientResponse | null> {
-    return db.transaction(async (tx) => {
-      await applyRlsContext(tx, user);
+/**
+ * Partially update a patient. Merges patch onto existing FHIR data, re-encrypts,
+ * updates promoted columns. Returns null if patient not found.
+ */
+export async function patchPatient(
+  id: string,
+  body: PatchPatientBody,
+  user: UserCtx,
+): Promise<PatientResponse | null> {
+  return db.transaction(async (tx) => {
+    await applyRlsContext(tx, user);
 
-      // Fetch existing (RLS-enforced)
-      const existing = await tx.select().from(patients).where(eq(patients.id, id));
-      const existingRow = existing[0];
-      if (!existingRow) return null;
+    // Fetch existing (RLS-enforced)
+    const existing = await tx.select().from(patients).where(eq(patients.id, id));
+    const existingRow = existing[0];
+    if (!existingRow) return null;
 
-      const encryptedExisting = existingRow.data as string;
-      const existingFhir = JSON.parse(
-        await PhiEncryptionService.decrypt(encryptedExisting),
-      ) as PatientFhirData;
+    const encryptedExisting = existingRow.data as string;
+    const existingFhir = JSON.parse(await decryptPhi(encryptedExisting)) as PatientFhirData;
 
-      // Separate promoted fields from FHIR patch
-      const { careModel, admissionDate, dischargeDate, ...fhirPatch } = body;
+    // Separate promoted fields from FHIR patch
+    const { careModel, admissionDate, dischargeDate, ...fhirPatch } = body;
 
-      const mergedFhir: PatientFhirData = {
-        ...existingFhir,
-        ...fhirPatch,
-        // hospiceLocationId is immutable after creation
-        hospiceLocationId: existingFhir.hospiceLocationId,
-      };
+    const mergedFhir: PatientFhirData = {
+      ...existingFhir,
+      ...fhirPatch,
+      // hospiceLocationId is immutable after creation
+      hospiceLocationId: existingFhir.hospiceLocationId,
+    };
 
-      const newEncryptedData = await PhiEncryptionService.encrypt(JSON.stringify(mergedFhir));
+    const newEncryptedData = await encryptPhi(JSON.stringify(mergedFhir));
 
-      const updateValues: Partial<typeof patients.$inferInsert> = {
-        data: newEncryptedData,
-        updatedAt: new Date(),
-      };
-      if (careModel !== undefined) updateValues.careModel = careModel;
-      if (admissionDate !== undefined) updateValues.admissionDate = admissionDate;
-      if (dischargeDate !== undefined) updateValues.dischargeDate = dischargeDate;
+    const updateValues: Partial<typeof patients.$inferInsert> = {
+      data: newEncryptedData,
+      updatedAt: new Date(),
+    };
+    if (careModel !== undefined) updateValues.careModel = careModel;
+    if (admissionDate !== undefined) updateValues.admissionDate = admissionDate;
+    if (dischargeDate !== undefined) updateValues.dischargeDate = dischargeDate;
 
-      const updated = await tx
-        .update(patients)
-        .set(updateValues)
-        .where(and(eq(patients.id, id)))
-        .returning();
+    const updated = await tx
+      .update(patients)
+      .set(updateValues)
+      .where(and(eq(patients.id, id)))
+      .returning();
 
-      const updatedRow = updated[0];
-      if (!updatedRow) throw new Error("Update returned no rows");
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new Error("Update returned no rows");
 
-      const patient = await toPatientResponse(updatedRow);
+    const patient = await toPatientResponse(updatedRow);
 
-      await AuditService.log("update", user.id, id, {
+    await logAudit(
+      "update",
+      user.id,
+      id,
+      {
         userRole: user.role,
         locationId: user.locationId,
         resourceType: "patient",
         details: { updatedFields: Object.keys(body) },
-      }, tx as unknown as AuditDbCtx);
+      },
+      tx as unknown as AuditDbCtx,
+    );
 
-      return patient;
-    });
-  }
+    return patient;
+  });
 }
+
+/**
+ * PatientService namespace — exposes CRUD methods for backward compatibility.
+ * All functions are standalone; this namespace just groups the API.
+ */
+export const PatientService = {
+  list: listPatients,
+  getById: getPatientById,
+  create: createPatient,
+  patch: patchPatient,
+};

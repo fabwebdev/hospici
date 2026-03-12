@@ -23,7 +23,7 @@ import { getCapYear } from "@/utils/business-days.js";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
 import pino from "pino";
-import { createBullMQConnection, QUEUE_NAMES } from "../queue.js";
+import { QUEUE_NAMES, createBullMQConnection } from "../queue.js";
 
 const log = pino(createLoggingConfig({ logLevel: env.logLevel, isDev: env.isDev }));
 
@@ -95,9 +95,9 @@ export async function capRecalculationHandler(_job: Job): Promise<CapRecalculati
   return {
     recalculatedAt: today.toISOString(),
     capYear: capYear.label,
-    locationsChecked: 0,    // TODO (T3-3)
+    locationsChecked: 0, // TODO (T3-3)
     locationsAtThreshold: 0, // TODO (T3-3)
-    locationsOverCap: 0,     // TODO (T3-3)
+    locationsOverCap: 0, // TODO (T3-3)
   };
 }
 
