@@ -193,7 +193,8 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | 2026-03-11 | Gaps audit | 47-gap audit. Added: T2-6, T3-8, NOTR→T3-2, extra pain scales→T2-3, iQIES reg as immediate action | T0-1..T0-7 |
 | 2026-03-11 | Firenote analysis (r1) | Added T2-7..T2-9, T3-9..T3-12. `care_model` enum, No-Prep IDG, unified care plan, SMART goals | T0-1..T0-7 |
 | 2026-03-11 | Firenote analysis (r2) | VantageChart arch: Layer 1 deterministic + Layer 2 optional LLM. Decline trajectory, voice input, HOPE completeness ring, quality benchmarks, Product Strategy | T0-1..T0-7 |
-| 2026-03-12 | T0-1..T0-7 | All build blockers done. Migration paths fixed; 9 Drizzle tables; logging.config.ts; rate-limit + 5 routes registered; shared-types wired. Pre-existing schema TS errors remain (not T0 scope). | T1-1 |
+| 2026-03-12 | T0-1..T0-7 | All build blockers done. Migration paths fixed; 9 Drizzle tables; logging.config.ts; rate-limit + 5 routes registered; shared-types wired. | — |
+| 2026-03-12 | Schema fixes + tests | Zero TS errors: `type Static` imports, ABAC deny policy, valkey password spread, HOPE response schemas, `HOPEReportingPeriodSchema` added, dotenv installed. Fixed business-days UTC bug — 9/9 tests passing. | T1-1 |
 
 ---
 
