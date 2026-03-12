@@ -89,7 +89,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | T2-1 | Patient CRUD — backend               | ✅     | MEDIUM |
 | T2-2 | Patient list + detail — frontend     | ✅     | MEDIUM |
 | T2-3 | Pain assessments + decline trajectory | ✅     | MEDIUM |
-| T2-4 | IDG meeting recording + enforcement   | ⬜     | MEDIUM |
+| T2-4 | IDG meeting recording + enforcement   | ✅     | MEDIUM |
 | T2-5 | Care plan schema + routes             | ⬜     | MEDIUM |
 | T2-6 | Medication management                 | ⬜     | MEDIUM |
 | T2-7 | VantageChart™ narrative generation   | ⬜     | HIGH   |
