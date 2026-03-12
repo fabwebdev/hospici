@@ -115,6 +115,10 @@ export type {
   HOPESubmissionRow,
   HOPEMeasureBenchmark,
   HOPEQualityBenchmark,
+  HOPEDashboardAssessmentItem,
+  HOPEDashboardResponse,
+  HOPEPatientTimeline,
+  HOPESubmissionListResponse,
 } from "./hope.js";
 export type {
   NoteReviewStatus,

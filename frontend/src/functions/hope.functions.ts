@@ -7,7 +7,10 @@ import type {
   HOPEAssessmentListQuery,
   HOPEAssessmentListResponse,
   HOPEAssessmentResponse,
+  HOPEDashboardResponse,
+  HOPEPatientTimeline,
   HOPEQualityBenchmark,
+  HOPESubmissionListResponse,
   HOPESubmissionRow,
   HOPEValidationResult,
   PatchHOPEAssessmentInput,
@@ -228,4 +231,68 @@ export const getQualityBenchmarksFn = createServerFn({ method: "GET" })
     const request = getRequest();
     const cookie = request.headers.get("cookie") ?? "";
     return fetchQualityBenchmarks(cookie);
+  });
+
+// ── T3-1b: Dashboard + Timeline + Submission history ─────────────────────────
+
+export async function fetchHOPEDashboard(cookieHeader: string): Promise<HOPEDashboardResponse> {
+  const response = await fetch(`${env.apiUrl}/api/v1/hope/dashboard`, {
+    headers: { cookie: cookieHeader },
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+    throw new Error(data.error?.message ?? "Failed to fetch HOPE dashboard");
+  }
+  return (await response.json()) as HOPEDashboardResponse;
+}
+
+export async function fetchHOPEPatientTimeline(
+  patientId: string,
+  cookieHeader: string,
+): Promise<HOPEPatientTimeline> {
+  const response = await fetch(`${env.apiUrl}/api/v1/hope/patients/${patientId}/timeline`, {
+    headers: { cookie: cookieHeader },
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+    throw new Error(data.error?.message ?? "Failed to fetch HOPE patient timeline");
+  }
+  return (await response.json()) as HOPEPatientTimeline;
+}
+
+export async function fetchHOPESubmissionsByAssessment(
+  assessmentId: string,
+  cookieHeader: string,
+): Promise<HOPESubmissionListResponse> {
+  const response = await fetch(`${env.apiUrl}/api/v1/hope/assessments/${assessmentId}/submissions`, {
+    headers: { cookie: cookieHeader },
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+    throw new Error(data.error?.message ?? "Failed to fetch HOPE submissions");
+  }
+  return (await response.json()) as HOPESubmissionListResponse;
+}
+
+export const getHOPEDashboardFn = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const request = getRequest();
+    const cookie = request.headers.get("cookie") ?? "";
+    return fetchHOPEDashboard(cookie);
+  });
+
+export const getHOPEPatientTimelineFn = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) => data as { patientId: string })
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const cookie = request.headers.get("cookie") ?? "";
+    return fetchHOPEPatientTimeline(data.patientId, cookie);
+  });
+
+export const getHOPESubmissionsByAssessmentFn = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) => data as { assessmentId: string })
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const cookie = request.headers.get("cookie") ?? "";
+    return fetchHOPESubmissionsByAssessment(data.assessmentId, cookie);
   });

@@ -25,6 +25,9 @@ import type {
   HOPEValidationResult,
   HOPESubmissionRow,
   HOPEQualityBenchmark,
+  HOPEDashboardResponse,
+  HOPEPatientTimeline,
+  HOPESubmissionListResponse,
   PatchHOPEAssessmentBody,
 } from "@/contexts/analytics/schemas/hopeAssessmentCrud.schema";
 import {
@@ -41,7 +44,7 @@ import {
   HQRP_TARGET_RATES,
 } from "@/db/schema/hope-quality-measures.table.js";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, asc, count, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import type * as schema from "@/db/schema/index.js";
 import { createHash } from "node:crypto";
 import type { FastifyBaseLogger } from "fastify";
@@ -600,6 +603,259 @@ export class HOPEService {
     });
 
     return toResponse(row);
+  }
+
+  // ── Dashboard (T3-1b) ─────────────────────────────────────────────────────
+
+  async getDashboard(locationId: string): Promise<HOPEDashboardResponse> {
+    const { db, log } = this.deps;
+    const { hopeAssessments } = await import("@/db/schema/hope-assessments.table.js");
+    const { patients } = await import("@/db/schema/patients.table.js");
+    const { decryptPhi } = await import("@/shared-kernel/services/phi-encryption.service.js");
+
+    const today = new Date().toISOString().split("T")[0] ?? "";
+    const tomorrow = new Date(Date.now() + 86_400_000).toISOString().split("T")[0] ?? "";
+    const in48h = new Date(Date.now() + 2 * 86_400_000).toISOString().split("T")[0] ?? "";
+
+    // Fetch all non-terminal assessments for this location
+    const activeStatuses = ["draft", "in_progress", "ready_for_review", "approved_for_submission", "submitted", "rejected", "needs_correction"] as const;
+    const rows = await db
+      .select()
+      .from(hopeAssessments)
+      .where(and(
+        eq(hopeAssessments.locationId, locationId),
+        inArray(hopeAssessments.status, [...activeStatuses]),
+      ))
+      .orderBy(asc(hopeAssessments.windowDeadline));
+
+    // Count widgets
+    let dueToday = 0;
+    let due48h = 0;
+    let overdue = 0;
+    let needsSymptomFollowUp = 0;
+    let rejectedByIQIES = 0;
+    let readyToSubmit = 0;
+
+    for (const r of rows) {
+      const deadline = r.windowDeadline;
+      const inProgress = ["draft", "in_progress", "ready_for_review"].includes(r.status);
+
+      if (r.status === "approved_for_submission") readyToSubmit++;
+      if (r.status === "rejected") rejectedByIQIES++;
+      if (r.symptomFollowUpRequired && r.status !== "accepted") needsSymptomFollowUp++;
+
+      if (inProgress) {
+        if (deadline < today) overdue++;
+        else if (deadline === today) dueToday++;
+        else if (deadline <= in48h) due48h++;
+      }
+    }
+
+    // Fetch quality benchmarks for penalty risk
+    const benchmarks = await this.getQualityBenchmarks(locationId);
+    const hqrpPenaltyRisk = benchmarks.hqrpPenaltyRisk;
+
+    // Build patient name map (decrypt in parallel)
+    const uniquePatientIds = [...new Set(rows.map((r) => r.patientId))];
+    const patientRows = uniquePatientIds.length > 0
+      ? await db.select().from(patients).where(inArray(patients.id, uniquePatientIds))
+      : [];
+
+    const nameMap = new Map<string, string>();
+    await Promise.all(
+      patientRows.map(async (p) => {
+        try {
+          const plaintext = await decryptPhi(p.data as string);
+          const fhirData = JSON.parse(plaintext) as { name?: Array<{ given: string[]; family: string }> };
+          const humanName = fhirData.name?.[0];
+          const formatted = humanName
+            ? `${humanName.given.join(" ")} ${humanName.family}`.trim()
+            : `Patient ${p.id.slice(0, 8)}`;
+          nameMap.set(p.id, formatted);
+        } catch {
+          nameMap.set(p.id, `Patient ${p.id.slice(0, 8)}`);
+        }
+      }),
+    );
+
+    const NEXT_ACTIONS: Record<string, string> = {
+      draft: "Complete assessment",
+      in_progress: "Continue assessment",
+      ready_for_review: "Submit for supervisor review",
+      approved_for_submission: "Submit to iQIES",
+      submitted: "Awaiting iQIES response",
+      accepted: "Complete",
+      rejected: "Correct and resubmit",
+      needs_correction: "Address correction required",
+    };
+
+    const assessmentList = rows.map((r) => ({
+      id: r.id,
+      patientName: nameMap.get(r.patientId) ?? `Patient ${r.patientId.slice(0, 8)}`,
+      assessmentType: r.assessmentType as "01" | "02" | "03",
+      status: r.status as import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").HOPEAssessmentStatus,
+      windowDeadline: r.windowDeadline,
+      completenessScore: r.completenessScore,
+      symptomFollowUpRequired: r.symptomFollowUpRequired,
+      assignedClinicianId: r.assignedClinicianId ?? null,
+      nextAction: NEXT_ACTIONS[r.status] ?? "Review assessment",
+    }));
+
+    log.info({ locationId, total: rows.length }, "hope.service: dashboard retrieved");
+
+    return {
+      dueToday,
+      due48h,
+      overdue,
+      needsSymptomFollowUp,
+      rejectedByIQIES,
+      readyToSubmit,
+      hqrpPenaltyRisk,
+      assessmentList,
+    };
+  }
+
+  // ── Patient timeline (T3-1b) ───────────────────────────────────────────────
+
+  async getPatientTimeline(patientId: string, locationId: string): Promise<HOPEPatientTimeline> {
+    const { db, log } = this.deps;
+    const { hopeAssessments } = await import("@/db/schema/hope-assessments.table.js");
+    const { hopeQualityMeasures } = await import("@/db/schema/hope-quality-measures.table.js");
+    const { hopeReportingPeriods } = await import("@/db/schema/hope-reporting-periods.table.js");
+
+    // Fetch all assessments for this patient
+    const rows = await db
+      .select()
+      .from(hopeAssessments)
+      .where(and(
+        eq(hopeAssessments.patientId, patientId),
+        eq(hopeAssessments.locationId, locationId),
+      ))
+      .orderBy(asc(hopeAssessments.assessmentDate));
+
+    const admissions = rows.filter((r) => r.assessmentType === "01");
+    const uvs = rows.filter((r) => r.assessmentType === "02");
+    const discharges = rows.filter((r) => r.assessmentType === "03");
+
+    const latestAdmission = admissions[admissions.length - 1];
+    const latestDischarge = discharges[discharges.length - 1];
+    const latestUV = uvs[uvs.length - 1];
+
+    // Symptom follow-up: any active assessment with symptomFollowUpRequired=true
+    const followUpRow = rows.find((r) => r.symptomFollowUpRequired && r.status !== "accepted");
+    const followUpCompleted = followUpRow
+      ? followUpRow.status === "accepted"
+      : true;
+
+    // HQRP penalty exposure: check current quarter measures
+    const today = new Date();
+    const quarter = Math.ceil((today.getMonth() + 1) / 3);
+    const year = today.getFullYear();
+
+    const [period] = await db
+      .select()
+      .from(hopeReportingPeriods)
+      .where(and(
+        eq(hopeReportingPeriods.locationId, locationId),
+        eq(hopeReportingPeriods.calendarYear, year),
+        eq(hopeReportingPeriods.quarter, quarter),
+      ))
+      .limit(1);
+
+    const measureShortfalls: string[] = [];
+    if (period) {
+      const measures = await db
+        .select()
+        .from(hopeQualityMeasures)
+        .where(eq(hopeQualityMeasures.reportingPeriodId, period.id));
+      for (const m of measures) {
+        if (m.rate !== null && Number(m.rate) < 70) {
+          measureShortfalls.push(m.measureCode);
+        }
+      }
+    }
+
+    log.info({ patientId, locationId }, "hope.service: patient timeline retrieved");
+
+    // Next UV due: roughly 60 days after last UV or election date (clinical estimate, not CMS mandated)
+    const nextUVDue = latestUV
+      ? new Date(new Date(latestUV.assessmentDate).getTime() + 60 * 86_400_000)
+          .toISOString()
+          .split("T")[0] ?? null
+      : latestAdmission
+        ? new Date(new Date(latestAdmission.electionDate).getTime() + 60 * 86_400_000)
+            .toISOString()
+            .split("T")[0] ?? null
+        : null;
+
+    return {
+      patientId,
+      hopeA: {
+        required: true, // all admitted patients need HOPE-A
+        windowDeadline: latestAdmission?.windowDeadline ?? null,
+        status: (latestAdmission?.status ?? null) as import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").HOPEAssessmentStatus | null,
+        assessmentId: latestAdmission?.id ?? null,
+      },
+      hopeUV: {
+        count: uvs.length,
+        lastFiledAt: latestUV?.assessmentDate ?? null,
+        nextDue: nextUVDue ?? null,
+      },
+      hopeD: {
+        required: discharges.length > 0, // HOPE-D required if discharge event occurred
+        windowDeadline: latestDischarge?.windowDeadline ?? null,
+        status: (latestDischarge?.status ?? null) as import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").HOPEAssessmentStatus | null,
+        assessmentId: latestDischarge?.id ?? null,
+      },
+      symptomFollowUp: {
+        required: followUpRow !== undefined,
+        dueAt: followUpRow?.symptomFollowUpDueAt ?? null,
+        completed: followUpCompleted,
+      },
+      penaltyExposure: {
+        atRisk: measureShortfalls.length > 0,
+        measureShortfalls,
+      },
+    };
+  }
+
+  // ── Submission history for an assessment (T3-1b) ──────────────────────────
+
+  async getSubmissionsByAssessment(
+    assessmentId: string,
+    locationId: string,
+  ): Promise<HOPESubmissionListResponse> {
+    const { db } = this.deps;
+    const { hopeIqiesSubmissions } = await import("@/db/schema/hope-iqies-submissions.table.js");
+
+    const rows = await db
+      .select()
+      .from(hopeIqiesSubmissions)
+      .where(and(
+        eq(hopeIqiesSubmissions.assessmentId, assessmentId),
+        eq(hopeIqiesSubmissions.locationId, locationId),
+      ))
+      .orderBy(asc(hopeIqiesSubmissions.attemptNumber));
+
+    return {
+      assessmentId,
+      data: rows.map((r) => ({
+        id: r.id,
+        assessmentId: r.assessmentId,
+        locationId: r.locationId,
+        attemptNumber: r.attemptNumber,
+        submittedAt: r.submittedAt.toISOString(),
+        responseReceivedAt: r.responseReceivedAt?.toISOString() ?? null,
+        trackingId: r.trackingId ?? null,
+        submittedByUserId: r.submittedByUserId ?? null,
+        submissionStatus: r.submissionStatus,
+        correctionType: r.correctionType,
+        rejectionCodes: r.rejectionCodes ?? [],
+        rejectionDetails: r.rejectionDetails ?? null,
+        payloadHash: r.payloadHash,
+        createdAt: r.createdAt.toISOString(),
+      })),
+    };
   }
 
   // ── Quality benchmarks ─────────────────────────────────────────────────────

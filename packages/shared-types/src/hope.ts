@@ -110,22 +110,28 @@ export interface HOPEValidationResult {
 export interface HOPESubmissionRow {
   id: string;
   assessmentId: string;
+  locationId: string;
   attemptNumber: number;
-  status: "pending" | "accepted" | "rejected" | "correction_pending";
-  payloadHash: string;
-  submittedAt: string | null;
-  iqiesResponseCode: string | null;
-  iqiesResponseMessage: string | null;
+  submittedAt: string;
+  responseReceivedAt: string | null;
+  trackingId: string | null;
+  submittedByUserId: string | null;
+  submissionStatus: "pending" | "accepted" | "rejected" | "correction_pending";
   correctionType: "none" | "modification" | "inactivation";
+  rejectionCodes: string[];
+  rejectionDetails: string | null;
+  payloadHash: string;
   createdAt: string;
 }
 
 export interface HOPEMeasureBenchmark {
   measureCode: string;
+  measureName: string;
   locationRate: number | null;
   nationalAverage: number | null;
   targetRate: number;
-  sampleSize: number;
+  atRisk: boolean;
+  trend: Array<{ quarter: string; rate: number | null }>;
 }
 
 export interface HOPEQualityBenchmark {
@@ -133,8 +139,72 @@ export interface HOPEQualityBenchmark {
   reportingPeriod: {
     calendarYear: number;
     quarter: number;
+    periodStart: string;
+    periodEnd: string;
   };
+  hqrpPenaltyRisk: boolean;
   measures: HOPEMeasureBenchmark[];
+  updatedAt: string;
+}
+
+// ── T3-1b: Dashboard + Timeline types ────────────────────────────────────────
+
+export interface HOPEDashboardAssessmentItem {
+  id: string;
+  patientName: string;
+  assessmentType: HOPEAssessmentType;
+  status: HOPEAssessmentStatus;
+  windowDeadline: string;
+  completenessScore: number;
+  symptomFollowUpRequired: boolean;
+  assignedClinicianId: string | null;
+  nextAction: string;
+}
+
+export interface HOPEDashboardResponse {
+  dueToday: number;
+  due48h: number;
+  overdue: number;
+  needsSymptomFollowUp: number;
+  rejectedByIQIES: number;
+  readyToSubmit: number;
+  hqrpPenaltyRisk: boolean;
+  assessmentList: HOPEDashboardAssessmentItem[];
+}
+
+export interface HOPEPatientTimeline {
+  patientId: string;
+  hopeA: {
+    required: boolean;
+    windowDeadline: string | null;
+    status: HOPEAssessmentStatus | null;
+    assessmentId: string | null;
+  };
+  hopeUV: {
+    count: number;
+    lastFiledAt: string | null;
+    nextDue: string | null;
+  };
+  hopeD: {
+    required: boolean;
+    windowDeadline: string | null;
+    status: HOPEAssessmentStatus | null;
+    assessmentId: string | null;
+  };
+  symptomFollowUp: {
+    required: boolean;
+    dueAt: string | null;
+    completed: boolean;
+  };
+  penaltyExposure: {
+    atRisk: boolean;
+    measureShortfalls: string[];
+  };
+}
+
+export interface HOPESubmissionListResponse {
+  assessmentId: string;
+  data: HOPESubmissionRow[];
 }
 
 /** iQIES error codes with human-readable resolution guidance */

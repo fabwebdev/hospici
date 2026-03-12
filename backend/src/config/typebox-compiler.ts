@@ -17,7 +17,10 @@ import {
   HOPEAssessmentListQuerySchema,
   HOPEAssessmentListResponseSchema,
   HOPEAssessmentResponseSchema,
+  HOPEDashboardResponseSchema,
+  HOPEPatientTimelineSchema,
   HOPEQualityBenchmarkSchema,
+  HOPESubmissionListResponseSchema,
   HOPESubmissionRowSchema,
   HOPEValidationResultSchema,
   PatchHOPEAssessmentBodySchema,
@@ -211,6 +214,11 @@ export const Validators = {
   HOPEValidationResult: TypeCompiler.Compile(HOPEValidationResultSchema),
   HOPESubmissionRow: TypeCompiler.Compile(HOPESubmissionRowSchema),
   HOPEQualityBenchmark: TypeCompiler.Compile(HOPEQualityBenchmarkSchema),
+
+  // Analytics — HOPE Operations Hub (T3-1b)
+  HOPEDashboardResponse: TypeCompiler.Compile(HOPEDashboardResponseSchema),
+  HOPEPatientTimeline: TypeCompiler.Compile(HOPEPatientTimelineSchema),
+  HOPESubmissionListResponse: TypeCompiler.Compile(HOPESubmissionListResponseSchema),
 };
 
 /**

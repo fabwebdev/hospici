@@ -259,3 +259,91 @@ export const HOPEQualityBenchmarkSchema = Type.Object(
 );
 
 export type HOPEQualityBenchmark = Static<typeof HOPEQualityBenchmarkSchema>;
+
+// ---------------------------------------------------------------------------
+// Dashboard — GET /hope/dashboard (T3-1b)
+// ---------------------------------------------------------------------------
+
+/** Single row in the dashboard assessment list */
+export const HOPEDashboardAssessmentItemSchema = Type.Object({
+  id: Type.String({ format: "uuid" }),
+  patientName: Type.String(),
+  assessmentType: Type.Union([Type.Literal("01"), Type.Literal("02"), Type.Literal("03")]),
+  status: HOPEAssessmentStatusSchema,
+  windowDeadline: Type.String({ format: "date" }),
+  completenessScore: Type.Integer({ minimum: 0, maximum: 100 }),
+  symptomFollowUpRequired: Type.Boolean(),
+  assignedClinicianId: Type.Union([Type.String({ format: "uuid" }), Type.Null()]),
+  nextAction: Type.String(),
+});
+
+export type HOPEDashboardAssessmentItem = Static<typeof HOPEDashboardAssessmentItemSchema>;
+
+export const HOPEDashboardResponseSchema = Type.Object(
+  {
+    dueToday: Type.Integer({ minimum: 0 }),
+    due48h: Type.Integer({ minimum: 0 }),
+    overdue: Type.Integer({ minimum: 0 }),
+    needsSymptomFollowUp: Type.Integer({ minimum: 0 }),
+    rejectedByIQIES: Type.Integer({ minimum: 0 }),
+    readyToSubmit: Type.Integer({ minimum: 0 }),
+    hqrpPenaltyRisk: Type.Boolean(),
+    assessmentList: Type.Array(HOPEDashboardAssessmentItemSchema),
+  },
+  { additionalProperties: false },
+);
+
+export type HOPEDashboardResponse = Static<typeof HOPEDashboardResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Patient timeline — GET /hope/patients/:id/timeline (T3-1b)
+// ---------------------------------------------------------------------------
+
+export const HOPEPatientTimelineSchema = Type.Object(
+  {
+    patientId: Type.String({ format: "uuid" }),
+    hopeA: Type.Object({
+      required: Type.Boolean(),
+      windowDeadline: Type.Union([Type.String({ format: "date" }), Type.Null()]),
+      status: Type.Union([HOPEAssessmentStatusSchema, Type.Null()]),
+      assessmentId: Type.Union([Type.String({ format: "uuid" }), Type.Null()]),
+    }),
+    hopeUV: Type.Object({
+      count: Type.Integer({ minimum: 0 }),
+      lastFiledAt: Type.Union([Type.String({ format: "date" }), Type.Null()]),
+      nextDue: Type.Union([Type.String({ format: "date" }), Type.Null()]),
+    }),
+    hopeD: Type.Object({
+      required: Type.Boolean(),
+      windowDeadline: Type.Union([Type.String({ format: "date" }), Type.Null()]),
+      status: Type.Union([HOPEAssessmentStatusSchema, Type.Null()]),
+      assessmentId: Type.Union([Type.String({ format: "uuid" }), Type.Null()]),
+    }),
+    symptomFollowUp: Type.Object({
+      required: Type.Boolean(),
+      dueAt: Type.Union([Type.String({ format: "date" }), Type.Null()]),
+      completed: Type.Boolean(),
+    }),
+    penaltyExposure: Type.Object({
+      atRisk: Type.Boolean(),
+      measureShortfalls: Type.Array(Type.String()),
+    }),
+  },
+  { additionalProperties: false },
+);
+
+export type HOPEPatientTimeline = Static<typeof HOPEPatientTimelineSchema>;
+
+// ---------------------------------------------------------------------------
+// Submission list — GET /hope/assessments/:id/submissions (T3-1b)
+// ---------------------------------------------------------------------------
+
+export const HOPESubmissionListResponseSchema = Type.Object(
+  {
+    data: Type.Array(HOPESubmissionRowSchema),
+    assessmentId: Type.String({ format: "uuid" }),
+  },
+  { additionalProperties: false },
+);
+
+export type HOPESubmissionListResponse = Static<typeof HOPESubmissionListResponseSchema>;

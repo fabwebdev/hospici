@@ -4,7 +4,10 @@
 import type {
   HOPEAssessmentListResponse,
   HOPEAssessmentResponse,
+  HOPEDashboardResponse,
+  HOPEPatientTimeline,
   HOPEQualityBenchmark,
+  HOPESubmissionListResponse,
   HOPESubmissionRow,
   HOPEValidationResult,
 } from "@hospici/shared-types";
@@ -35,6 +38,9 @@ const {
   reprocessHOPESubmission,
   revertHOPEToReview,
   fetchQualityBenchmarks,
+  fetchHOPEDashboard,
+  fetchHOPEPatientTimeline,
+  fetchHOPESubmissionsByAssessment,
 } = await import("@/functions/hope.functions.js");
 
 const COOKIE = "session=test";
@@ -86,28 +92,41 @@ const sampleValidation: HOPEValidationResult = {
 const sampleSubmission: HOPESubmissionRow = {
   id: SUBMISSION_ID,
   assessmentId: ASSESSMENT_ID,
+  locationId: LOCATION_ID,
   attemptNumber: 1,
-  status: "pending",
-  payloadHash: "abc123def456",
-  submittedAt: null,
-  iqiesResponseCode: null,
-  iqiesResponseMessage: null,
+  submittedAt: "2026-03-01T10:00:00.000Z",
+  responseReceivedAt: null,
+  trackingId: null,
+  submittedByUserId: null,
+  submissionStatus: "pending",
   correctionType: "none",
+  rejectionCodes: [],
+  rejectionDetails: null,
+  payloadHash: "abc123def456",
   createdAt: "2026-03-01T10:00:00.000Z",
 };
 
 const sampleBenchmark: HOPEQualityBenchmark = {
   locationId: LOCATION_ID,
-  reportingPeriod: { calendarYear: 2025, quarter: 4 },
+  reportingPeriod: {
+    calendarYear: 2025,
+    quarter: 4,
+    periodStart: "2025-10-01",
+    periodEnd: "2025-12-31",
+  },
+  hqrpPenaltyRisk: false,
   measures: [
     {
       measureCode: "NQF_3235",
+      measureName: "Comprehensive Assessment at Admission",
       locationRate: 0.82,
       nationalAverage: 0.79,
       targetRate: 0.85,
-      sampleSize: 48,
+      atRisk: false,
+      trend: [],
     },
   ],
+  updatedAt: "2026-03-01T10:00:00.000Z",
 };
 
 // ── fetchHOPEAssessments ──────────────────────────────────────────────────────
@@ -645,10 +664,10 @@ describe("fetchQualityBenchmarks", () => {
     const fullBenchmark: HOPEQualityBenchmark = {
       ...sampleBenchmark,
       measures: [
-        { measureCode: "NQF_3235", locationRate: 0.82, nationalAverage: 0.79, targetRate: 0.85, sampleSize: 48 },
-        { measureCode: "NQF_3633", locationRate: 0.71, nationalAverage: 0.68, targetRate: 0.75, sampleSize: 48 },
-        { measureCode: "NQF_3634A", locationRate: 0.64, nationalAverage: 0.61, targetRate: 0.70, sampleSize: 30 },
-        { measureCode: "HCI", locationRate: 0.55, nationalAverage: 0.52, targetRate: 0.60, sampleSize: 48 },
+        { measureCode: "NQF_3235", measureName: "Comprehensive Assessment", locationRate: 0.82, nationalAverage: 0.79, targetRate: 0.85, atRisk: false, trend: [] },
+        { measureCode: "NQF_3633", measureName: "Treatment Preferences", locationRate: 0.71, nationalAverage: 0.68, targetRate: 0.75, atRisk: false, trend: [] },
+        { measureCode: "NQF_3634A", measureName: "HVLDL Part A", locationRate: 0.64, nationalAverage: 0.61, targetRate: 0.70, atRisk: false, trend: [] },
+        { measureCode: "HCI", measureName: "Hospice Care Index", locationRate: 0.55, nationalAverage: 0.52, targetRate: 0.60, atRisk: false, trend: [] },
       ],
     };
     vi.mocked(global.fetch).mockResolvedValueOnce(
@@ -692,6 +711,270 @@ describe("fetchQualityBenchmarks", () => {
 
     await expect(fetchQualityBenchmarks(COOKIE)).rejects.toThrow(
       "Failed to fetch quality benchmarks",
+    );
+  });
+});
+
+// ── fetchHOPEDashboard (T3-1b) ────────────────────────────────────────────────
+
+describe("fetchHOPEDashboard", () => {
+  beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+  afterEach(() => vi.unstubAllGlobals());
+
+  const sampleDashboard: HOPEDashboardResponse = {
+    dueToday: 1,
+    due48h: 2,
+    overdue: 0,
+    needsSymptomFollowUp: 1,
+    rejectedByIQIES: 0,
+    readyToSubmit: 3,
+    hqrpPenaltyRisk: false,
+    assessmentList: [
+      {
+        id: ASSESSMENT_ID,
+        patientName: "Jane Doe",
+        assessmentType: "01",
+        status: "ready_for_review",
+        windowDeadline: "2026-03-15",
+        completenessScore: 85,
+        symptomFollowUpRequired: true,
+        assignedClinicianId: CLINICIAN_ID,
+        nextAction: "Submit for supervisor review",
+      },
+    ],
+  };
+
+  it("calls GET /api/v1/hope/dashboard with cookie", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(sampleDashboard), { status: 200 }),
+    );
+
+    const result = await fetchHOPEDashboard(COOKIE);
+
+    expect(vi.mocked(global.fetch)).toHaveBeenCalledWith(
+      "http://localhost:3000/api/v1/hope/dashboard",
+      { headers: { cookie: COOKIE } },
+    );
+    expect(result.dueToday).toBe(1);
+    expect(result.due48h).toBe(2);
+    expect(result.assessmentList).toHaveLength(1);
+    expect(result.assessmentList[0]?.patientName).toBe("Jane Doe");
+  });
+
+  it("returns hqrpPenaltyRisk=true when quality measures below threshold", async () => {
+    const atRisk: HOPEDashboardResponse = { ...sampleDashboard, hqrpPenaltyRisk: true };
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(atRisk), { status: 200 }),
+    );
+
+    const result = await fetchHOPEDashboard(COOKIE);
+    expect(result.hqrpPenaltyRisk).toBe(true);
+  });
+
+  it("returns zero counts when no active assessments", async () => {
+    const empty: HOPEDashboardResponse = {
+      dueToday: 0,
+      due48h: 0,
+      overdue: 0,
+      needsSymptomFollowUp: 0,
+      rejectedByIQIES: 0,
+      readyToSubmit: 0,
+      hqrpPenaltyRisk: false,
+      assessmentList: [],
+    };
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(empty), { status: 200 }),
+    );
+
+    const result = await fetchHOPEDashboard(COOKIE);
+    expect(result.assessmentList).toHaveLength(0);
+    expect(result.dueToday).toBe(0);
+  });
+
+  it("throws on 401 unauthorized", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: { message: "Unauthorized" } }), { status: 401 }),
+    );
+
+    await expect(fetchHOPEDashboard(COOKIE)).rejects.toThrow("Unauthorized");
+  });
+
+  it("throws fallback on malformed error body", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(new Response("", { status: 500 }));
+
+    await expect(fetchHOPEDashboard(COOKIE)).rejects.toThrow("Failed to fetch HOPE dashboard");
+  });
+});
+
+// ── fetchHOPEPatientTimeline (T3-1b) ─────────────────────────────────────────
+
+describe("fetchHOPEPatientTimeline", () => {
+  beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+  afterEach(() => vi.unstubAllGlobals());
+
+  const sampleTimeline: HOPEPatientTimeline = {
+    patientId: PATIENT_ID,
+    hopeA: {
+      required: true,
+      windowDeadline: "2026-03-08",
+      status: "accepted",
+      assessmentId: ASSESSMENT_ID,
+    },
+    hopeUV: {
+      count: 3,
+      lastFiledAt: "2026-03-01",
+      nextDue: "2026-05-01",
+    },
+    hopeD: {
+      required: false,
+      windowDeadline: null,
+      status: null,
+      assessmentId: null,
+    },
+    symptomFollowUp: {
+      required: false,
+      dueAt: null,
+      completed: true,
+    },
+    penaltyExposure: {
+      atRisk: false,
+      measureShortfalls: [],
+    },
+  };
+
+  it("calls GET /api/v1/hope/patients/:id/timeline with cookie", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(sampleTimeline), { status: 200 }),
+    );
+
+    const result = await fetchHOPEPatientTimeline(PATIENT_ID, COOKIE);
+
+    expect(vi.mocked(global.fetch)).toHaveBeenCalledWith(
+      `http://localhost:3000/api/v1/hope/patients/${PATIENT_ID}/timeline`,
+      { headers: { cookie: COOKIE } },
+    );
+    expect(result.patientId).toBe(PATIENT_ID);
+    expect(result.hopeA.status).toBe("accepted");
+    expect(result.hopeUV.count).toBe(3);
+  });
+
+  it("returns penalty exposure when measures below threshold", async () => {
+    const atRisk: HOPEPatientTimeline = {
+      ...sampleTimeline,
+      penaltyExposure: { atRisk: true, measureShortfalls: ["NQF3235", "HCI"] },
+    };
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(atRisk), { status: 200 }),
+    );
+
+    const result = await fetchHOPEPatientTimeline(PATIENT_ID, COOKIE);
+    expect(result.penaltyExposure.atRisk).toBe(true);
+    expect(result.penaltyExposure.measureShortfalls).toContain("NQF3235");
+  });
+
+  it("returns symptom follow-up required when UV has high symptom burden", async () => {
+    const withFollowUp: HOPEPatientTimeline = {
+      ...sampleTimeline,
+      symptomFollowUp: { required: true, dueAt: "2026-03-10", completed: false },
+    };
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(withFollowUp), { status: 200 }),
+    );
+
+    const result = await fetchHOPEPatientTimeline(PATIENT_ID, COOKIE);
+    expect(result.symptomFollowUp.required).toBe(true);
+    expect(result.symptomFollowUp.dueAt).toBe("2026-03-10");
+  });
+
+  it("throws on patient not found", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ error: { message: "Patient not found" } }),
+        { status: 404 },
+      ),
+    );
+
+    await expect(
+      fetchHOPEPatientTimeline("00000000-0000-0000-0000-000000000000", COOKIE),
+    ).rejects.toThrow("Patient not found");
+  });
+
+  it("throws fallback on malformed error body", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(new Response("", { status: 500 }));
+
+    await expect(fetchHOPEPatientTimeline(PATIENT_ID, COOKIE)).rejects.toThrow(
+      "Failed to fetch HOPE patient timeline",
+    );
+  });
+});
+
+// ── fetchHOPESubmissionsByAssessment (T3-1b) ──────────────────────────────────
+
+describe("fetchHOPESubmissionsByAssessment", () => {
+  beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+  afterEach(() => vi.unstubAllGlobals());
+
+  const sampleSubmissionList: HOPESubmissionListResponse = {
+    assessmentId: ASSESSMENT_ID,
+    data: [
+      { ...sampleSubmission, attemptNumber: 1, submissionStatus: "rejected", rejectionCodes: ["WINDOW_VIOLATION"] },
+      { ...sampleSubmission, id: "ffffffff-0000-0000-0000-000000000001", attemptNumber: 2, submissionStatus: "accepted" },
+    ],
+  };
+
+  it("calls GET /api/v1/hope/assessments/:id/submissions with cookie", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(sampleSubmissionList), { status: 200 }),
+    );
+
+    const result = await fetchHOPESubmissionsByAssessment(ASSESSMENT_ID, COOKIE);
+
+    expect(vi.mocked(global.fetch)).toHaveBeenCalledWith(
+      `http://localhost:3000/api/v1/hope/assessments/${ASSESSMENT_ID}/submissions`,
+      { headers: { cookie: COOKIE } },
+    );
+    expect(result.assessmentId).toBe(ASSESSMENT_ID);
+    expect(result.data).toHaveLength(2);
+  });
+
+  it("returns rejection codes on failed submissions", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(sampleSubmissionList), { status: 200 }),
+    );
+
+    const result = await fetchHOPESubmissionsByAssessment(ASSESSMENT_ID, COOKIE);
+    expect(result.data[0]?.rejectionCodes).toContain("WINDOW_VIOLATION");
+    expect(result.data[1]?.submissionStatus).toBe("accepted");
+  });
+
+  it("returns empty data array when no submissions yet", async () => {
+    const empty: HOPESubmissionListResponse = { assessmentId: ASSESSMENT_ID, data: [] };
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(empty), { status: 200 }),
+    );
+
+    const result = await fetchHOPESubmissionsByAssessment(ASSESSMENT_ID, COOKIE);
+    expect(result.data).toHaveLength(0);
+  });
+
+  it("throws on non-ok response", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ error: { message: "Assessment not found" } }),
+        { status: 404 },
+      ),
+    );
+
+    await expect(
+      fetchHOPESubmissionsByAssessment("00000000-0000-0000-0000-000000000000", COOKIE),
+    ).rejects.toThrow("Assessment not found");
+  });
+
+  it("throws fallback on malformed error body", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(new Response("", { status: 500 }));
+
+    await expect(fetchHOPESubmissionsByAssessment(ASSESSMENT_ID, COOKIE)).rejects.toThrow(
+      "Failed to fetch HOPE submissions",
     );
   });
 });

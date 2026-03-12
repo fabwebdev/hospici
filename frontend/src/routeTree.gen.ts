@@ -16,6 +16,8 @@ import { Route as authedPatientsIndexRoute } from "./routes/_authed/patients/ind
 import { Route as authedHopeAssessmentsIndexRoute } from "./routes/_authed/hope/assessments/index";
 import { Route as authedHopeAssessmentsNewRoute } from "./routes/_authed/hope/assessments/new";
 import { Route as authedHopeAssessmentsIdRoute } from "./routes/_authed/hope/assessments/$id";
+import { Route as authedHopeDashboardRoute } from "./routes/_authed/hope/dashboard";
+import { Route as authedHopeSubmissionsRoute } from "./routes/_authed/hope/submissions";
 import { Route as IndexRoute } from "./routes/index";
 import { Route as LoginRoute } from "./routes/login";
 
@@ -35,6 +37,8 @@ const authedRouteWithChildren = authedRoute.addChildren({
   authedHopeAssessmentsIndexRoute,
   authedHopeAssessmentsNewRoute,
   authedHopeAssessmentsIdRoute,
+  authedHopeDashboardRoute,
+  authedHopeSubmissionsRoute,
 });
 
 export const routeTree = rootRoute.addChildren({
@@ -142,6 +146,20 @@ declare module "@tanstack/react-router" {
       path: "/hope/assessments/$id";
       fullPath: "/hope/assessments/$id";
       preLoaderRoute: typeof authedHopeAssessmentsIdRoute;
+      parentRoute: typeof authedRoute;
+    };
+    "/_authed/hope/dashboard": {
+      id: "/_authed/hope/dashboard";
+      path: "/hope/dashboard";
+      fullPath: "/hope/dashboard";
+      preLoaderRoute: typeof authedHopeDashboardRoute;
+      parentRoute: typeof authedRoute;
+    };
+    "/_authed/hope/submissions": {
+      id: "/_authed/hope/submissions";
+      path: "/hope/submissions";
+      fullPath: "/hope/submissions";
+      preLoaderRoute: typeof authedHopeSubmissionsRoute;
       parentRoute: typeof authedRoute;
     };
   }

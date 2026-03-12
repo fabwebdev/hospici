@@ -539,16 +539,194 @@ Reuse T3-9 `orders` table pattern. When F2F is required (period ≥ 3) and not y
 
 ---
 
-## T3-3 · Hospice cap calculation engine `MEDIUM`
+## T3-3 · Hospice Cap Intelligence Module `HIGH`
 
-`read:` `backend/src/contexts/billing/schemas/hospiceCap.schema.ts`, `backend/src/utils/business-days.ts`
+`read:` `backend/src/contexts/billing/schemas/hospiceCap.schema.ts`, `backend/src/utils/business-days.ts`, `DB-ARCH`
 
-- Cap calculation service: `POST /api/v1/cap/calculate`
-- BullMQ `cap-recalculation` job fires Nov 2 annually
-- Alert at 80% via Socket.IO `cap:threshold:alert` event
-- Wire `getCapYear()` (already implemented in schema) into route response
+> ⚠️ Market entry blocker. T3-7 and T3-12 consume `estimatedLiability` and `isCapAtRisk` flags produced here.
 
-**Done when:** Cap overage alert fires at 80%; cap year correctly uses Nov 1 – Oct 31 boundary
+### DB migrations
+
+**`cap_snapshots`** table:
+```typescript
+{
+  id: uuid PK;
+  locationId: uuid FK;       // RLS
+  capYear: integer;          // e.g. 2025 = Nov 1 2025 – Oct 31 2026
+  calculatedAt: timestamptz;
+  utilizationPercent: numeric(6,3);
+  projectedYearEndPercent: numeric(6,3);  // linear extrapolation from days-elapsed
+  estimatedLiability: numeric(12,2);     // dollars
+  patientCount: integer;
+  formulaVersion: varchar;   // semver e.g. '1.0.0' — bump on any formula change
+  inputHash: varchar;        // SHA-256 of input parameters — tamper-evident audit trail
+  triggeredBy: 'scheduled' | 'manual' | 'data_correction';
+  triggeredByUserId: uuid FK → users.id | null;
+  createdAt: timestamptz;
+}
+```
+
+**`cap_patient_contributions`** table:
+```typescript
+{
+  id: uuid PK;
+  snapshotId: uuid FK → cap_snapshots.id;
+  patientId: uuid FK;
+  locationId: uuid FK;       // RLS (denormalized for query performance)
+  capContributionAmount: numeric(12,2);
+  routineDays: integer;
+  continuousHomeCareDays: integer;
+  inpatientDays: integer;
+  liveDischargeFlag: boolean;
+  admissionDate: date;
+  dischargeDate: date | null;
+  createdAt: timestamptz;
+}
+```
+
+Both tables: RLS policies (`location_read` + `location_insert` + `location_update_own_or_admin`).
+
+**Migration also adds to `alert_type_enum`:**
+- `CAP_THRESHOLD_70`
+- `CAP_THRESHOLD_80`
+- `CAP_THRESHOLD_90`
+- `CAP_PROJECTED_OVERAGE`
+
+---
+
+### Cap calculation engine
+
+**`CapCalculationService.calculate(locationId, capYear)`:**
+1. Pull all patients admitted to location during cap year (Nov 1 – Oct 31) from `patients` table
+2. For each patient: compute `capContributionAmount` = (routine home care days × rate) + (continuous home care days × rate) + (inpatient days × rate), capped at individual patient max per CMS formula
+3. Sum all contributions → `estimatedLiability`
+4. Divide by cap limit for location's Medicare region → `utilizationPercent`
+5. Compute `projectedYearEndPercent` via linear extrapolation: `utilizationPercent / (daysElapsedInCapYear / 365)`
+6. Compute `inputHash` = SHA-256 of serialized inputs (patientIds + contribution amounts + cap limit used + capYear)
+7. Insert `cap_snapshots` row
+8. Insert `cap_patient_contributions` rows (one per patient)
+9. Upsert threshold alerts:
+   - ≥ 70% and < 80%: upsert `CAP_THRESHOLD_70` (severity: WARNING)
+   - ≥ 80% and < 90%: upsert `CAP_THRESHOLD_80` (severity: WARNING)
+   - ≥ 90% and < 100%: upsert `CAP_THRESHOLD_90` (severity: CRITICAL)
+   - projected ≥ 100%: upsert `CAP_PROJECTED_OVERAGE` (severity: CRITICAL)
+10. Emit Socket.IO `cap:threshold:alert` to location room with `{ utilizationPercent, projectedYearEndPercent, threshold }` if any new threshold crossed
+
+**`getCapYear(date)`:** already implemented in `hospiceCap.schema.ts` — use as-is.
+
+> **Scope boundary:** Scenario modeling ("what-if current census holds") is deferred to T4-9 (predictive analytics — already has "length-of-stay variance"). T3-3 provides linear `projectedYearEndPercent` only.
+
+---
+
+### Routes
+
+- `POST /api/v1/cap/recalculate` — manual trigger; `admin`/`billing_specialist` roles only; enqueues BullMQ `cap-recalculation` job; returns 202 + `{ jobId }`
+- `GET /api/v1/cap/summary` — current cap year summary for requesting location:
+  ```typescript
+  {
+    capYear: number;
+    capYearStart: string;         // Nov 1
+    capYearEnd: string;           // Oct 31
+    daysRemainingInYear: number;
+    utilizationPercent: number;
+    projectedYearEndPercent: number;
+    estimatedLiability: number;   // dollars
+    patientCount: number;
+    lastCalculatedAt: string;
+    thresholdAlerts: { type: string; firedAt: string }[];
+    priorYearUtilizationPercent: number | null;   // year-over-year comparison
+  }
+  ```
+- `GET /api/v1/cap/patients` — filterable contributor list:
+  - query params: `?snapshotId=&sortBy=contribution&limit=25&losMin=&losMax=&highUtilizationOnly=true`
+  - returns `cap_patient_contributions` joined with patient name, admission date, LOS, care model, contribution $, contribution %
+- `GET /api/v1/cap/trends` — monthly utilization across cap year + branch comparison:
+  ```typescript
+  {
+    months: {
+      month: string;                  // 'YYYY-MM'
+      utilizationPercent: number;
+      projectedYearEndPercent: number;
+      patientCount: number;
+      snapshotId: string;
+    }[];
+    branchComparison: {
+      locationId: string;
+      locationName: string;
+      utilizationPercent: number;
+      projectedYearEndPercent: number;
+      trend: 'up' | 'down' | 'stable';    // vs prior month
+    }[];
+  }
+  ```
+- `GET /api/v1/cap/snapshots/:id` — single snapshot detail with full patient contribution list (drillable for audit/dispute)
+
+---
+
+### BullMQ worker
+
+**`cap-recalculation`** worker (already exists from T1-7 as a stub — replace stub body):
+- Scheduled: `0 6 2 11 *` (Nov 2 annually — existing cron, do not change)
+- Manual trigger: via `POST /api/v1/cap/recalculate`
+- Calls `CapCalculationService.calculate()` for all locations
+- On completion: emit Socket.IO `cap:calculation:complete` to each location room with summary
+- On failure: DLQ alert (existing T1-7 behavior already in place)
+
+---
+
+### Socket.IO events
+
+Add to `compliance-events.ts` and `shared-types/socket.ts`:
+- `cap:threshold:alert` — fired when 70%/80%/90%/projected-overage is crossed (new or escalated)
+- `cap:calculation:complete` — snapshot stored; dashboard should refresh
+
+---
+
+### Frontend — Cap Intelligence Dashboard (`/cap`)
+
+**Summary widget row (top of page):**
+- Utilization gauge (0–100%; green <70%, amber 70–89%, red 90%+)
+- Projected year-end %
+- Estimated liability ($)
+- Days remaining in cap year
+- Last calculated timestamp + "Recalculate" button (admin/billing_specialist only)
+
+**Dashboard sections (7 tabs/panels):**
+
+1. **Current Utilization** — gauge + key metrics + threshold alert history (all four `CAP_*` alert types with timestamps)
+2. **Projected Year-End** — trend line chart (actual utilization month-by-month + projected to Oct 31); projected overage date if applicable
+3. **Top 25 Contributors** — sortable table: patient name, admission date, LOS, care model, contribution $, % of total; action column: "Review eligibility" / "Review level of care" / "Review discharge planning" / "Review documentation strength" CTAs
+4. **Trend by Month** — line chart: Nov 1 → Oct 31, actual utilization % each month, projected year-end % per snapshot; shows movement over time
+5. **By Branch** — branch ranking table: location name, utilization %, projected %, trend arrow (up/down/stable), patient count; multi-location operators see all locations they have access to
+6. **High-Risk Patients** — contributors with LOS > 180 days or contribution in top 10% of current snapshot
+7. **Recalculation History** — table of all `cap_snapshots`: calculatedAt, utilizationPercent, projectedYearEndPercent, triggeredBy, formulaVersion, delta % vs prior run; "Compare to prior snapshot" button → side-by-side diff (utilization %, patient count, estimatedLiability, new contributors since prior snapshot)
+
+**Prior cap year toggle:** Switch between current and prior cap year snapshots. Shows final utilization for closed years.
+
+**Export:** "Export Report" button → CSV of all patient contributors for selected snapshot (admin/billing_specialist only).
+
+**Patient drill-down:** Click any contributor row → navigate to `/patients/:id`.
+
+**Alert CTA:** `CAP_THRESHOLD_*` alert cards in the T2-8 compliance dashboard render a "View Cap Dashboard" button.
+
+---
+
+**Done when:**
+- `CapCalculationService.calculate()` correctly computes per-patient contribution (routine + CHC + inpatient days)
+- `utilizationPercent` and `projectedYearEndPercent` stored in every `cap_snapshots` row
+- All 4 threshold alerts upsert at correct thresholds (70/80/90/projected)
+- `cap-recalculation` BullMQ worker runs Nov 2 annually (existing cron confirmed) and on-demand via route
+- Manual recalculate returns 202, job enqueued, `cap:calculation:complete` Socket.IO fires on completion
+- `inputHash` stored on every snapshot row (tamper-evident)
+- `GET /api/v1/cap/summary` includes prior-year comparison field
+- `GET /api/v1/cap/patients` filterable by `highUtilizationOnly` and LOS range
+- `GET /api/v1/cap/trends` returns monthly snapshots + branch comparison with trend direction
+- `GET /api/v1/cap/snapshots/:id` returns full patient contribution list for that snapshot
+- Cap Intelligence Dashboard renders all 7 sections at `/cap`
+- Branch comparison table renders with trend direction for all RLS-accessible locations
+- Top 25 contributors table shows all 4 patient-action CTA buttons
+- Snapshot comparison diff shows delta % and new/removed contributors
+- RLS: location A cannot read location B cap data or contribution rows
 
 ---
 

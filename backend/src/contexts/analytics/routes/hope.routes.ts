@@ -26,7 +26,10 @@ import {
   HOPEAssessmentListQuerySchema,
   HOPEAssessmentListResponseSchema,
   HOPEAssessmentResponseSchema,
+  HOPEDashboardResponseSchema,
+  HOPEPatientTimelineSchema,
   HOPEQualityBenchmarkSchema,
+  HOPESubmissionListResponseSchema,
   HOPESubmissionRowSchema,
   HOPEValidationResultSchema,
   CreateHOPEAssessmentBodySchema,
@@ -336,6 +339,81 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
         }
         throw err;
       }
+    },
+  );
+
+  // ── GET /hope/dashboard (T3-1b) ───────────────────────────────────────────
+
+  fastify.get(
+    "/dashboard",
+    {
+      schema: {
+        tags: ["HOPE"],
+        summary: "HOPE Command Center dashboard — widget counts + operational list",
+        description:
+          "Returns 7 widget counts (dueToday, due48h, overdue, needsSymptomFollowUp, rejectedByIQIES, readyToSubmit, hqrpPenaltyRisk) and the full assessment list for the location.",
+        response: {
+          200: HOPEDashboardResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { locationId } = request.user!;
+      const dashboard = await svc.getDashboard(locationId);
+      return reply.code(200).send(dashboard);
+    },
+  );
+
+  // ── GET /hope/patients/:patientId/timeline (T3-1b) ────────────────────────
+
+  fastify.get(
+    "/patients/:patientId/timeline",
+    {
+      schema: {
+        tags: ["HOPE"],
+        summary: "HOPE assessment timeline for a patient (HOPE-A / UV / HOPE-D state)",
+        params: Type.Object({ patientId: Type.String({ format: "uuid" }) }),
+        response: {
+          200: HOPEPatientTimelineSchema,
+          404: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { locationId } = request.user!;
+      const { patientId } = request.params as { patientId: string };
+      try {
+        const timeline = await svc.getPatientTimeline(patientId, locationId);
+        return reply.code(200).send(timeline);
+      } catch {
+        return reply.code(404).send({
+          success: false,
+          error: { code: "NOT_FOUND", message: `Patient ${patientId} not found` },
+        });
+      }
+    },
+  );
+
+  // ── GET /hope/assessments/:id/submissions (T3-1b) ─────────────────────────
+
+  fastify.get(
+    "/assessments/:id/submissions",
+    {
+      schema: {
+        tags: ["HOPE"],
+        summary: "List all iQIES submission attempts for a HOPE assessment",
+        params: UuidParamsSchema,
+        response: {
+          200: HOPESubmissionListResponseSchema,
+          404: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { locationId } = request.user!;
+      const { id } = request.params as { id: string };
+      const result = await svc.getSubmissionsByAssessment(id, locationId);
+      return reply.code(200).send(result);
     },
   );
 

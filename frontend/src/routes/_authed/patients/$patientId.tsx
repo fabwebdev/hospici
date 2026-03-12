@@ -4,12 +4,22 @@
 import { IDGOverdueModal } from "@/components/clinical/idg-overdue-modal.js";
 import { getTrajectoryFn } from "@/functions/assessment.functions.js";
 import { getCarePlanFn } from "@/functions/carePlan.functions.js";
+import {
+  getHOPEAssessmentsFn,
+  getHOPEPatientTimelineFn,
+  getHOPESubmissionsByAssessmentFn,
+} from "@/functions/hope.functions.js";
 import { getIDGComplianceFn } from "@/functions/idg.functions.js";
 import { getPatientFn } from "@/functions/patient.functions.js";
 import { patientKeys } from "@/lib/query/keys.js";
 import type {
   CarePlanResponse,
   DisciplineType,
+  HOPEAssessmentListResponse,
+  HOPEAssessmentStatus,
+  HOPEPatientTimeline,
+  HOPESubmissionListResponse,
+  HOPESubmissionRow,
   HumanName,
   IDGComplianceStatus,
   PatientResponse,
@@ -18,8 +28,14 @@ import type {
   TrajectoryDataPoint,
   TrajectoryResponse,
 } from "@hospici/shared-types";
+import {
+  HOPE_ASSESSMENT_TYPE_LABELS,
+  HOPE_STATUS_LABELS,
+  IQIES_ERROR_GUIDANCE,
+} from "@hospici/shared-types";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/patients/$patientId")({
   loader: ({ context: { queryClient }, params: { patientId } }) =>
@@ -333,6 +349,264 @@ function CarePlanPanel({ patientId }: { patientId: string }) {
   );
 }
 
+// ── HOPE Panel — Timeline Ribbon + Submission History ─────────────────────────
+
+function HOPEStatusBadge({ status }: { status: HOPEAssessmentStatus | null }) {
+  if (!status) return <span className="text-xs text-gray-400 italic">None</span>;
+  const colors: Record<HOPEAssessmentStatus, string> = {
+    draft: "bg-gray-100 text-gray-600",
+    in_progress: "bg-blue-100 text-blue-700",
+    ready_for_review: "bg-amber-100 text-amber-700",
+    approved_for_submission: "bg-purple-100 text-purple-700",
+    submitted: "bg-indigo-100 text-indigo-700",
+    accepted: "bg-green-100 text-green-700",
+    rejected: "bg-red-100 text-red-700",
+    needs_correction: "bg-orange-100 text-orange-700",
+  };
+  return (
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${colors[status]}`}>
+      {HOPE_STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+function HOPECompletenessRing({ score }: { score: number }) {
+  const r = 14;
+  const circ = 2 * Math.PI * r;
+  const dash = (score / 100) * circ;
+  const color = score >= 80 ? "#22c55e" : score >= 50 ? "#f59e0b" : "#ef4444";
+  return (
+    <svg width={36} height={36} aria-label={`${score}% complete`} className="shrink-0">
+      <circle cx={18} cy={18} r={r} fill="none" stroke="#e2e8f0" strokeWidth="3" />
+      <circle
+        cx={18}
+        cy={18}
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth="3"
+        strokeDasharray={`${dash} ${circ}`}
+        strokeLinecap="round"
+        transform="rotate(-90 18 18)"
+      />
+      <text x={18} y={22} textAnchor="middle" fontSize={8} fontWeight="600" fill={color}>
+        {score}%
+      </text>
+    </svg>
+  );
+}
+
+function HOPEPanel({ patientId }: { patientId: string }) {
+  const [showHistory, setShowHistory] = useState<string | null>(null); // assessmentId
+
+  const { data: timeline, isLoading: timelineLoading } = useQuery<HOPEPatientTimeline>({
+    queryKey: ["hope", "patient-timeline", patientId],
+    queryFn: () => getHOPEPatientTimelineFn({ data: { patientId } }) as Promise<HOPEPatientTimeline>,
+  });
+
+  const { data: assessmentList } = useQuery<HOPEAssessmentListResponse>({
+    queryKey: ["hope", "assessments", patientId],
+    queryFn: () =>
+      getHOPEAssessmentsFn({ data: { patientId } }) as Promise<HOPEAssessmentListResponse>,
+  });
+
+  const { data: submissions } = useQuery<HOPESubmissionListResponse>({
+    queryKey: ["hope", "submissions", showHistory],
+    queryFn: () =>
+      getHOPESubmissionsByAssessmentFn({ data: { assessmentId: showHistory! } }) as Promise<HOPESubmissionListResponse>,
+    enabled: showHistory !== null,
+  });
+
+  if (timelineLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">HOPE Assessment Timeline</h2>
+        <div className="text-xs text-gray-400">Loading HOPE timeline…</div>
+      </div>
+    );
+  }
+
+  // Submission status chip
+  const hopeAAssessment = assessmentList?.data.find((a) => a.assessmentType === "01");
+  const hopeDAssessment = assessmentList?.data.find((a) => a.assessmentType === "03");
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">HOPE Assessment Timeline</h2>
+        <Link
+          to="/hope/dashboard"
+          className="text-xs text-blue-600 hover:underline"
+        >
+          HOPE Command Center →
+        </Link>
+      </div>
+
+      {/* Timeline ribbon */}
+      <div className="flex items-stretch gap-3">
+        {/* HOPE-A */}
+        <div className="flex-1 rounded-lg border border-gray-200 p-3">
+          <p className="text-xs font-semibold text-blue-700 mb-1">HOPE-A (Admission)</p>
+          <HOPEStatusBadge status={timeline?.hopeA.status ?? null} />
+          {timeline?.hopeA.windowDeadline && (
+            <p className="mt-1 text-xs text-gray-500">Deadline: {timeline.hopeA.windowDeadline}</p>
+          )}
+          {hopeAAssessment && (
+            <div className="mt-2 flex items-center gap-2">
+              <HOPECompletenessRing score={hopeAAssessment.completenessScore} />
+              <button
+                type="button"
+                className="text-xs text-blue-600 hover:underline"
+                onClick={() =>
+                  setShowHistory((prev) =>
+                    prev === hopeAAssessment.id ? null : hopeAAssessment.id,
+                  )
+                }
+              >
+                {showHistory === hopeAAssessment.id ? "Hide" : "iQIES History"}
+              </button>
+            </div>
+          )}
+          {!timeline?.hopeA.assessmentId && (
+            <Link
+              to="/hope/assessments/new"
+              className="mt-2 block text-xs text-blue-600 hover:underline"
+            >
+              + Create HOPE-A
+            </Link>
+          )}
+        </div>
+
+        {/* Arrow */}
+        <div className="flex items-center text-gray-400 text-sm font-bold">→</div>
+
+        {/* HOPE-UV */}
+        <div className="flex-1 rounded-lg border border-gray-200 p-3">
+          <p className="text-xs font-semibold text-indigo-700 mb-1">HOPE-UV (Update Visits)</p>
+          <span className="text-lg font-bold text-gray-800">{timeline?.hopeUV.count ?? 0}</span>
+          <span className="text-xs text-gray-500 ml-1">filed</span>
+          {timeline?.hopeUV.lastFiledAt && (
+            <p className="mt-1 text-xs text-gray-500">Last: {timeline.hopeUV.lastFiledAt}</p>
+          )}
+          {timeline?.hopeUV.nextDue && (
+            <p className="text-xs text-gray-500">Next est.: {timeline.hopeUV.nextDue}</p>
+          )}
+          {/* Symptom follow-up indicator */}
+          {timeline?.symptomFollowUp.required && !timeline.symptomFollowUp.completed && (
+            <div className="mt-2 flex items-center gap-1 text-xs font-medium text-amber-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              Follow-up due {timeline.symptomFollowUp.dueAt ?? "ASAP"}
+            </div>
+          )}
+        </div>
+
+        {/* Arrow */}
+        <div className="flex items-center text-gray-400 text-sm font-bold">→</div>
+
+        {/* HOPE-D */}
+        <div className="flex-1 rounded-lg border border-gray-200 p-3">
+          <p className="text-xs font-semibold text-purple-700 mb-1">HOPE-D (Discharge)</p>
+          {timeline?.hopeD.required ? (
+            <>
+              <HOPEStatusBadge status={timeline.hopeD.status} />
+              {timeline.hopeD.windowDeadline && (
+                <p className="mt-1 text-xs text-gray-500">Deadline: {timeline.hopeD.windowDeadline}</p>
+              )}
+              {hopeDAssessment && (
+                <div className="mt-2 flex items-center gap-2">
+                  <HOPECompletenessRing score={hopeDAssessment.completenessScore} />
+                  <button
+                    type="button"
+                    className="text-xs text-blue-600 hover:underline"
+                    onClick={() =>
+                      setShowHistory((prev) =>
+                        prev === hopeDAssessment.id ? null : hopeDAssessment.id,
+                      )
+                    }
+                  >
+                    {showHistory === hopeDAssessment.id ? "Hide" : "iQIES History"}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <span className="text-xs text-gray-400 italic">Not yet required</span>
+          )}
+        </div>
+      </div>
+
+      {/* HQRP penalty exposure */}
+      {timeline?.penaltyExposure.atRisk && (
+        <div className="rounded-md bg-red-50 border border-red-200 p-3">
+          <p className="text-xs font-semibold text-red-700">
+            HQRP Penalty Risk — shortfalls on:{" "}
+            {timeline.penaltyExposure.measureShortfalls.join(", ")}
+          </p>
+        </div>
+      )}
+
+      {/* Submission history panel */}
+      {showHistory && submissions && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">
+            iQIES Submission History ({submissions.data.length} attempt{submissions.data.length !== 1 ? "s" : ""})
+          </h3>
+          {submissions.data.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">No submission attempts yet.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-gray-500 border-b border-gray-200">
+                  <th className="text-left py-1 font-medium">#</th>
+                  <th className="text-left py-1 font-medium">Submitted</th>
+                  <th className="text-left py-1 font-medium">Status</th>
+                  <th className="text-left py-1 font-medium">Tracking ID</th>
+                  <th className="text-left py-1 font-medium">Rejection Codes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {submissions.data.map((sub: HOPESubmissionRow) => (
+                  <tr key={sub.id}>
+                    <td className="py-1.5 font-mono">{sub.attemptNumber}</td>
+                    <td className="py-1.5">{new Date(sub.submittedAt).toLocaleDateString()}</td>
+                    <td className="py-1.5">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          sub.submissionStatus === "accepted"
+                            ? "bg-green-100 text-green-700"
+                            : sub.submissionStatus === "rejected"
+                              ? "bg-red-100 text-red-700"
+                              : sub.submissionStatus === "pending"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-orange-100 text-orange-700"
+                        }`}
+                      >
+                        {sub.submissionStatus}
+                      </span>
+                    </td>
+                    <td className="py-1.5 font-mono text-gray-600">{sub.trackingId ?? "—"}</td>
+                    <td className="py-1.5">
+                      {sub.rejectionCodes.length > 0 ? (
+                        <div className="space-y-0.5">
+                          {sub.rejectionCodes.map((code) => (
+                            <div key={code} className="text-red-600 font-mono">{code}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function PatientDetailPage() {
@@ -392,6 +666,9 @@ function PatientDetailPage() {
 
       {/* Decline trajectory sparklines */}
       <TrajectoryPanel patientId={patientId} />
+
+      {/* HOPE assessment timeline — T3-1b */}
+      <HOPEPanel patientId={patientId} />
 
       {/* Interdisciplinary care plan — embedded inline (no separate navigation) */}
       <CarePlanPanel patientId={patientId} />
