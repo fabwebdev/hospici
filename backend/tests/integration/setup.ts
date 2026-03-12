@@ -269,7 +269,9 @@ export async function withRlsContext(
   try {
     await client.query("BEGIN");
 
-    // Switch to the non-superuser role so PostgreSQL enforces RLS
+    // Switch to the non-superuser role so PostgreSQL enforces RLS.
+    // FORCE ROW LEVEL SECURITY is applied to all PHI tables in migration 0001,
+    // so policies apply even though POSTGRES_USER is a superuser.
     await client.query("SET LOCAL ROLE TO hospici_app");
 
     // Inject the three config values that every policy reads

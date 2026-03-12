@@ -29,7 +29,6 @@ import {
   cleanupFixtures,
   createAppRole,
   getTestPool,
-  runMigrations,
   seedFixtures,
 } from "./setup.js";
 import { addBusinessDays } from "@/utils/business-days.js";
@@ -46,7 +45,6 @@ const NOE_OVERDUE_ID = "b0000000-0000-0000-0000-000000000004";
 const NOE_FAR_ID = "b0000000-0000-0000-0000-000000000005";
 
 beforeAll(async () => {
-  await runMigrations();
   const client: PoolClient = await pool.connect();
   try {
     await createAppRole(client);
@@ -195,16 +193,13 @@ describe("noeDeadlineHandler worker query logic", () => {
         `INSERT INTO notice_of_election
            (id, patient_id, benefit_period_id, location_id, status, election_date, filing_deadline)
          VALUES
-           ($1, $2, $3, $4, 'draft', $5, $6),
-           ($7, $2, $3, $4, 'draft', $8, $9),
-           ($10, $2, $3, $4, 'draft', $11, $12)`,
+           ($1,  $2,  $3,  $4,  'draft', $5,  $6),
+           ($7,  $8,  $9,  $10, 'draft', $11, $12),
+           ($13, $14, $15, $16, 'draft', $17, $18)`,
         [
-          NOE_UPCOMING_ID, TEST_IDS.patientA, NOE_BENEFIT_PERIOD_ID, TEST_IDS.locationA,
-          todayStr, tomorrowStr,
-          NOE_OVERDUE_ID, TEST_IDS.patientA, NOE_BENEFIT_PERIOD_ID, TEST_IDS.locationA,
-          yesterdayStr, yesterdayStr,
-          NOE_FAR_ID, TEST_IDS.patientA, NOE_BENEFIT_PERIOD_ID, TEST_IDS.locationA,
-          todayStr, farFutureStr,
+          NOE_UPCOMING_ID, TEST_IDS.patientA, NOE_BENEFIT_PERIOD_ID, TEST_IDS.locationA, todayStr,     tomorrowStr,
+          NOE_OVERDUE_ID,  TEST_IDS.patientA, NOE_BENEFIT_PERIOD_ID, TEST_IDS.locationA, yesterdayStr, yesterdayStr,
+          NOE_FAR_ID,      TEST_IDS.patientA, NOE_BENEFIT_PERIOD_ID, TEST_IDS.locationA, todayStr,     farFutureStr,
         ],
       );
     } finally {

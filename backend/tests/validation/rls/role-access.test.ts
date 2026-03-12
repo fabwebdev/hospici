@@ -17,7 +17,6 @@ import {
   cleanupFixtures,
   createAppRole,
   getTestPool,
-  runMigrations,
   seedFixtures,
   withRlsContext,
 } from "../../integration/setup.js";
@@ -25,7 +24,6 @@ import {
 const pool = getTestPool();
 
 beforeAll(async () => {
-  await runMigrations();
   const client: PoolClient = await pool.connect();
   try {
     await createAppRole(client);
