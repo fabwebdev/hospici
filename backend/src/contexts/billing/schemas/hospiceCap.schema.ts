@@ -2,7 +2,6 @@
 // Hospice Cap Calculation - Aggregate and Proportional methodologies
 
 import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const CapMethodologySchema = Type.Enum({
   aggregate: "aggregate",
@@ -67,8 +66,6 @@ export const getCapYearDates = (capYear: number): { start: string; end: string }
     end: `${capYear}-10-31`,
   };
 };
-
-export const CapCalculationValidator = TypeCompiler.Compile(CapCalculationSchema);
 
 export type CapCalculation = Static<typeof CapCalculationSchema>;
 export type CapMethodology = Static<typeof CapMethodologySchema>;

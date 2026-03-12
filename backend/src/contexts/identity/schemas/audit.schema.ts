@@ -2,7 +2,6 @@
 // HIPAA-compliant audit logging schemas
 
 import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const AuditActionSchema = Type.Enum({
   view: "view",
@@ -32,8 +31,6 @@ export const AuditLogSchema = Type.Object(
   },
   { additionalProperties: false },
 );
-
-export const AuditLogValidator = TypeCompiler.Compile(AuditLogSchema);
 
 export type AuditAction = Static<typeof AuditActionSchema>;
 export type AuditLog = Static<typeof AuditLogSchema>;

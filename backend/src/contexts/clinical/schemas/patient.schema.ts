@@ -2,7 +2,6 @@
 // Patient demographics and FHIR R4 Patient resource + CRUD request/response schemas
 
 import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const HumanNameSchema = Type.Object({
   use: Type.Optional(
@@ -62,8 +61,6 @@ export const PatientSchema = Type.Object(
     description: "Hospici Patient Resource (FHIR R4 compatible)",
   },
 );
-
-export const PatientValidator = TypeCompiler.Compile(PatientSchema);
 
 export type Patient = Static<typeof PatientSchema>;
 export type HumanName = Static<typeof HumanNameSchema>;

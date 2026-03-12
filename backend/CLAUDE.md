@@ -38,19 +38,28 @@ export default defineConfig({
 ### 1.3 TypeBox AOT Compilation
 
 `TypeCompiler.Compile()` must be called **exactly once per schema, at module level.**
-Never inside a function, class method, request handler, or loop.
+Never inside a function, class method, request handler, or loop. Never compile the same schema twice.
 
 ```typescript
-// ✅ CORRECT — compiled at module initialization
-export const PatientValidator = TypeCompiler.Compile(PatientSchema);
+// ✅ CORRECT — compiled once at module level in typebox-compiler.ts
+Validators = {
+  Patient: TypeCompiler.Compile(PatientSchema),
+  ...
+}
 
 // ❌ WRONG — re-compiles on every call, defeats AOT, wastes CPU
 async function handleRequest(req) {
   const validator = TypeCompiler.Compile(PatientSchema); // NEVER
 }
+
+// ❌ WRONG — duplicate compilation (schema file also compiles PatientSchema)
+// patient.schema.ts:  export const PatientValidator = TypeCompiler.Compile(PatientSchema);
+// typebox-compiler.ts: Patient: TypeCompiler.Compile(PatientSchema);  ← duplicate
 ```
 
-The central validator registry is `src/config/typebox-compiler.ts`. Add new validators there.
+All production validators live in `src/config/typebox-compiler.ts` as entries in the `Validators` object.
+Do **not** add `TypeCompiler.Compile()` calls to schema files — schemas export only the `TSchema` value and types.
+Consumers import `Validators.Patient`, `Validators.User`, etc. from `typebox-compiler.ts`.
 
 This rule applies equally to the **Frontend** (`packages/shared-types` validators compiled at module level in `src/lib/validators/`).
 

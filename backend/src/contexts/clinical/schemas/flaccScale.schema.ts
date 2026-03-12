@@ -2,7 +2,6 @@
 // FLACC Pain Scale for pediatric patients (0-2 years)
 
 import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const FlaccScaleSchema = Type.Object(
   {
@@ -26,7 +25,5 @@ export const FlaccScaleSchema = Type.Object(
   },
   { additionalProperties: false },
 );
-
-export const FlaccScaleValidator = TypeCompiler.Compile(FlaccScaleSchema);
 
 export type FlaccScale = Static<typeof FlaccScaleSchema>;

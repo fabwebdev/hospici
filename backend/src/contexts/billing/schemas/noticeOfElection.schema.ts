@@ -2,7 +2,6 @@
 // CMS NOE (Notice of Election) - 5-day filing rule with Friday edge case
 
 import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const NOEStatusSchema = Type.Enum({
   draft: "draft",
@@ -60,8 +59,6 @@ export const validateNOEDeadline = (
 
   return { valid: true };
 };
-
-export const NOEValidator = TypeCompiler.Compile(NOESchema);
 
 export type NOE = Static<typeof NOESchema>;
 export type NOEStatus = Static<typeof NOEStatusSchema>;

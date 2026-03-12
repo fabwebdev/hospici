@@ -4,7 +4,6 @@ export {
   IDGMeetingSchema,
   IDGMemberSchema,
   IDGAttendanceStatusSchema,
-  IDGMeetingValidator,
   checkIDGCompliance,
   hasRequiredAttendees,
   type IDGMeeting,
@@ -15,7 +14,6 @@ export {
 export {
   AideSupervisionSchema,
   SupervisionMethodSchema,
-  AideSupervisionValidator,
   calculateNextSupervisionDue,
   checkSupervisionOverdue,
   shouldSendSupervisionAlert,

@@ -2,7 +2,6 @@
 // Interdisciplinary Group (IDG) Meeting - CMS 15-day requirement
 
 import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const IDGAttendanceStatusSchema = Type.Enum({
   present: "present",
@@ -72,8 +71,6 @@ export const hasRequiredAttendees = (attendees: Static<typeof IDGMemberSchema>[]
     .map((a) => a.role.toLowerCase());
   return roles.includes("rn") && roles.includes("md") && roles.includes("sw");
 };
-
-export const IDGMeetingValidator = TypeCompiler.Compile(IDGMeetingSchema);
 
 export type IDGMeeting = Static<typeof IDGMeetingSchema>;
 export type IDGMember = Static<typeof IDGMemberSchema>;

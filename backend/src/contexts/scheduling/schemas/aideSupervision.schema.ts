@@ -2,7 +2,6 @@
 // HHA Aide Supervision - CMS 42 CFR §418.76 (14-day requirement)
 
 import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const SupervisionMethodSchema = Type.Enum({
   inPerson: "in_person",
@@ -67,8 +66,6 @@ export const shouldSendSupervisionAlert = (nextDueDate: string, alertSentAt?: st
 
   return daysUntilDue <= 2;
 };
-
-export const AideSupervisionValidator = TypeCompiler.Compile(AideSupervisionSchema);
 
 export type AideSupervision = Static<typeof AideSupervisionSchema>;
 export type SupervisionMethod = Static<typeof SupervisionMethodSchema>;

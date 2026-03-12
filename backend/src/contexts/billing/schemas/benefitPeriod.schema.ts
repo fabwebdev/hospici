@@ -2,7 +2,6 @@
 // CMS Hospice Benefit Periods (90d/90d/60d/60d...)
 
 import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 export const BenefitPeriodTypeSchema = Type.Enum({
   initial90: "initial_90",
@@ -67,8 +66,6 @@ export const shouldSendExpiryAlert = (
 
   return daysUntilExpiry <= 15;
 };
-
-export const BenefitPeriodValidator = TypeCompiler.Compile(BenefitPeriodSchema);
 
 export type BenefitPeriod = Static<typeof BenefitPeriodSchema>;
 export type BenefitPeriodType = Static<typeof BenefitPeriodTypeSchema>;

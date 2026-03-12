@@ -3,7 +3,6 @@
 // Updated with comprehensive role definitions for hospice EHR
 
 import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 /**
  * Comprehensive User Role Enumeration
@@ -273,14 +272,6 @@ export const BreakGlassSchema = Type.Object({
     }),
   ),
 });
-
-// ═══════════════════════════════════════════════════════════
-// COMPILED VALIDATORS
-// ═══════════════════════════════════════════════════════════
-
-export const UserValidator = TypeCompiler.Compile(UserSchema);
-export const SessionValidator = TypeCompiler.Compile(SessionSchema);
-export const BreakGlassValidator = TypeCompiler.Compile(BreakGlassSchema);
 
 // ═══════════════════════════════════════════════════════════
 // TYPE EXPORTS
