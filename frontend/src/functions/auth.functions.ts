@@ -15,7 +15,7 @@ import {
 // ── Login ─────────────────────────────────────────────────────────────────────
 
 export const loginFn = createServerFn({ method: "POST" })
-	.validator((data: unknown) => LoginInputValidator.Decode(data))
+	.inputValidator((data: unknown) => LoginInputValidator.Decode(data))
 	.handler(async ({ data }) => {
 		const event = getEvent();
 
@@ -86,7 +86,7 @@ export const getCurrentSessionFn = createServerFn({ method: "GET" }).handler(asy
 // Reason must be ≥ 20 characters per HIPAA §164.312(a)(2)(ii) audit requirements.
 
 export const breakGlassFn = createServerFn({ method: "POST" })
-	.validator((data: unknown) => BreakGlassInputValidator.Decode(data))
+	.inputValidator((data: unknown) => BreakGlassInputValidator.Decode(data))
 	.handler(async ({ data }) => {
 		const request = getRequest();
 		const cookieHeader = request.headers.get("cookie") ?? "";

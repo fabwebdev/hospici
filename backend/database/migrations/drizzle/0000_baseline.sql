@@ -36,14 +36,14 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- ───────────────────────────────────────────────────────────────────────────────
 -- Identity: Audit Logs (Append-only, partitioned)
 -- ───────────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS audit_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID NOT NULL DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id),
     user_role VARCHAR(50) NOT NULL,
     location_id UUID REFERENCES locations(id) NOT NULL,
@@ -52,16 +52,17 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     resource_id UUID NOT NULL,
     ip_address INET,
     user_agent TEXT,
-    timestamp TIMESTAMPTZ DEFAULT NOW(),
-    details JSONB
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    details JSONB,
+    PRIMARY KEY (id, timestamp)
 ) PARTITION BY RANGE (timestamp);
 
 -- Create initial partitions
 CREATE TABLE IF NOT EXISTS audit_logs_y2026m03 PARTITION OF audit_logs
     FOR VALUES FROM ('2026-03-01') TO ('2026-04-01');
 
-CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
-CREATE INDEX idx_audit_logs_location ON audit_logs(location_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_location ON audit_logs(location_id);
 
 -- ───────────────────────────────────────────────────────────────────────────────
 -- Clinical: Patients (FHIR R4 Patient resource in JSONB)
@@ -81,9 +82,9 @@ CREATE TABLE IF NOT EXISTS patients (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_patients_location ON patients(location_id);
-CREATE INDEX idx_patients_admission ON patients(admission_date);
-CREATE INDEX idx_patients_data ON patients USING GIN (data);
+CREATE INDEX IF NOT EXISTS idx_patients_location ON patients(location_id);
+CREATE INDEX IF NOT EXISTS idx_patients_admission ON patients(admission_date);
+CREATE INDEX IF NOT EXISTS idx_patients_data ON patients USING GIN (data);
 
 -- ───────────────────────────────────────────────────────────────────────────────
 -- Clinical: Pain Assessments
@@ -102,8 +103,8 @@ CREATE TABLE IF NOT EXISTS pain_assessments (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_pain_assessments_patient ON pain_assessments(patient_id);
-CREATE INDEX idx_pain_assessments_location ON pain_assessments(location_id);
+CREATE INDEX IF NOT EXISTS idx_pain_assessments_patient ON pain_assessments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_pain_assessments_location ON pain_assessments(location_id);
 
 -- ───────────────────────────────────────────────────────────────────────────────
 -- Billing: Notice of Election (NOE)
@@ -124,10 +125,10 @@ CREATE TABLE IF NOT EXISTS notice_of_election (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_noe_patient ON notice_of_election(patient_id);
-CREATE INDEX idx_noe_location ON notice_of_election(location_id);
-CREATE INDEX idx_noe_status ON notice_of_election(status);
-CREATE INDEX idx_noe_deadline ON notice_of_election(filing_deadline) WHERE status = 'draft';
+CREATE INDEX IF NOT EXISTS idx_noe_patient ON notice_of_election(patient_id);
+CREATE INDEX IF NOT EXISTS idx_noe_location ON notice_of_election(location_id);
+CREATE INDEX IF NOT EXISTS idx_noe_status ON notice_of_election(status);
+CREATE INDEX IF NOT EXISTS idx_noe_deadline ON notice_of_election(filing_deadline) WHERE status = 'draft';
 
 -- ───────────────────────────────────────────────────────────────────────────────
 -- Billing: Benefit Periods
@@ -150,9 +151,9 @@ CREATE TABLE IF NOT EXISTS benefit_periods (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_benefit_periods_patient ON benefit_periods(patient_id);
-CREATE INDEX idx_benefit_periods_location ON benefit_periods(location_id);
-CREATE INDEX idx_benefit_periods_active ON benefit_periods(patient_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_benefit_periods_patient ON benefit_periods(patient_id);
+CREATE INDEX IF NOT EXISTS idx_benefit_periods_location ON benefit_periods(location_id);
+CREATE INDEX IF NOT EXISTS idx_benefit_periods_active ON benefit_periods(patient_id, is_active);
 
 -- ───────────────────────────────────────────────────────────────────────────────
 -- Scheduling: IDG Meetings
@@ -180,8 +181,8 @@ CREATE TABLE IF NOT EXISTS idg_meetings (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_idg_meetings_patient ON idg_meetings(patient_id);
-CREATE INDEX idx_idg_meetings_location ON idg_meetings(location_id);
+CREATE INDEX IF NOT EXISTS idx_idg_meetings_patient ON idg_meetings(patient_id);
+CREATE INDEX IF NOT EXISTS idx_idg_meetings_location ON idg_meetings(location_id);
 
 -- ───────────────────────────────────────────────────────────────────────────────
 -- Scheduling: Aide Supervision
@@ -205,9 +206,9 @@ CREATE TABLE IF NOT EXISTS aide_supervisions (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_aide_supervisions_patient ON aide_supervisions(patient_id);
-CREATE INDEX idx_aide_supervisions_aide ON aide_supervisions(aide_id);
-CREATE INDEX idx_aide_supervisions_due ON aide_supervisions(next_supervision_due);
+CREATE INDEX IF NOT EXISTS idx_aide_supervisions_patient ON aide_supervisions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_aide_supervisions_aide ON aide_supervisions(aide_id);
+CREATE INDEX IF NOT EXISTS idx_aide_supervisions_due ON aide_supervisions(next_supervision_due);
 
 -- ───────────────────────────────────────────────────────────────────────────────
 -- Row-Level Security (RLS) Policies

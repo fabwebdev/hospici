@@ -1,4 +1,4 @@
-import { customType, jsonb, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { customType, jsonb, pgTable, primaryKey, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { locations } from "./locations.table.js";
 import { users } from "./users.table.js";
 
@@ -17,18 +17,24 @@ const inet = customType<{ data: string }>({
  * Drizzle manages schema typing only; partitioning is handled in migrations.
  * NEVER add UPDATE or DELETE RLS policies to this table.
  */
-export const auditLogs = pgTable("audit_logs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id),
-  userRole: varchar("user_role", { length: 50 }).notNull(),
-  locationId: uuid("location_id")
-    .references(() => locations.id)
-    .notNull(),
-  action: varchar("action", { length: 50 }).notNull(),
-  resourceType: varchar("resource_type", { length: 100 }).notNull(),
-  resourceId: uuid("resource_id").notNull(),
-  ipAddress: inet("ip_address"),
-  userAgent: text("user_agent"),
-  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow(),
-  details: jsonb("details"),
-});
+export const auditLogs = pgTable(
+  "audit_logs",
+  {
+    id: uuid("id").notNull().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id),
+    userRole: varchar("user_role", { length: 50 }).notNull(),
+    locationId: uuid("location_id")
+      .references(() => locations.id)
+      .notNull(),
+    action: varchar("action", { length: 50 }).notNull(),
+    resourceType: varchar("resource_type", { length: 100 }).notNull(),
+    resourceId: uuid("resource_id").notNull(),
+    ipAddress: inet("ip_address"),
+    userAgent: text("user_agent"),
+    timestamp: timestamp("timestamp", { withTimezone: true }).notNull().defaultNow(),
+    details: jsonb("details"),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.id, table.timestamp] }),
+  }),
+);

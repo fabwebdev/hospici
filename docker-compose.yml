@@ -29,7 +29,7 @@ services:
     ports:
       - "5433:5432"
     tmpfs:
-      - /var/lib/postgresql/data
+      - /var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hospici -d hospici_test"]
       interval: 5s
@@ -47,7 +47,7 @@ services:
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "valkey-cli", "PING"]
+      test: ["CMD", "valkey-cli", "-a", "hospici_dev_valkey", "--no-auth-warning", "PING"]
       interval: 5s
       timeout: 5s
       retries: 10

@@ -418,7 +418,7 @@ CREATE POLICY aide_supervisions_insert ON aide_supervisions
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 -- Add indexes to support RLS query patterns
-CREATE INDEX IF NOT EXISTS idx_patients_location_active ON patients(location_id, is_active);
+-- Note: idx_patients_location_active removed — patients.is_active column does not exist
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_role ON audit_logs(user_id, user_role);
 CREATE INDEX IF NOT EXISTS idx_noe_status_location ON notice_of_election(status, location_id);
 

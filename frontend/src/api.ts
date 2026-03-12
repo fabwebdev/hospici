@@ -1,10 +1,8 @@
 // api.ts
-// API router entry point for TanStack Start
-// Referenced by app.config.ts routers.api.entry
+// Vinxi API router entry point — referenced by app.config.ts routers.api.entry
+// All application API calls go to the separate Fastify backend.
+// Server functions (createServerFn) are handled via the SSR router, not here.
 
-import {
-	createStartAPIHandler,
-	defaultAPIFileRouteHandler,
-} from "@tanstack/react-start/api";
+import { defineEventHandler } from "vinxi/http";
 
-export default createStartAPIHandler(defaultAPIFileRouteHandler);
+export default defineEventHandler(() => new Response("Not Found", { status: 404 }));

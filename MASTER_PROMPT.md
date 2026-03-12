@@ -87,7 +87,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | ID | Task | Status | Size |
 |----|------|--------|------|
 | T2-1 | Patient CRUD — backend | ✅ | MEDIUM |
-| T2-2 | Patient list + detail — frontend | ⬜ | MEDIUM |
+| T2-2 | Patient list + detail — frontend | ✅ | MEDIUM |
 | T2-3 | Pain assessments + decline trajectory | ⬜ | MEDIUM |
 | T2-4 | IDG meeting recording + enforcement | ⬜ | MEDIUM |
 | T2-5 | Care plan schema + routes | ⬜ | MEDIUM |
@@ -207,6 +207,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | 2026-03-12 | T1-10 CI/CD pipeline | `.github/workflows/ci.yml`: single job — pnpm 9 + Node 22 + postgres:17 + valkey:8 services, pgcrypto enabled, migrations run, then: typecheck → biome lint → AOT violation check → unit tests → integration tests → RLS suite → frontend contract tests. Env vars injected via `env:` (no secrets in source). | T1-11 |
 | 2026-03-12 | T1-11 Valkey password + pool hardening | `valkey.conf`: uncommented `requirepass hospici_dev_valkey`. `docker-compose.yml`: healthcheck updated with `-a hospici_dev_valkey --no-auth-warning`. `db/client.ts`: `statement_timeout: 30s`, `idle_in_transaction_session_timeout: 10s`, `acquire` event warns when active > 15. `valkey.plugin.ts` already reads `VALKEY_PASSWORD`. 0 TS errors. | T2-1 |
 | 2026-03-12 | T2-1 Patient CRUD backend | Migration 0005 (care_model enum+column). `CreatePatientBody/PatchPatientBody/PatientListQuery/PatientResponse/PatientListResponse` schemas. `PatientService` (list/getById/create/patch) — full PHI encrypt/decrypt + RLS-in-transaction pattern + AuditService.log(). 4 routes. 3 new validators in typebox-compiler. `AuditService` gains optional `tx` param for atomicity. `setup.ts`: FormatRegistry (uuid/date/date-time), encrypted fixture patients, audit_logs cleaned before users in cleanupFixtures. 18 schema unit tests + 14 integration tests. 0 TS errors, 131/131 tests. | T2-2 |
+| 2026-03-12 | T2-2 Patient list + detail frontend | `shared-types/patient.ts`: PatientResponse/PatientListResponse/PatientListQuery interfaces. `patient.functions.ts`: fetchPatients/fetchPatient internal handlers + getPatientsFn/getPatientFn server fns (uses `.inputValidator()` — correct API vs broken `.validator()`). `__root.tsx`: QueryClientProvider added + real session via getCurrentSessionFn. `patients/index.tsx`: useQuery<PatientListResponse> + loader cache warm. `patients/$patientId.tsx`: new detail route, useQuery<PatientResponse>. `_authed.tsx`: all `<a href>` → `<Link>`. `vitest.config.ts`: standalone vitest config (vite not in direct deps). 8/8 contract tests, 131/131 backend tests. | T2-3 |
 
 ---
 

@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: hospici
+          POSTGRES_PASSWORD: hospici_test
+          POSTGRES_DB: hospici_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      valkey:
+        image: valkey/valkey:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://hospici:hospici_test@localhost:5432/hospici_test
+      DATABASE_URL_TEST: postgresql://hospici:hospici_test@localhost:5432/hospici_test
+      VALKEY_URL: redis://localhost:6379
+      # Non-secret CI test values — not used in production
+      PHI_ENCRYPTION_KEY: ci-test-phi-key-32-chars-padded!!
+      BETTER_AUTH_SECRET: ci-test-better-auth-secret-only!!
+      IQIES_API_URL: https://iqies-sandbox.cms.gov/api
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Static analysis ────────────────────────────────────────────────────
+
+      - name: Typecheck all packages
+        run: pnpm -r typecheck
+
+      - name: Biome lint
+        run: pnpm -r lint
+
+      - name: TypeBox AOT violation check
+        run: pnpm --filter @hospici/backend lint:no-compile-in-handler
+
+      # ── Database setup ─────────────────────────────────────────────────────
+
+      - name: Enable pgcrypto extension
+        env:
+          PGPASSWORD: hospici_test
+        run: psql -h localhost -U hospici -d hospici_test -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+
+      - name: Run database migrations
+        run: pnpm --filter @hospici/backend db:migrate
+
+      # ── Tests ──────────────────────────────────────────────────────────────
+
+      - name: Backend unit tests
+        run: pnpm --filter @hospici/backend test:unit
+
+      - name: Backend integration tests
+        run: pnpm --filter @hospici/backend test:integration
+
+      - name: Backend RLS suite
+        run: pnpm --filter @hospici/backend test:rls
+
+      - name: Frontend contract tests
+        run: pnpm --filter @hospici/frontend test:contract
