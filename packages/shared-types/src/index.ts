@@ -50,6 +50,23 @@ export type {
   PatchAllergyInput,
 } from "./medication.js";
 export type {
+  VisitType,
+  EncounterStatus,
+  VantageChartMethod,
+  VantageChartInput,
+  TraceabilityEntry,
+  EncounterResponse,
+  EncounterListResponse,
+  GenerateNarrativeResponse,
+  EnhanceNarrativeResponse,
+  ContextAlert,
+  PatientContextResponse,
+  VantageChartStep,
+  CreateEncounterInput,
+  PatchEncounterInput,
+} from "./vantageChart.js";
+export { VANTAGE_CHART_STEPS } from "./vantageChart.js";
+export type {
   IDGAttendeeNoteEntry,
   IDGAttendeeNotes,
   IDGAttendanceStatus,

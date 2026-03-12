@@ -41,6 +41,12 @@ import {
 } from "@/contexts/clinical/schemas/carePlan.schema";
 import { EsasScaleSchema } from "@/contexts/clinical/schemas/esasScale.schema";
 import {
+  CreateEncounterBodySchema,
+  EnhanceNarrativeBodySchema,
+  GenerateNarrativeBodySchema,
+  PatchEncounterBodySchema,
+} from "@/contexts/clinical/schemas/encounter.schema";
+import {
   CreateAllergyBodySchema,
   CreateMedicationBodySchema,
   MedicationAdministrationSchema,
@@ -108,6 +114,12 @@ export const Validators = {
   CreateAllergyBody: TypeCompiler.Compile(CreateAllergyBodySchema),
   PatchAllergyBody: TypeCompiler.Compile(PatchAllergyBodySchema),
   PatientAllergy: TypeCompiler.Compile(PatientAllergySchema),
+
+  // Clinical — encounters + VantageChart
+  CreateEncounterBody: TypeCompiler.Compile(CreateEncounterBodySchema),
+  PatchEncounterBody: TypeCompiler.Compile(PatchEncounterBodySchema),
+  GenerateNarrativeBody: TypeCompiler.Compile(GenerateNarrativeBodySchema),
+  EnhanceNarrativeBody: TypeCompiler.Compile(EnhanceNarrativeBodySchema),
 
   // Clinical — assessment CRUD + trajectory
   CreateAssessmentBody: TypeCompiler.Compile(CreateAssessmentBodySchema),

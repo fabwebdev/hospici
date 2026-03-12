@@ -18,3 +18,4 @@ export * from "./care-plans.table.js";
 export * from "./medications.table.js";
 export * from "./medication-administrations.table.js";
 export * from "./patient-allergies.table.js";
+export * from "./encounters.table.js";

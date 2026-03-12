@@ -39,7 +39,7 @@
 | ---------------------------------------------------------------------------------------------------- | ------ |
 | NOE 5-day —`addBusinessDays()`, skips weekends + holidays, Friday edge tested                     | ✅     |
 | IDG 15-day — hard block (no dismiss), 42 CFR §418.56. Schema logic done; route enforcement pending | 🔄     |
-| HHA supervision 14-day — alert day 12, block if overdue. 42 CFR §418.76                            | ⬜     |
+| HHA supervision 14-day — alert day 12 (`AIDE_SUPERVISION_UPCOMING`), block if overdue (`AIDE_SUPERVISION_OVERDUE`). 42 CFR §418.76 | ⬜ |
 | Hospice cap year — Nov 1–Oct 31.`getCapYear()` implemented. Nov 2 recalc job + 80% alert pending | 🔄     |
 | Benefit periods — 90/90/60/60d. F2F required period 3+, within 30 prior days                        | ⬜     |
 | HOPE windows — admission ≤7 days, discharge ≤7 days.`HOPEWindowViolationError` class exists     | ✅     |
@@ -92,9 +92,10 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | T2-4 | IDG meeting recording + enforcement   | ✅     | MEDIUM |
 | T2-5 | Care plan schema + routes             | ✅     | MEDIUM |
 | T2-6 | Medication management                 | ✅     | MEDIUM |
-| T2-7 | VantageChart™ narrative generation   | ⬜     | HIGH   |
+| T2-7 | VantageChart™ narrative generation   | ✅     | HIGH   |
 | T2-8 | Compliance alert dashboard            | ⬜     | MEDIUM |
 | T2-9 | Note review system                    | ⬜     | MEDIUM |
+| T2-10 | Visit scheduling + frequency tracking | ⬜     | MEDIUM |
 
 ### Tier 3 — Compliance & Billing _(needs: T2 exit gate; ⚠️ T3-1/2/3/7 = market-entry blockers)_
 
@@ -111,7 +112,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | T3-9  | Physician order inbox                                      | ⬜     | MEDIUM |
 | T3-10 | ADR audit record export                                    | ⬜     | MEDIUM |
 | T3-11 | QAPI management                                            | ⬜     | MEDIUM |
-| T3-12 | Pre-submission claim audit (31-point)                      | ⬜     | MEDIUM |
+| T3-12 | Pre-submission claim audit (31-point) + billing alert dashboard (CLAIM_VALIDATION_ERROR, CLAIM_REJECTION_STATUS, BILL_HOLD_* types) | ⬜ | MEDIUM |
 
 ### Tier 4 — Interoperability & Scale _(needs: T3 exit gates)_
 
@@ -125,6 +126,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | T4-6 | TypeBox AOT CI verification          | ⬜     | LOW    |
 | T4-7 | Load testing                         | ⬜     | MEDIUM |
 | T4-8 | Error monitoring                     | ⬜     | LOW    |
+| T4-9 | Predictive analytics (RAPID_DECLINE_RISK, REVOCATION_RISK, length-of-stay variance) | ⬜ | HIGH |
 
 ### Tier 5 — Mobile & Offline _(deferred — start only after Phase 6 exit gate signed off)_
 
@@ -214,7 +216,9 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 
 | 2026-03-12 | T2-5 Care plan schema + routes | Migration 0008 (`care_plans` table + unique index + GIN + RLS). `carePlan.schema.ts`: `DisciplineType` enum + `SmartGoalSchema` + `DisciplineSectionsSchema` (optional Object keys). `care-plans.table.ts`. `carePlan.service.ts`: create (idempotent)/get/patchDiscipline — JSONB merge PATCH, role gate (non-admin may only patch own discipline), version increment, RLS+audit. `carePlan.routes.ts`: 3 routes (POST/GET/PATCH). 4 new validators in typebox-compiler. `shared-types/carePlan.ts`. `carePlan.functions.ts` + 10 contract tests. `$patientId.tsx`: care plan panel (inline, no separate nav). 228/228 backend + 32/32 frontend. 0 TS errors. | T2-6 |
 
+| 2026-03-12 | Compliance dashboard planning | Competitor research (Axxess/WellSky/FireNote) reviewed. T2-8 expanded: 8→10 alert types + escalation state + "Why blocked?" cards + role-based work queues. Deferred: billing alerts→T3-12, HOPE alerts→T3-1, note alerts→T2-9, predictive risk→T4-9 (new). Added T2-10 (visit scheduling) and T4-9 (predictive analytics) to roadmap. T3-12 scope extended to include billing alert dashboard. |
 | 2026-03-12 | T2-6 Medication management | Migration 0010: 7 enums (`medication_status`, `medication_frequency_type`, `dea_schedule`, `medicare_coverage_type`, `medication_administration_type`, `allergy_severity`, `allergen_type`) + 3 tables with full RLS. `medication.schema.ts`: all 12 feature domains (active list, comfort-kit, PRN, MAR, effectiveness, controlled substance, allergy, drug interaction, physician order linkage, pharmacy, caregiver teaching, Medicare billing). `medications.table.ts` + `medication-administrations.table.ts` + `patient-allergies.table.ts`. `medication.service.ts`: 8 service methods (listMedications/createMedication/patchMedication/recordAdministration/listAdministrations/listAllergies/createAllergy/patchAllergy) — all RLS+audit. OpenFDA interaction check on medication add (fail-open). `medication.routes.ts`: 8 routes. 9 new validators in typebox-compiler. `shared-types/medication.ts`. `medications.functions.ts` + 15 contract tests. Socket.IO `medication:administered` on MAR insert. 228/228 backend + 47/47 frontend. 0 TS errors. | T2-7 |
+| 2026-03-12 | T2-7 VantageChart™ narrative generation | Migration 0011: `visit_type`, `encounter_status`, `vantage_chart_method` enums + `encounters` table with full RLS (location_read, location_insert, owner_or_admin_update). Layer 1: `NarrativeAssemblerService` (Handlebars, typed Rule DSL — 12 operators, pure switch/case, no eval), `ROUTINE_RN_TEMPLATE` (11 sections, 5 contextRules), `ContextResolverService` (Valkey TTL-300 cache, pain trend ±2 threshold, similarity check >90%). Layer 2: `vantageChart.llm.ts` (Claude claude-sonnet-4-6, rate limit 10/hour via Valkey, `FEATURE_AI_CLINICAL_NOTES` flag). 7 routes, 4 new validators in typebox-compiler. `shared-types/vantageChart.ts`. `vantage-chart.functions.ts` + 11 contract tests. Frontend: 9-step `vantage-chart.tsx` (AnimatePresence, debounced 500ms preview, CompletenessRing, ContextAlertsBar). All tests: 0 TS errors (backend + frontend), 58/58 frontend tests. | T2-8 |
 
 ---
 

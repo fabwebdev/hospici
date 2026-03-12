@@ -74,3 +74,29 @@ Valkey caching for FHIR `$everything` and cap year data.
 - Sentry SDK
 - PHI scrubbed in `beforeSend`
 - Wire to Fastify error handler + BullMQ worker errors
+
+---
+
+## T4-9 · Predictive analytics `HIGH`
+
+> Adds `RAPID_DECLINE_RISK`, `REVOCATION_RISK`, and length-of-stay variance signals to the T2-8 alert system. Requires sufficient pain assessment + visit data to train/run models.
+
+`needs:` T2-8 (alert service), T2-10 (visit scheduling), T4-7 (load tested baseline)
+
+**Signals to derive (rule-based first, ML later):**
+- `RAPID_DECLINE_RISK` — ESAS total score increase ≥30% in 14 days OR ≥2 new symptoms in last IDG
+- `REVOCATION_RISK` — patient hospitalized >3 days in 30-day window OR caregiver distress flag
+- `LENGTH_OF_STAY_VARIANCE` — patient in care >180 days AND last IDG did not document continued decline
+
+**Implementation approach:**
+1. Phase 1: Rule-based queries in a new BullMQ daily job (`predictive-risk.worker.ts`) — no external ML, pure SQL + TypeScript
+2. Phase 2: Optional — pipe features to external model endpoint (configurable, fail-open)
+
+**AlertType additions:**
+- `RAPID_DECLINE_RISK` — severity: `warning` — snoozeable (not a CMS hard block)
+- `REVOCATION_RISK` — severity: `warning` — snoozeable
+- `SUITABILITY_REVIEW` — severity: `info` — for length-of-stay outliers
+
+**PHI:** Risk scores are derived values, not PHI themselves, but trigger display of patient context — follow same PHI_ACCESS role gate as all T2-8 alerts.
+
+**Done when:** Rule-based daily job produces `RAPID_DECLINE_RISK` alerts for qualifying patients; alerts appear in T2-8 dashboard under a distinct "Risk" filter tab; PHI access gate enforced; no real ML model required for Phase 1 done-state

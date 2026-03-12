@@ -248,39 +248,106 @@ Note: eRx/EPCS integration deferred to T4-3.
 
 ## T2-8 · Compliance alert dashboard `MEDIUM`
 
-> Operational staff (DON, billing coordinator, admin) need real-time view of all compliance gaps and claim-blocking issues.
+> Operational staff (DON, billing coordinator, admin) need a real-time operational command center surfacing compliance gaps, with clear "why blocked?" context and escalation workflow.
 
 `needs:` T1-6 (BullMQ), T1-8 (Socket.IO), T2-1 (patients)
 
-**AlertType enum** (add to `@hospici/shared-types`):
-`NOE_DEADLINE | NOTR_DEADLINE | IDG_OVERDUE | AIDE_SUPERVISION_OVERDUE | HOPE_WINDOW_CLOSING | F2F_REQUIRED | CAP_THRESHOLD | BENEFIT_PERIOD_EXPIRING`
+`read:` `BE-SPEC`, `DB-ARCH`
 
-**Alert object schema:**
+---
+
+### AlertType enum (add to `@hospici/shared-types/alerts.ts`)
+
 ```typescript
-{
+// 10 types — data exists for all of these now
+export const AlertType = {
+  NOE_DEADLINE:               'NOE_DEADLINE',              // 42 CFR §418.22 — 5-day rule
+  NOTR_DEADLINE:              'NOTR_DEADLINE',             // 5-day revocation rule
+  IDG_OVERDUE:                'IDG_OVERDUE',               // 42 CFR §418.56 — hard block
+  AIDE_SUPERVISION_OVERDUE:   'AIDE_SUPERVISION_OVERDUE',  // 42 CFR §418.76
+  AIDE_SUPERVISION_UPCOMING:  'AIDE_SUPERVISION_UPCOMING', // day 12 warning
+  HOPE_WINDOW_CLOSING:        'HOPE_WINDOW_CLOSING',       // ≤2 days remaining
+  F2F_REQUIRED:               'F2F_REQUIRED',              // benefit period 3+
+  CAP_THRESHOLD:              'CAP_THRESHOLD',             // ≥80% hospice cap
+  BENEFIT_PERIOD_EXPIRING:    'BENEFIT_PERIOD_EXPIRING',   // recert needed
+  RECERTIFICATION_DUE:        'RECERTIFICATION_DUE',       // cert expiring + F2F dependency flag
+} as const;
+```
+
+**Hard-block types** (cannot be snoozed): `IDG_OVERDUE`, `NOE_DEADLINE` (critical), `NOTR_DEADLINE` (critical), `HOPE_WINDOW_CLOSING` (≤0 days).
+
+**Deferred types** (homed to correct tasks — do not build stubs here):
+- `HOPE_VALIDATION_ERROR`, `HOPE_SUBMISSION_READY` → T3-1 (HOPE live routes)
+- `NOTE_INCOMPLETE`, `NOTE_REVIEW_REQUIRED` → T2-9 (note review system)
+- `PLAN_OF_CARE_UNSIGNED` → T3-5 (electronic signatures)
+- `MISSED_VISIT`, `VISIT_FREQUENCY_VARIANCE` → T2-10 (visit scheduling — new task)
+- `CLAIM_VALIDATION_ERROR`, `CLAIM_REJECTION_STATUS`, `BILL_HOLD_*` → T3-12 (extend pre-submission audit)
+- `RAPID_DECLINE_RISK`, `REVOCATION_RISK` → T4-9 (predictive analytics — new task)
+
+---
+
+### Alert object schema
+
+```typescript
+interface Alert {
+  id: string;                  // uuid — needed for PATCH /status
   type: AlertType;
   severity: 'critical' | 'warning' | 'info';
   patientId: string;
-  patientName: string; // PHI — encrypted at rest, decrypted for authorized roles only
-  dueDate: date;
+  patientName: string;         // PHI — encrypted at rest, decrypted for authorized roles only
+  dueDate: string;             // ISO date
   daysRemaining: number;
   description: string;
+  // "Why blocked?" pattern — every alert must populate both fields
+  rootCause: string;           // machine-readable root cause, e.g. "NOE not submitted"
+  nextAction: string;          // human-readable step, e.g. "Submit NOE before Friday"
+  // Escalation state
+  status: 'new' | 'acknowledged' | 'assigned' | 'resolved';
+  assignedTo: string | null;   // userId — drives role-based work queues
+  snoozedUntil: string | null; // ISO date — null for hard-block types, enforced in service
+  resolvedAt: string | null;
 }
 ```
 
-**Backend routes:**
-- `GET /api/v1/alerts/compliance`
-- `GET /api/v1/alerts/billing`
+---
 
-Pre-computed alerts cached in Valkey (TTL 5 min) — all BullMQ deadline jobs feed into this. Dashboard loads instantly.
+### Backend
 
-**Frontend:**
-- Persistent alert banner (count badge) visible on all authed pages
-- Full dashboard at `_authed/alerts/index.tsx` — sortable by severity, filterable by type, patient deep-link
-- Critical alerts (0 days remaining): red + pulsing indicator
-- Socket.IO `alert:new` pushes real-time updates
+| File | Purpose |
+|---|---|
+| `shared-types/src/alerts.ts` | `AlertType` const + `AlertSchema` (TypeBox) + `AlertListResponse` + `AlertStatusPatchBody` |
+| `backend/db/schema/compliance-alerts.table.ts` | `compliance_alerts` Drizzle table |
+| Migration 0012 | `compliance_alerts` table + RLS (location_id scoped) + partial index on `status != 'resolved'` |
+| `alert.service.ts` | `listAlerts(filters)`, `upsertAlert()` (called by BullMQ workers), `acknowledgeAlert()`, `assignAlert()`, `resolveAlert()`, `snoozeAlert()` (guards hard-block types — throws if attempted) |
+| `alert.routes.ts` | `GET /api/v1/alerts/compliance`, `GET /api/v1/alerts/billing` (returns `[]` until T3-7), `PATCH /api/v1/alerts/:id/status` |
+| BullMQ workers (T1-6/T1-7) | Replace `fastify.log` TODO stubs → call `alertService.upsertAlert()` with `rootCause` + `nextAction` fields |
+| `typebox-compiler.ts` | Register `AlertSchema`, `AlertListResponse`, `AlertStatusPatchBody` |
 
-**Done when:** Dashboard shows all 8 alert types from real data; Socket.IO pushes new alert within 1s of BullMQ detecting gap; Valkey cache hit on second request; PHI fields only visible to roles with `PHI_ACCESS` permission
+Pre-computed alerts cached in Valkey (TTL 5 min). `upsertAlert()` writes DB + invalidates Valkey key. Dashboard loads from cache.
+
+---
+
+### Frontend
+
+| File | Purpose |
+|---|---|
+| `alerts.functions.ts` | `getComplianceAlertsFn`, `getBillingAlertsFn`, `patchAlertStatusFn` |
+| `_authed.tsx` | Add `AlertBanner` — critical count badge, warning count badge, one-click drill-in to `/alerts` |
+| `_authed/alerts/index.tsx` | Dual-tab dashboard: **Operational** (compliance types) / **Billing** (empty until T3-7) |
+| `AlertCard` component | Type icon + severity color + patient link + `rootCause` + `nextAction` + status selector dropdown |
+| `WorkQueue` component | "My items" tab — filters `assignedTo = currentUserId` + `status != 'resolved'` |
+| Socket.IO handler in `_authed.tsx` | `compliance:alert` event → invalidate query + update banner count optimistically |
+
+**Alert card UX rules:**
+- Hard-block types: no snooze option rendered, badge pulses
+- `status = 'new'`: blue dot indicator
+- `status = 'acknowledged'`: grey, no pulse
+- `status = 'assigned'`: shows assignee avatar
+- `daysRemaining ≤ 0`: red background, `OVERDUE` pill
+
+---
+
+**Done when:** Dashboard shows all 10 alert types from real data; BullMQ workers populate `rootCause` + `nextAction` on every alert; Socket.IO pushes new alert within 1s; Valkey cache hit on second request; hard-block types cannot be snoozed (service throws, frontend hides control); PHI only visible to `PHI_ACCESS` roles; `PATCH /status` updates DB + emits `compliance:alert:updated` over Socket.IO; role-based work queue shows correct subset
 
 ---
 
@@ -305,3 +372,31 @@ Pre-computed alerts cached in Valkey (TTL 5 min) — all BullMQ deadline jobs fe
 **Audit:** Every status transition logged to `audit_logs`.
 
 **Done when:** Supervisor sees pending notes queue; `REVISION_REQUESTED` triggers Socket.IO to clinician; approved note cannot be edited; all transitions in audit log
+
+**Alert integration:** On note submission, emit `alertService.upsertAlert({ type: 'NOTE_REVIEW_REQUIRED', ... })` so T2-8 dashboard shows supervisor work items.
+
+---
+
+## T2-10 · Visit scheduling + frequency tracking `MEDIUM`
+
+> Enables `MISSED_VISIT` and `VISIT_FREQUENCY_VARIANCE` alert types (deferred from T2-8). Provides the visit frequency plan and actual visit records needed by compliance monitoring.
+
+`needs:` T2-5 (care plan), T2-8 (alert service)
+
+**New tables (Migration 0013):**
+- `scheduled_visits` — `patient_id`, `discipline`, `scheduled_date`, `frequency_plan` (from care plan), `status: 'scheduled' | 'completed' | 'missed' | 'cancelled'`
+- RLS on `location_id`
+
+**AlertType additions** (add to `@hospici/shared-types/alerts.ts` when this task is built):
+- `MISSED_VISIT` — scheduled_date passed, status still `scheduled`
+- `VISIT_FREQUENCY_VARIANCE` — completed visits in rolling 30 days < planned frequency
+
+**BullMQ:** Daily job checks `scheduled_visits` for missed → emits `alertService.upsertAlert({ type: 'MISSED_VISIT', rootCause: 'Visit not completed by scheduled date', nextAction: 'Contact clinician to reschedule or document reason' })`
+
+**Routes:**
+- `GET /api/v1/patients/:id/scheduled-visits`
+- `POST /api/v1/patients/:id/scheduled-visits`
+- `PATCH /api/v1/scheduled-visits/:id/status`
+
+**Done when:** Missed visit alert appears in T2-8 dashboard within 24h of missed date; frequency variance alert fires when actual < planned; care plan frequency drives scheduling defaults
+
