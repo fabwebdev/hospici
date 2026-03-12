@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@hospici/shared-types": "workspace:*",
+    "@sinclair/typebox": "^0.34.48",
     "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-router": "^1.82.0",
     "@tanstack/react-start": "^1.82.0",

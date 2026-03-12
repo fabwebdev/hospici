@@ -6,7 +6,7 @@ import { createLoggingConfig } from "@/config/logging.config.js";
 import hopeRoutes from "@/contexts/analytics/routes/hope.routes.js";
 import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
 import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
-import identityRoutes from "@/contexts/identity/routes/identity.routes.js";
+import authRoutes from "@/contexts/identity/routes/auth.routes.js";
 import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
 import { registerRLSMiddleware } from "@/middleware/rls.middleware.js";
 import valkeyPlugin from "@/plugins/valkey.plugin.js";
@@ -121,7 +121,8 @@ export async function buildApp() {
   );
 
   // ── API Routes ────────────────────────────────────────────────────────────────
-  await fastify.register(identityRoutes, {
+  // Better Auth handler — delegates all /api/v1/auth/* to auth.handler()
+  await fastify.register(authRoutes, {
     prefix: "/api/v1/auth",
     config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
   });

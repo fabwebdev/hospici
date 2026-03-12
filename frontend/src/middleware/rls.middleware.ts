@@ -11,18 +11,24 @@ import { authMiddleware } from "./auth.middleware";
  */
 export const rlsMiddleware = createMiddleware({ type: "function" })
 	.middleware([authMiddleware])
+	// NOTE (T1-3): Header-based RLS injection will be removed once JWT claims are wired.
+	// Guards here handle unauthenticated routes where session may be null.
 	.server(async ({ next, context }) => {
-		// Add headers that the backend uses for RLS context injection
-		const backendHeaders = {
-			"X-User-ID": context.session.userId,
-			"X-User-Role": context.session.role,
-			"X-Location-ID": context.session.locationId,
+		const session = context?.session ?? null;
+		const backendHeaders: Record<string, string> = {
 			"X-Request-ID": crypto.randomUUID(),
+			...(session
+				? {
+						"X-User-ID": session.userId,
+						"X-User-Role": session.role,
+						"X-Location-ID": session.locationId,
+					}
+				: {}),
 		};
 
 		return next({
 			context: {
-				...context,
+				...(context ?? {}),
 				backendHeaders,
 			},
 		});

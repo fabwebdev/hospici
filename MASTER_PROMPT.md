@@ -71,7 +71,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | ID | Task | Status | Size |
 |----|------|--------|------|
 | T1-1 | Better Auth — backend | ✅ | MEDIUM |
-| T1-2 | Better Auth — frontend | ⬜ | MEDIUM |
+| T1-2 | Better Auth — frontend | ✅ | MEDIUM |
 | T1-3 | Replace header-stub RLS with JWT claims | ⬜ | MEDIUM |
 | T1-4 | AuditService | ⬜ | MEDIUM |
 | T1-5 | PHI encryption service | ⬜ | MEDIUM |
@@ -196,6 +196,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | 2026-03-12 | T0-1..T0-7 | All build blockers done. Migration paths fixed; 9 Drizzle tables; logging.config.ts; rate-limit + 5 routes registered; shared-types wired. | — |
 | 2026-03-12 | Schema fixes + tests | Zero TS errors: `type Static` imports, ABAC deny policy, valkey password spread, HOPE response schemas, `HOPEReportingPeriodSchema` added, dotenv installed. Fixed business-days UTC bug — 9/9 tests passing. | T1-1 |
 | 2026-03-12 | T1-1 Better Auth backend | `auth.config.ts` (drizzleAdapter + twoFactor plugin + 30min session + httpOnly cookie). `auth.routes.ts` (Web API Request bridge pattern). `auth-tables.ts` (sessions/accounts/verifications/twoFactors). `users.table.ts` extended (name/image/isActive/twoFactorEnabled). Migration 0002. 0 TS errors, 9/9 tests. | T1-2 |
+| 2026-03-12 | T1-2 Better Auth frontend | `auth.server.ts` (createAuthClient + HospiciSession type + parseHospiciSession). `validators/auth.validators.ts` (TypeBox AOT for login + break-glass). `auth.functions.ts` (loginFn/logoutFn/getCurrentSessionFn/breakGlassFn — real BA calls, Set-Cookie forwarding via vinxi/http). `auth.middleware.ts` (real session cookie validation). `rls.middleware.ts` (null session guard). `server.ts` (register authRoutes, fixing T1-1 gap). 18 pre-existing FE TS errors unchanged, 9/9 backend tests. | T1-3 |
 
 ---
 
