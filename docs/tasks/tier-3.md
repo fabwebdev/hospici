@@ -1133,12 +1133,148 @@ Add to `socket.ts`: `'benefit:period:status:changed'` event.
 
 ---
 
-## T3-5 · Electronic signatures `MEDIUM`
+## T3-5 · Electronic Signatures `HIGH`
 
-- TypeBox schema for signatures
-- Tamper-evident: hash of signed content + timestamp + signer ID stored in `audit_logs`
+> Upgraded from MEDIUM based on competitive analysis (Axxess/WellSky/FireNote). Market-credible e-signature requires workflow management, multi-party signing, and downstream controls — not just a single signing endpoint.
 
-**Done when:** Signed document hash verifiable; re-signing an already-signed document returns 409
+`read:` `docs/qa/ELECTRONIC_SIGNATURE_COMPETITIVE_ANALYSIS.md`
+
+### DB migrations
+
+**`signature_requests`** — workflow tracking:
+```typescript
+{
+  id: uuid PK;
+  locationId: uuid FK;   // RLS
+  patientId: uuid FK;
+  documentType: 'encounter' | 'order' | 'recertification' | 'f2f' | 'idg_record' | 'consent' | 'care_plan';
+  documentId: uuid;
+  status: signature_request_status;  // 10-state machine
+  requireCountersign: boolean;
+  requirePatientSignature: boolean;
+  requireSignatureTime: boolean;
+  allowGrouping: boolean;
+  deliveryMethod: 'portal' | 'fax' | 'mail' | 'courier';
+  contentHash: varchar(64);  // SHA-256
+  priorRevisionHash: varchar(64);
+  exceptionType?: 'NO_SIGNATURE_REQUIRED' | 'PATIENT_UNABLE_TO_SIGN' | 'PHYSICIAN_UNAVAILABLE';
+  requestedBy: uuid FK;
+  createdAt: timestamptz;
+  updatedAt: timestamptz;
+}
+```
+
+**`electronic_signatures`** — individual signer records:
+```typescript
+{
+  id: uuid PK;
+  signatureRequestId: uuid FK;
+  signerType: 'CLINICIAN' | 'PHYSICIAN' | 'PATIENT' | 'REPRESENTATIVE' | 'AGENCY_REP';
+  signerName: string;
+  signerLegalName?: string;
+  signerNpi?: string;
+  attestationText: string;
+  attestationAccepted: boolean;
+  documentedSignedAt?: timestamptz;  // user-reported time
+  signedAt: timestamptz;             // system time
+  ipAddress?: inet;
+  userAgent?: string;
+  signatureData?: text;  // base64 image (for stylus/finger capture)
+  typedName?: string;
+  contentHashAtSign: varchar(64);
+  signatureHash: varchar(64);  // tamper-evident
+  representativeRelationship?: string;
+  patientUnableReason?: string;
+  countersignsSignatureId?: uuid FK;  // countersign chain
+}
+```
+
+**`signature_events`** — append-only audit log
+
+All tables: RLS policies (`location_read`, `location_insert`, `location_update`).
+
+### Signature State Machine (10 states)
+
+```
+DRAFT → READY_FOR_SIGNATURE → SENT_FOR_SIGNATURE → VIEWED → PARTIALLY_SIGNED → SIGNED
+                                    ↓                    ↓
+                              REJECTED ←──────────────────┘
+                                    ↓
+                              VOIDED / NO_SIGNATURE_REQUIRED / EXPIRED
+```
+
+### SignatureService methods
+
+- `createSignatureRequest()` — checks for existing active request (409 if duplicate)
+- `sendForSignature()` — transitions to SENT_FOR_SIGNATURE
+- `markViewed()` — transitions to VIEWED
+- `signDocument()` — adds signature record; transitions to PARTIALLY_SIGNED or SIGNED
+- `countersignDocument()` — agency rep countersign
+- `rejectSignature()` — transitions to REJECTED
+- `voidSignature()` — transitions to VOIDED (not allowed from SIGNED)
+- `markNoSignatureRequired()` — exception handling
+- `verifySignature()` — cryptographic verification (content hash + signature hash)
+- `listSignatures()` — filterable list
+- `getOutstandingSignatures()` — workbench data (pending/sent/overdue/exception queues)
+
+### Routes
+
+- `POST /api/v1/signatures` — create request
+- `GET /api/v1/signatures` — list with filters
+- `GET /api/v1/signatures/outstanding` — workbench queues
+- `GET /api/v1/signatures/:id` — get request with signatures and events
+- `POST /api/v1/signatures/:id/send` — send for signature
+- `POST /api/v1/signatures/:id/viewed` — mark as viewed
+- `POST /api/v1/signatures/:id/sign` — sign document
+- `POST /api/v1/signatures/:id/countersign` — add countersignature
+- `POST /api/v1/signatures/:id/reject` — reject signature
+- `POST /api/v1/signatures/:id/void` — void request
+- `POST /api/v1/signatures/:id/exception` — mark no-signature-required
+- `GET /api/v1/signatures/verify/:signatureId` — verify signature integrity
+
+### Socket.IO events
+
+Add to `shared-types/src/socket.ts`:
+- `signature:requested` — new signature request created
+- `signature:completed` — document fully signed
+- `signature:rejected` — signature rejected
+- `signature:overdue` — signature past expiration
+
+### Frontend
+
+**`functions/signature.functions.ts`** — 12 server functions (create, send, sign, countersign, reject, void, exception, verify, list, outstanding, get, mark viewed)
+
+**`/signatures` route** — Signature Workbench:
+- 5-tab view: All / Pending / Sent / Overdue / Partially Signed
+- Signature cards with status badges, patient link, document type, days outstanding
+- Send/Void actions
+- Summary counts (overdue, pending)
+
+### Audit requirements
+
+Every mutation writes to `audit_logs`:
+- `SIGNATURE_REQUEST_CREATED`
+- `SIGNATURE_REQUEST_SENT`
+- `DOCUMENT_SIGNED` (includes contentHash, signatureHash)
+- `SIGNATURE_REQUEST_REJECTED`
+- `SIGNATURE_REQUEST_VOIDED`
+- `SIGNATURE_EXCEPTION_MARKED`
+
+### Verification
+
+The `verifySignature()` service method:
+1. Recomputes content hash and compares to `contentHashAtSign`
+2. Recomputes signature hash and compares to stored `signatureHash`
+3. Returns `{ isValid, contentHashMatch, signatureHashMatch, message }`
+
+**Done when:** 
+- Signed content is cryptographically verifiable via `GET /api/v1/signatures/verify/:id`
+- Already-signed documents reject re-sign with 409
+- Outstanding signatures trackable by status and age (pending/sent/overdue/exception queues)
+- Consents support patient/representative/agency signatures
+- Orders route to physician signature queue via T3-9 integration
+- Note-review-approved artifacts lock only after successful signature
+- RLS enforces location isolation
 
 ---
 

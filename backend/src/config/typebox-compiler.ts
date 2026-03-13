@@ -3,6 +3,16 @@
 // ⚠️  CRITICAL: Never call TypeCompiler.Compile() inside functions, class methods,
 // request handlers, or loops. Module-level only (here or in schema files).
 
+import {
+  CountersignBodySchema,
+  CreateSignatureRequestBodySchema,
+  MarkExceptionBodySchema,
+  RejectSignatureBodySchema,
+  SignatureListQuerySchema,
+  SignatureListResponseSchema,
+  SignDocumentBodySchema,
+  VoidSignatureBodySchema,
+} from "@/contexts/signatures/schemas/signature.schema.js";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 import {
@@ -31,7 +41,19 @@ import {
   HOPEHospiceCareIndexSchema,
   HOPETreatmentPreferencesMeasureSchema,
 } from "@/contexts/analytics/schemas/hopeQualityMeasures.schema";
-import { BenefitPeriodSchema, CapCalculationSchema } from "@/contexts/billing/schemas";
+import {
+  BenefitPeriodDetailResponseSchema,
+  BenefitPeriodListQuerySchema,
+  BenefitPeriodListResponseSchema,
+  BenefitPeriodResponseSchema,
+  BenefitPeriodTimelineResponseSchema,
+  CommitRecalculationBodySchema,
+  CorrectPeriodBodySchema,
+  RecalculationPreviewResponseSchema,
+  RecertifyBodySchema,
+  SetReportingPeriodBodySchema,
+} from "@/contexts/billing/schemas/benefitPeriod.schema.js";
+import { CapCalculationSchema } from "@/contexts/billing/schemas";
 import {
   CapPatientListResponseSchema,
   CapSnapshotResponseSchema,
@@ -188,9 +210,20 @@ export const Validators = {
   AssessmentListResponse: TypeCompiler.Compile(AssessmentListResponseSchema),
   TrajectoryResponse: TypeCompiler.Compile(TrajectoryResponseSchema),
 
-  // Billing — BenefitPeriod + Cap
-  BenefitPeriod: TypeCompiler.Compile(BenefitPeriodSchema),
+  // Billing — Cap
   CapCalculation: TypeCompiler.Compile(CapCalculationSchema),
+
+  // Billing — Benefit Period Control System (T3-4)
+  BenefitPeriodListQuery: TypeCompiler.Compile(BenefitPeriodListQuerySchema),
+  BenefitPeriodResponse: TypeCompiler.Compile(BenefitPeriodResponseSchema),
+  BenefitPeriodDetailResponse: TypeCompiler.Compile(BenefitPeriodDetailResponseSchema),
+  BenefitPeriodTimelineResponse: TypeCompiler.Compile(BenefitPeriodTimelineResponseSchema),
+  SetReportingPeriodBody: TypeCompiler.Compile(SetReportingPeriodBodySchema),
+  RecalculationPreviewResponse: TypeCompiler.Compile(RecalculationPreviewResponseSchema),
+  CommitRecalculationBody: TypeCompiler.Compile(CommitRecalculationBodySchema),
+  RecertifyBody: TypeCompiler.Compile(RecertifyBodySchema),
+  CorrectPeriodBody: TypeCompiler.Compile(CorrectPeriodBodySchema),
+  BenefitPeriodListResponse: TypeCompiler.Compile(BenefitPeriodListResponseSchema),
 
   // Billing — NOE/NOTR Filing Workbench (T3-2a)
   CreateNOEBody: TypeCompiler.Compile(CreateNOEBodySchema),
@@ -276,6 +309,16 @@ export const Validators = {
   CapTrendResponse: TypeCompiler.Compile(CapTrendResponseSchema),
   CapSnapshotResponse: TypeCompiler.Compile(CapSnapshotResponseSchema),
   RecalculateCapResponse: TypeCompiler.Compile(RecalculateCapResponseSchema),
+
+  // Electronic Signatures (T3-5)
+  CreateSignatureRequestBody: TypeCompiler.Compile(CreateSignatureRequestBodySchema),
+  SignDocumentBody: TypeCompiler.Compile(SignDocumentBodySchema),
+  CountersignBody: TypeCompiler.Compile(CountersignBodySchema),
+  RejectSignatureBody: TypeCompiler.Compile(RejectSignatureBodySchema),
+  VoidSignatureBody: TypeCompiler.Compile(VoidSignatureBodySchema),
+  MarkExceptionBody: TypeCompiler.Compile(MarkExceptionBodySchema),
+  SignatureListQuery: TypeCompiler.Compile(SignatureListQuerySchema),
+  SignatureListResponse: TypeCompiler.Compile(SignatureListResponseSchema),
 };
 
 /**

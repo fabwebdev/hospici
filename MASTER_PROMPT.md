@@ -107,7 +107,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | T3-2b | F2F Validity Engine + Physician Routing (benefit-period-aware, tasks, deep links) | ✅ | MEDIUM |
 | T3-3  | Hospice cap intelligence module (forecasting, drilldown, branch benchmarking, audit trail) | ✅     | HIGH   |
 | T3-4  | Benefit Period Control System (period engine, recert timeline, transfer-aware recalculation, reporting flag, error correction, BullMQ + alerts, manager UI) | ⬜     | HIGH   |
-| T3-5  | Electronic signatures                                      | ⬜     | MEDIUM |
+| T3-5  | Electronic signatures                                      | ✅     | HIGH   |
 | T3-6  | FHIR R4 Patient + Observation endpoints                    | ⬜     | HIGH   |
 | T3-7a | Hospice Claim Lifecycle + 837i Generation (state machine, readiness gating, holds, correction/void, workbench routes) | ⬜ | HIGH |
 | T3-7b | ERA 835 + Remittance Reconciliation + Denial Management (ingest, auto-match, auto-post, exception queue) | ⬜ | HIGH |

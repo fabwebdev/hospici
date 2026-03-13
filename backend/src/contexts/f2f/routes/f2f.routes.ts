@@ -16,7 +16,7 @@ import { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import { db } from "@/db/client.js";
 import { benefitPeriods } from "@/db/schema/benefit-periods.table.js";
 import { faceToFaceEncounters } from "@/db/schema/face-to-face-encounters.table.js";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import type { CreateF2FBody, PatchF2FBody } from "../schemas/f2f.schema.js";
 import { F2FTaskService } from "../services/f2fTask.service.js";
@@ -105,7 +105,7 @@ export async function f2fPatientRoutes(fastify: FastifyInstance): Promise<void> 
         ...encounter,
         validity,
         periodNumber: period.periodNumber,
-        periodType: period.periodType,
+        admissionType: period.admissionType,
       });
     },
   );
@@ -123,7 +123,7 @@ export async function f2fPatientRoutes(fastify: FastifyInstance): Promise<void> 
       .select({
         encounter: faceToFaceEncounters,
         periodNumber: benefitPeriods.periodNumber,
-        periodType: benefitPeriods.periodType,
+        admissionType: benefitPeriods.admissionType,
       })
       .from(faceToFaceEncounters)
       .innerJoin(benefitPeriods, eq(faceToFaceEncounters.benefitPeriodId, benefitPeriods.id))
@@ -131,10 +131,10 @@ export async function f2fPatientRoutes(fastify: FastifyInstance): Promise<void> 
       .orderBy(desc(faceToFaceEncounters.f2fDate));
 
     return reply.send({
-      encounters: encounters.map(({ encounter, periodNumber, periodType }) => ({
+      encounters: encounters.map(({ encounter, periodNumber, admissionType }) => ({
         ...encounter,
         periodNumber,
-        periodType,
+        admissionType,
       })),
       total: encounters.length,
     });
@@ -242,7 +242,12 @@ export async function f2fStandaloneRoutes(fastify: FastifyInstance): Promise<voi
           eq(faceToFaceEncounters.isValidForRecert, true),
         ),
       )
-      .where(and(eq(benefitPeriods.isActive, true), sql`${benefitPeriods.periodNumber} >= 3`));
+      .where(
+        and(
+          notInArray(benefitPeriods.status, ["closed", "revoked", "discharged", "transferred_out"]),
+          sql`${benefitPeriods.periodNumber} >= 3`,
+        ),
+      );
 
     // Group by period and keep the valid encounter if present
     const periodMap = new Map<string, (typeof periods)[0]>();
@@ -266,14 +271,14 @@ export async function f2fStandaloneRoutes(fastify: FastifyInstance): Promise<voi
         patientId: period.patientId,
         patientName: "[PHI]",
         periodNumber: period.periodNumber,
-        periodType: period.periodType,
+        admissionType: period.admissionType,
         startDate: period.startDate,
         endDate: period.endDate,
         recertDate: period.endDate,
         daysUntilRecert,
         f2fStatus,
         lastF2FDate: encounter?.f2fDate ?? undefined,
-        assignedPhysicianId: period.f2fPhysicianId ?? undefined,
+        assignedPhysicianId: period.f2fProviderId ?? undefined,
       };
     });
 

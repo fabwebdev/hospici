@@ -19,7 +19,7 @@ import { benefitPeriods } from "@/db/schema/benefit-periods.table.js";
 import { faceToFaceEncounters } from "@/db/schema/face-to-face-encounters.table.js";
 import { complianceEvents } from "@/events/compliance-events.js";
 import { Worker } from "bullmq";
-import { and, eq, sql } from "drizzle-orm";
+import { and, notInArray, sql } from "drizzle-orm";
 import type Valkey from "iovalkey";
 import pino from "pino";
 import { QUEUE_NAMES, createBullMQConnection } from "../queue.js";
@@ -53,7 +53,12 @@ export async function runF2FDeadlineCheck(valkey: Valkey): Promise<F2FDeadlineJo
   const activePeriods = await db
     .select()
     .from(benefitPeriods)
-    .where(and(eq(benefitPeriods.isActive, true), sql`${benefitPeriods.periodNumber} >= 3`));
+    .where(
+      and(
+        notInArray(benefitPeriods.status, ["closed", "revoked", "discharged", "transferred_out"]),
+        sql`${benefitPeriods.periodNumber} >= 3`,
+      ),
+    );
 
   for (const period of activePeriods) {
     const recertDate = new Date(period.endDate);

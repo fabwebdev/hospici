@@ -97,6 +97,9 @@ function AuthedLayout() {
                 <Link to="/filings" className="px-3 py-2 text-gray-700 hover:text-blue-600">
                   Filings
                 </Link>
+                <Link to="/signatures" className="px-3 py-2 text-gray-700 hover:text-blue-600">
+                  Signatures
+                </Link>
                 <Link to="/cap" className="px-3 py-2 text-gray-700 hover:text-blue-600">
                   Cap
                 </Link>

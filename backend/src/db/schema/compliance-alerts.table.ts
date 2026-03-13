@@ -32,6 +32,12 @@ export const alertTypeEnum = pgEnum("alert_type_enum", [
   "CAP_THRESHOLD_80",
   "CAP_THRESHOLD_90",
   "CAP_PROJECTED_OVERAGE",
+  // T3-4 Benefit Period Control System
+  "RECERT_DUE",
+  "RECERT_AT_RISK",
+  "RECERT_PAST_DUE",
+  "F2F_DUE_SOON",
+  "BENEFIT_PERIOD_BILLING_RISK",
 ]);
 
 export const alertSeverityEnum = pgEnum("alert_severity_enum", ["critical", "warning", "info"]);

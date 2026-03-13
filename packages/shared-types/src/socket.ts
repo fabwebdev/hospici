@@ -239,6 +239,37 @@ export interface ServerToClientEvents {
 		taskId: string;
 	}) => void;
 
+	// Benefit Period Control System (T3-4)
+	"benefit:period:status:changed": (data: {
+		locationId: string;
+		periodId: string;
+		patientId: string;
+		periodNumber: number;
+		oldStatus: string;
+		newStatus: string;
+		billingRisk: boolean;
+		checkedAt: string;
+	}) => void;
+
+	"benefit:period:recert_task": (data: {
+		periodId: string;
+		patientId: string;
+		locationId: string;
+		periodNumber: number;
+		recertDueDate: string;
+		severity: "warning" | "critical";
+	}) => void;
+
+	"benefit:period:f2f_task": (data: {
+		periodId: string;
+		patientId: string;
+		locationId: string;
+		periodNumber: number;
+		f2fWindowStart: string;
+		f2fWindowEnd: string;
+		severity: "warning" | "critical";
+	}) => void;
+
 	// Security
 	"break:glass:access": (data: {
 		userId: string;
@@ -246,6 +277,41 @@ export interface ServerToClientEvents {
 		patientId: string;
 		reason: string;
 		expiresAt: string;
+	}) => void;
+
+	// Electronic Signatures (T3-5)
+	"signature:requested": (data: {
+		requestId: string;
+		patientId: string;
+		documentType: string;
+		documentId: string;
+		requestedBy: string;
+	}) => void;
+
+	"signature:completed": (data: {
+		requestId: string;
+		patientId: string;
+		documentType: string;
+		documentId: string;
+		signedBy: string;
+		signedAt: string;
+	}) => void;
+
+	"signature:rejected": (data: {
+		requestId: string;
+		patientId: string;
+		documentType: string;
+		documentId: string;
+		rejectedBy: string;
+		reason: string;
+	}) => void;
+
+	"signature:overdue": (data: {
+		requestId: string;
+		patientId: string;
+		documentType: string;
+		documentId: string;
+		daysOverdue: number;
 	}) => void;
 }
 

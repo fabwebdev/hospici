@@ -21,6 +21,10 @@ import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js"
 import visitSchedulePatientRoutes, {
   visitScheduleStandaloneRoutes,
 } from "@/contexts/scheduling/routes/visitSchedule.routes.js";
+import {
+  signatureRoutes,
+  patientSignatureRoutes,
+} from "@/contexts/signatures/routes/signature.routes.js";
 import { closeQueues, scheduleDailyJobs } from "@/jobs/queue.js";
 import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.worker.js";
 import { createCapRecalculationWorker } from "@/jobs/workers/cap-recalculation.worker.js";
@@ -170,6 +174,8 @@ export async function buildApp() {
   await fastify.register(f2fPatientRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(f2fStandaloneRoutes, { prefix: "/api/v1" });
   await fastify.register(capRoutes, { prefix: "/api/v1/cap" });
+  await fastify.register(signatureRoutes, { prefix: "/api/v1/signatures" });
+  await fastify.register(patientSignatureRoutes, { prefix: "/api/v1/patients/:patientId/signatures" });
 
   // ── BullMQ Workers ────────────────────────────────────────────────────────────
   // Workers are created after Fastify is fully configured so the logger is ready.

@@ -52,7 +52,7 @@ export class F2FTaskService {
     const recertDate = new Date(period.endDate);
     const dueAt = addBusinessDays(recertDate, -5);
 
-    const physicianId = period.f2fPhysicianId ?? null;
+    const physicianId = period.f2fProviderId ?? null;
 
     const result = await db.transaction(async (tx) => {
       // Create orders row

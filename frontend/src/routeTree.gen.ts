@@ -6,7 +6,9 @@
 import { Route as rootRoute } from "./routes/__root";
 import { Route as authedRoute } from "./routes/_authed";
 import { Route as authedAlertsIndexRoute } from "./routes/_authed/alerts/index";
+import { Route as authedBenefitPeriodsIndexRoute } from "./routes/_authed/benefit-periods/index";
 import { Route as authedCapIndexRoute } from "./routes/_authed/cap/index";
+import { Route as authedComplianceRecertQueueRoute } from "./routes/_authed/compliance/recert-queue";
 import { Route as authedDashboardRoute } from "./routes/_authed/dashboard";
 import { Route as authedFilingsF2FQueueRoute } from "./routes/_authed/filings/f2f-queue";
 import { Route as authedFilingsIndexRoute } from "./routes/_authed/filings/index";
@@ -22,6 +24,7 @@ import { Route as authedPatientsPatientIdIdgScheduleRoute } from "./routes/_auth
 import { Route as authedPatientsPatientIdVisitsIndexRoute } from "./routes/_authed/patients/$patientId/visits/index";
 import { Route as authedPatientsIndexRoute } from "./routes/_authed/patients/index";
 import { Route as authedReviewQueueIndexRoute } from "./routes/_authed/review-queue/index";
+import { Route as authedSignaturesIndexRoute } from "./routes/_authed/signatures/index";
 import { Route as IndexRoute } from "./routes/index";
 import { Route as LoginRoute } from "./routes/login";
 
@@ -47,6 +50,9 @@ const authedRouteWithChildren = authedRoute.addChildren({
   authedFilingsIndexRoute,
   authedFilingsF2FQueueRoute,
   authedCapIndexRoute,
+  authedBenefitPeriodsIndexRoute,
+  authedComplianceRecertQueueRoute,
+  authedSignaturesIndexRoute,
 });
 
 export const routeTree = rootRoute.addChildren({
@@ -196,6 +202,27 @@ declare module "@tanstack/react-router" {
       path: "/cap";
       fullPath: "/cap";
       preLoaderRoute: typeof authedCapIndexRoute;
+      parentRoute: typeof authedRoute;
+    };
+    "/_authed/benefit-periods/": {
+      id: "/_authed/benefit-periods/";
+      path: "/benefit-periods";
+      fullPath: "/benefit-periods";
+      preLoaderRoute: typeof authedBenefitPeriodsIndexRoute;
+      parentRoute: typeof authedRoute;
+    };
+    "/_authed/compliance/recert-queue": {
+      id: "/_authed/compliance/recert-queue";
+      path: "/compliance/recert-queue";
+      fullPath: "/compliance/recert-queue";
+      preLoaderRoute: typeof authedComplianceRecertQueueRoute;
+      parentRoute: typeof authedRoute;
+    };
+    "/_authed/signatures/": {
+      id: "/_authed/signatures/";
+      path: "/signatures";
+      fullPath: "/signatures";
+      preLoaderRoute: typeof authedSignaturesIndexRoute;
       parentRoute: typeof authedRoute;
     };
   }

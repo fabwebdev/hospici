@@ -30,3 +30,4 @@ export * from "./orders.table.js";
 export * from "./face-to-face-encounters.table.js";
 export * from "./cap-snapshots.table.js";
 export * from "./cap-patient-contributions.table.js";
+export * from "./signature-requests.table.js";
