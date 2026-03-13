@@ -30,6 +30,7 @@ export const QUEUE_NAMES = {
   CLAIM_SUBMISSION_DLQ: "claim-submission-dlq",
   ERA_INGESTION: "era-ingestion",
   ERA_RECONCILIATION: "era-reconciliation",
+  VENDOR_COMPLIANCE_CHECK: "vendor-compliance-check",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -151,6 +152,17 @@ export const eraIngestionQueue = new Queue(QUEUE_NAMES.ERA_INGESTION, {
  * Daily reconciliation scan — 0 7 * * * (flags stale unposted remittances).
  */
 export const eraReconciliationQueue = new Queue(QUEUE_NAMES.ERA_RECONCILIATION, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
+// ── Vendor compliance check queue (T3-8) ─────────────────────────────────────
+
+/**
+ * Weekly compliance scan — Monday 08:00 UTC.
+ * Checks expiring BAAs, missing BAAs, and overdue security reviews.
+ */
+export const vendorComplianceQueue = new Queue(QUEUE_NAMES.VENDOR_COMPLIANCE_CHECK, {
   connection: createBullMQConnection(),
   defaultJobOptions,
 });
@@ -278,6 +290,16 @@ export async function scheduleDailyJobs(): Promise<void> {
       jobId: "era-daily-reconciliation",
     },
   );
+
+  // Vendor compliance check — weekly on Monday 08:00 UTC (T3-8)
+  await vendorComplianceQueue.add(
+    "weekly-check",
+    {},
+    {
+      repeat: { pattern: "0 8 * * 1" },
+      jobId: "vendor-weekly-compliance-check",
+    },
+  );
 }
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
@@ -297,4 +319,5 @@ export async function closeQueues(): Promise<void> {
   await claimSubmissionQueue.close();
   await eraIngestionQueue.close();
   await eraReconciliationQueue.close();
+  await vendorComplianceQueue.close();
 }

@@ -8,6 +8,7 @@ import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
 import capRoutes from "@/contexts/billing/routes/cap.routes.js";
 import { claimRoutes } from "@/contexts/billing/routes/claim.routes.js";
 import { claimAuditRoutes } from "@/contexts/billing/routes/claimAudit.routes.js";
+import { vendorRoutes } from "@/contexts/vendors/routes/vendor.routes.js";
 import { setClaimEventEmitter } from "@/contexts/billing/services/claim.service.js";
 import { setClaimAuditEventEmitter } from "@/contexts/billing/services/claimAudit.service.js";
 import { complianceEvents } from "@/events/compliance-events.js";
@@ -31,10 +32,13 @@ import {
   patientSignatureRoutes,
   signatureRoutes,
 } from "@/contexts/signatures/routes/signature.routes.js";
+import { db } from "@/db/client.js";
 import { closeQueues, scheduleDailyJobs } from "@/jobs/queue.js";
+import { sql } from "drizzle-orm";
 import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.worker.js";
 import { createCapRecalculationWorker } from "@/jobs/workers/cap-recalculation.worker.js";
 import { createClaimSubmissionWorker } from "@/jobs/workers/claim-submission.worker.js";
+import { createVendorComplianceWorker } from "@/jobs/workers/vendor-compliance-check.worker.js";
 import { createF2FDeadlineWorker } from "@/jobs/workers/f2f-deadline-check.worker.js";
 import { createHopeDeadlineCheckWorker } from "@/jobs/workers/hope-deadline-check.worker.js";
 import { createHopeSubmissionWorker } from "@/jobs/workers/hope-submission.worker.js";
@@ -194,6 +198,56 @@ export async function buildApp() {
   await fastify.register(fhirRoutes, { prefix: "/fhir/r4" });
   await fastify.register(claimRoutes, { prefix: "/api/v1" });
   await fastify.register(claimAuditRoutes, { prefix: "/api/v1" });
+  await fastify.register(vendorRoutes, { prefix: "/api/v1/vendors" });
+
+  // ── Internal PHI Encryption Health Check ─────────────────────────────────
+  // 127.0.0.1 only — not exposed through reverse proxy or auth middleware.
+  fastify.get(
+    "/api/v1/health/phi-encryption",
+    {
+      schema: {
+        tags: ["System"],
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              status: { type: "string" },
+              message: { type: "string" },
+            },
+          },
+          403: {
+            type: "object",
+            properties: { error: { type: "string" } },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      const addr = req.socket.remoteAddress;
+      if (addr !== "127.0.0.1" && addr !== "::1") {
+        return reply.code(403).send({ error: "Forbidden" });
+      }
+      try {
+        const testValue = "phi-encryption-health-check";
+        const encResult = await db.execute(
+          sql`SELECT pgp_sym_encrypt(${testValue}, ${env.phiEncryptionKey}) AS encrypted`,
+        );
+        const encVal = (encResult.rows[0] as Record<string, string>).encrypted;
+        const decResult = await db.execute(
+          sql`SELECT pgp_sym_decrypt(${encVal}::bytea, ${env.phiEncryptionKey}) AS decrypted`,
+        );
+        const decVal = (decResult.rows[0] as Record<string, string>).decrypted;
+        const pass = decVal === testValue;
+        return reply.send({
+          status: pass ? "pass" : "fail",
+          message: pass ? "PHI encryption operational" : "Decryption mismatch",
+        });
+      } catch (err) {
+        fastify.log.error(err, "PHI encryption health check failed");
+        return reply.send({ status: "fail", message: "PHI encryption error" });
+      }
+    },
+  );
 
   // ── BullMQ Workers ────────────────────────────────────────────────────────────
   // Workers are created after Fastify is fully configured so the logger is ready.
@@ -207,6 +261,7 @@ export async function buildApp() {
   const missedVisitCheckWorker = createMissedVisitCheckWorker(fastify.valkey);
   const f2fDeadlineWorker = createF2FDeadlineWorker(fastify.valkey);
   const claimSubmissionWorker = createClaimSubmissionWorker(fastify.valkey);
+  const vendorComplianceWorker = createVendorComplianceWorker(fastify.valkey);
 
   fastify.addHook("onClose", async () => {
     await noeWorker.close();
@@ -219,6 +274,7 @@ export async function buildApp() {
     await missedVisitCheckWorker.close();
     await f2fDeadlineWorker.close();
     await claimSubmissionWorker.close();
+    await vendorComplianceWorker.close();
     await closeQueues();
     fastify.log.info("BullMQ workers and queues closed");
   });

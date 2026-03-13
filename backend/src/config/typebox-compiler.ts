@@ -13,6 +13,17 @@ import {
   WarnOverrideBodySchema,
 } from "@/contexts/billing/schemas/claimAudit.schema.js";
 import {
+  CreateVendorBodySchema,
+  CreateVendorReviewBodySchema,
+  ExpiringBaaResponseSchema,
+  UpdateVendorBodySchema,
+  VendorDetailResponseSchema,
+  VendorListQuerySchema,
+  VendorListResponseSchema,
+  VendorResponseSchema,
+  VendorReviewResponseSchema,
+} from "@/contexts/vendors/schemas/vendor.schema.js";
+import {
   CountersignBodySchema,
   CreateSignatureRequestBodySchema,
   MarkExceptionBodySchema,
@@ -404,6 +415,17 @@ export const Validators = {
   PatientSearchQuery: TypeCompiler.Compile(PatientSearchQuerySchema),
   ObservationSearchQuery: TypeCompiler.Compile(ObservationSearchQuerySchema),
   OperationOutcome: TypeCompiler.Compile(OperationOutcomeSchema),
+
+  // Vendor Governance + BAA Registry (T3-8)
+  VendorResponse: TypeCompiler.Compile(VendorResponseSchema),
+  VendorReviewResponse: TypeCompiler.Compile(VendorReviewResponseSchema),
+  VendorDetailResponse: TypeCompiler.Compile(VendorDetailResponseSchema),
+  CreateVendorBody: TypeCompiler.Compile(CreateVendorBodySchema),
+  UpdateVendorBody: TypeCompiler.Compile(UpdateVendorBodySchema),
+  CreateVendorReviewBody: TypeCompiler.Compile(CreateVendorReviewBodySchema),
+  VendorListQuery: TypeCompiler.Compile(VendorListQuerySchema),
+  VendorListResponse: TypeCompiler.Compile(VendorListResponseSchema),
+  ExpiringBaaResponse: TypeCompiler.Compile(ExpiringBaaResponseSchema),
 
   // Claim Audit Rules Engine (T3-12)
   AuditFailure: TypeCompiler.Compile(AuditFailureSchema),

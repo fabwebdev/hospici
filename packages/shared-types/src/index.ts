@@ -298,3 +298,18 @@ export type {
   OperationOutcome,
   FhirCapabilityStatement,
 } from "./fhir.js";
+export type {
+  BaaStatus,
+  VendorServiceCategory,
+  PhiExposureLevel,
+  ReviewOutcome,
+  Vendor,
+  VendorReview,
+  VendorDetail,
+  CreateVendorInput,
+  UpdateVendorInput,
+  CreateVendorReviewInput,
+  VendorListResponse,
+  ExpiringBaaItem,
+  ExpiringBaaResponse,
+} from "./vendors.js";

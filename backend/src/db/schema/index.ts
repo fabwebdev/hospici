@@ -34,3 +34,5 @@ export * from "./signature-requests.table.js";
 export * from "./claims.table.js";
 export * from "./claim-audit-snapshots.table.js";
 export * from "./remittances.table.js";
+export * from "./vendors.table.js";
+export * from "./vendor-reviews.table.js";

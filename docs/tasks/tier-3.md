@@ -1582,43 +1582,237 @@ Each item below must be verified in code and tested — not just documented:
 
 ---
 
-## T3-9 · Physician order inbox + paperless order routing `MEDIUM`
+## T3-9 · Physician order inbox + paperless order routing `HIGH`
 
-> Verbal orders, DME requests, and frequency changes route automatically to physician for e-signature.
+> Upgraded from MEDIUM based on competitor research (2026-03-13) — see `docs/qa/PHYSICIAN_ORDER_INBOX_COMPETITIVE_ANALYSIS.md`. Axxess, WellSky, and FireNote confirm that a simple sign/reject queue is not competitive. This replaces the minimal 4-route spec with a full physician work-queue service.
 
-`needs:` T3-5 (e-signatures), T1-6 (BullMQ), T1-8 (Socket.IO)
+`needs:` T3-5 (e-signatures), T1-6 (BullMQ), T1-8 (Socket.IO), T3-2b (orders table bootstrap + F2F task routing)
 
-> **Table bootstrap note:** The `orders` table and its pg enums (`order_status_enum`, `order_type_enum`, `provider_role_enum`, `encounter_setting_enum`) were created in **T3-2b migration 0018** as a minimal bootstrap. Do NOT re-create the table or enums — only add the inbox routes and BullMQ job on top of the existing schema.
+`read:` `BE-SPEC`, `DB-ARCH`, `backend/src/contexts/f2f/` (T3-2b F2F routing pattern), `backend/src/contexts/billing/` (T3-7a claim readiness — unsigned orders feed SIGNED_ORDERS_AND_PLAN_OF_CARE rule)
+
+---
+
+### Context + Architecture Boundary
+
+**T3-5 owns:** signature request records, attestation, countersign, verification, signature state machine.
+
+**T3-9 owns:** physician work queue, task routing, order/task metadata, reminders, due dates, rerouting, work-item lifecycle, exception handling.
+
+This keeps inbox orchestration separate from the legal signature engine — the same clean split used between T3-7a (claim lifecycle) and T3-12 (audit rules).
 
 **Bounded context:** `backend/src/contexts/orders/` (partially exists from T3-2b — add `order.service.ts` + `order.routes.ts`)
 
-**`orders` table (already migrated — reference only):**
+---
+
+### DB Migration
+
+> **Table bootstrap note:** The `orders` table and its pg enums (`order_status_enum`, `order_type_enum`, `provider_role_enum`, `encounter_setting_enum`) were created in **T3-2b migration 0018**. Do NOT re-create them.
+
+**Migration: extend `order_status_enum`** (ALTER TYPE … ADD VALUE) to add the missing states:
+
+Current values (from T3-2b): `PENDING_SIGNATURE | SIGNED | REJECTED | EXPIRED`
+
+Add:
+```sql
+ALTER TYPE order_status_enum ADD VALUE IF NOT EXISTS 'DRAFT';
+ALTER TYPE order_status_enum ADD VALUE IF NOT EXISTS 'VIEWED';
+ALTER TYPE order_status_enum ADD VALUE IF NOT EXISTS 'VOIDED';
+ALTER TYPE order_status_enum ADD VALUE IF NOT EXISTS 'NO_SIGNATURE_REQUIRED';
+ALTER TYPE order_status_enum ADD VALUE IF NOT EXISTS 'COMPLETED_RETURNED';
+```
+
+Full state set after migration:
+```
+DRAFT → PENDING_SIGNATURE → VIEWED → SIGNED
+                        ↘ REJECTED
+                        ↘ EXPIRED (system)
+                        ↘ VOIDED (admin override)
+                        ↘ NO_SIGNATURE_REQUIRED (exception)
+SIGNED → COMPLETED_RETURNED (after signed doc confirmed in chart)
+```
+
+**Migration: extend `orders` table** (ALTER TABLE … ADD COLUMN) — add missing metadata columns:
+
 ```typescript
 {
-  type: 'VERBAL' | 'DME' | 'FREQUENCY_CHANGE' | 'MEDICATION' | 'F2F_DOCUMENTATION';
-  patientId: uuid FK;
-  locationId: uuid FK;   // RLS
-  issuingClinicianId: uuid FK → users.id;
-  physicianId: uuid FK → users.id;
-  content: string;
-  status: order_status_enum;  // PENDING_SIGNATURE | SIGNED | REJECTED | EXPIRED
-  dueAt: date;                // 72h from creation for verbals (CMS requirement)
-  signedAt?: timestamptz;
-  rejectionReason?: string;
-  createdAt: timestamptz;
-  updatedAt: timestamptz;
+  // existing columns from T3-2b — do not touch
+  // new columns:
+  verbalReadBackFlag: boolean;          // CMS verbal-order read-back compliance
+  verbalReadBackAt?: timestamptz;       // when read-back was confirmed
+  deliveryMethod?: 'PORTAL' | 'FAX' | 'MAIL' | 'COURIER';  // physician delivery preference (fax gateway deferred T4)
+  urgencyReason?: string;               // human-readable explanation of due date source
+  linkedSignatureRequestId?: uuid FK → signature_requests.id;  // T3-5 linkage
+  groupBundleId?: uuid;                 // optional: group multiple orders for one physician signature session
+  noSignatureReason?: string;           // required when status = NO_SIGNATURE_REQUIRED
+  voidedAt?: timestamptz;
+  voidedByUserId?: uuid FK → users.id;
+  completedReturnedAt?: timestamptz;    // when signed doc confirmed in chart
+  reminderCount: integer DEFAULT 0;     // how many reminders sent
+  lastReminderAt?: timestamptz;
 }
 ```
 
-**Routes:**
-- `POST /api/v1/orders` (clinician creates)
-- `GET /api/v1/orders/inbox` (physician sees pending)
-- `POST /api/v1/orders/:id/sign`
-- `POST /api/v1/orders/:id/reject`
+RLS: `location_read` + `location_insert` + `location_update` (already in place from T3-2b — no change needed).
 
-**BullMQ `order-expiry-check`:** Daily scan for unsigned verbals approaching 72h → Socket.IO `order:expiring` to physician session.
+---
 
-**Done when:** Verbal order created by nurse routes to physician inbox; physician signs via e-sig; 72h warning fires via Socket.IO; unsigned order at 72h logged as compliance gap in alert dashboard
+### TypeBox Schemas
+
+Add to `packages/shared-types/src/orders.ts` (new file) + compile in `typebox-compiler.ts`:
+
+- `OrderStatusSchema` — enum of all 9 states
+- `OrderTypeSchema` — enum of all 5 types
+- `CreateOrderBodySchema` — clinician input: `{ type, patientId, physicianId, content, dueAt, verbalReadBackFlag?, deliveryMethod? }`
+- `OrderResponseSchema` — full order shape (mirrors DB, camelCase) with `urgencyLabel` + `blockedDownstream` computed fields
+- `OrderInboxResponseSchema` — paginated list with `{ pending, overdue, rejected, exceptions, completed }` counts
+- `SignOrderBodySchema` — `{ linkedSignatureRequestId? }` (T3-5 hook)
+- `RejectOrderBodySchema` — `{ rejectionReason: string }`
+- `ExceptionOrderBodySchema` — `{ noSignatureReason: string }`
+- `ResendOrderBodySchema` — `{ deliveryMethod?: DeliveryMethod; physicianId?: uuid }` (reroute)
+
+---
+
+### State Machine (valid transitions)
+
+```
+DRAFT            → PENDING_SIGNATURE (clinician submits)
+PENDING_SIGNATURE→ VIEWED (physician opens)
+PENDING_SIGNATURE→ SIGNED (direct sign without view — allowed)
+PENDING_SIGNATURE→ REJECTED
+PENDING_SIGNATURE→ EXPIRED (system, BullMQ)
+PENDING_SIGNATURE→ VOIDED (admin/supervisor only)
+PENDING_SIGNATURE→ NO_SIGNATURE_REQUIRED (supervisor/admin only)
+VIEWED           → SIGNED
+VIEWED           → REJECTED
+VIEWED           → VOIDED
+SIGNED           → COMPLETED_RETURNED (after chart confirmation)
+```
+
+Invalid transition attempts → 422 + `ORDER_INVALID_TRANSITION` error code.
+
+---
+
+### Service: `OrderService`
+
+Methods:
+- `createOrder(input)` — insert row, auto-set `urgencyReason` based on type (verbal = "72h CMS window", DME = "delivery coordination", F2F = "recert blocking"), emit `order:created`
+- `getInbox(physicianId, filters)` — paginated by status group, includes `blockedDownstream` message computed from T3-7a + T3-12 readiness flags
+- `getOrder(id)` — detail with linked signature request (T3-5) and linked F2F encounter (T3-2b) if applicable
+- `markViewed(id)` — PENDING_SIGNATURE → VIEWED, emit `order:viewed`
+- `signOrder(id, linkedSignatureRequestId?)` — → SIGNED, emit `order:signed`, upsert `SIGNED_ORDERS_AND_PLAN_OF_CARE` resolution hint to T3-12 rule
+- `rejectOrder(id, reason)` — → REJECTED, emit `order:rejected`
+- `voidOrder(id, supervisorUserId)` — supervisor/admin only → VOIDED
+- `markNoSignatureRequired(id, reason, supervisorUserId)` — supervisor/admin only → NO_SIGNATURE_REQUIRED, emit `order:exception`
+- `resendOrder(id, input)` — reroute to different physician or change delivery method, reset reminder count
+- `markReturnedToChart(id)` — SIGNED → COMPLETED_RETURNED, emit `order:completed_returned`
+- `listOverdue()` — all PENDING_SIGNATURE/VIEWED past `dueAt`, used by BullMQ worker + dashboard
+- `getPatientOrders(patientId)` — all orders for patient orders tab
+
+---
+
+### Routes
+
+```
+POST   /api/v1/orders                         clinician creates order
+GET    /api/v1/orders/inbox                   physician inbox (pending + overdue groups)
+GET    /api/v1/orders/overdue                 overdue list (supervisor / billing view)
+GET    /api/v1/orders/:id                     order detail
+POST   /api/v1/orders/:id/viewed             mark viewed (physician)
+POST   /api/v1/orders/:id/sign               sign
+POST   /api/v1/orders/:id/reject             reject
+POST   /api/v1/orders/:id/void               void (supervisor/admin)
+POST   /api/v1/orders/:id/exception          mark no-signature-required (supervisor/admin)
+POST   /api/v1/orders/:id/resend             resend / reroute
+POST   /api/v1/orders/:id/returned           mark completed-returned (clinician/admin)
+GET    /api/v1/patients/:patientId/orders    patient orders tab
+```
+
+---
+
+### BullMQ Workers
+
+**`order-expiry-check` worker** (daily 07:00 UTC, replaces stub):
+- Query all PENDING_SIGNATURE + VIEWED orders where `dueAt < now + 12h`
+- For verbals: Socket.IO `order:expiring` to physician session with `{ hoursRemaining, blockedDownstream }`
+- At `dueAt`: transition to EXPIRED, upsert `ORDER_EXPIRY` compliance alert, emit `order:expired`
+- For SIGNED orders older than 7 days without COMPLETED_RETURNED: emit `order:return:overdue` reminder
+
+**`order-reminder` worker** (daily 09:00 UTC):
+- Query PENDING_SIGNATURE orders where `reminderCount < 3` and `lastReminderAt < now - 24h`
+- Increment `reminderCount`, set `lastReminderAt`, emit `order:reminder` Socket.IO event to physician
+
+---
+
+### Socket.IO Events
+
+Add to `socket.ts`:
+```
+order:created          { orderId, type, patientId, physicianId, dueAt, urgencyReason }
+order:viewed           { orderId, physicianId }
+order:signed           { orderId, signedAt }
+order:rejected         { orderId, rejectionReason }
+order:expired          { orderId, type, patientId }
+order:overdue          { orderId, hoursOverdue, blockedDownstream }
+order:expiring         { orderId, hoursRemaining, blockedDownstream }
+order:exception        { orderId, noSignatureReason }
+order:completed_returned { orderId, completedReturnedAt }
+order:f2f:required     (already exists from T3-2b — no change)
+```
+
+---
+
+### Frontend
+
+**Physician Inbox** (`/orders/inbox`):
+- Tabs: Pending | Overdue | Rejected | Exceptions | Completed
+- Each order card shows: patient name, order type badge, due date, urgency pill (green/yellow/red based on hours remaining), `blockedDownstream` message in amber banner when applicable
+- Actions per card: View, Sign (opens T3-5 signature drawer), Reject, Mark No-Sig-Required (supervisor only)
+- Overdue tab: `order:overdue` Socket.IO badge updates in real-time
+
+**Patient Orders Tab** (`/patients/:patientId/orders`):
+- List of all orders for the patient across all statuses
+- Group-bundle view: multiple orders with same `groupBundleId` displayed together with "Sign all" CTA (stretch goal)
+- "Create Order" button: type selector → clinician order form with verbal read-back checkbox
+
+**Urgency label logic** (shared utility, `frontend/src/lib/order-urgency.ts`):
+```
+> 48h remaining → "Due soon"    (green)
+12–48h remaining → "Urgent"     (amber)
+< 12h remaining  → "Critical"   (red)
+overdue          → "Overdue"    (red, flashing)
+```
+
+**`blockedDownstream` message** — computed server-side in `getInbox`:
+- If claim readiness check `SIGNED_ORDERS_AND_PLAN_OF_CARE` would BLOCK → "Claim billing blocked until signed"
+- If F2F documentation pending and order is F2F_DOCUMENTATION type → "Recertification blocked"
+- Otherwise: null (no banner)
+
+---
+
+### Downstream Integration Points
+
+| System | Integration |
+|--------|-------------|
+| T3-5 | `linkedSignatureRequestId` FK; sign route creates or links existing signature request |
+| T3-2b | F2F orders created here use same `orders` table; physician inbox shows F2F tasks |
+| T3-12 | `SIGNED_ORDERS_AND_PLAN_OF_CARE` rule queries orders table for unsigned verbals |
+| T3-7a | Claim readiness `UNSIGNED_ORDERS` check (currently stub) resolved by this service |
+| T3-13 | Chart completeness queries `orders` for unsigned-order indicators |
+
+---
+
+### Done When
+
+- Physician sees all pending routed work (verbal, DME, frequency change, medication, F2F) in one inbox
+- Remote signing works via T3-5 integration without requiring full clinical navigation
+- 9-state machine enforced with validated transitions; invalid transitions return 422
+- Overdue/expired states surface in inbox with `blockedDownstream` messaging
+- `No Signature Required` exception supported (supervisor/admin only)
+- Verbal read-back flag captured at order creation
+- Signed orders transition to COMPLETED_RETURNED on chart confirmation
+- `SIGNED_ORDERS_AND_PLAN_OF_CARE` T3-12 rule + T3-7a `UNSIGNED_ORDERS` stub resolved against live orders data
+- BullMQ expiry + reminder workers fire correctly; Socket.IO events delivered to physician session
+- Contract tests cover all routes; 0 TS errors
 
 ---
 

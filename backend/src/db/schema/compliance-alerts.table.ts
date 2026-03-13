@@ -46,6 +46,10 @@ export const alertTypeEnum = pgEnum("alert_type_enum", [
   "BILL_HOLD_COMPLIANCE_BLOCK",
   "BILL_HOLD_MISSING_DOC",
   "BILL_HOLD_MANUAL_REVIEW",
+  // T3-8 Vendor Governance + BAA Registry
+  "BAA_EXPIRING",
+  "BAA_MISSING",
+  "SECURITY_REVIEW_OVERDUE",
 ]);
 
 export const alertSeverityEnum = pgEnum("alert_severity_enum", ["critical", "warning", "info"]);

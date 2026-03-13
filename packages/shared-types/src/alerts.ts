@@ -45,6 +45,10 @@ export const AlertType = {
 	BILL_HOLD_COMPLIANCE_BLOCK: "BILL_HOLD_COMPLIANCE_BLOCK",
 	BILL_HOLD_MISSING_DOC: "BILL_HOLD_MISSING_DOC",
 	BILL_HOLD_MANUAL_REVIEW: "BILL_HOLD_MANUAL_REVIEW",
+	// T3-8 — Vendor Governance + BAA Registry
+	BAA_EXPIRING: "BAA_EXPIRING", // BAA renewal within 90 days
+	BAA_MISSING: "BAA_MISSING", // baaRequired=true but baaStatus != SIGNED
+	SECURITY_REVIEW_OVERDUE: "SECURITY_REVIEW_OVERDUE", // securityReviewDueDate passed
 } as const;
 
 export type AlertType = (typeof AlertType)[keyof typeof AlertType];

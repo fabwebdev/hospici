@@ -28,7 +28,10 @@ import { Route as AuthedHopeDashboardImport } from './routes/_authed/hope/dashbo
 import { Route as AuthedFilingsF2fQueueImport } from './routes/_authed/filings/f2f-queue'
 import { Route as AuthedComplianceRecertQueueImport } from './routes/_authed/compliance/recert-queue'
 import { Route as AuthedBillingAuditImport } from './routes/_authed/billing/audit'
+import { Route as AuthedSettingsBaaIndexImport } from './routes/_authed/settings/baa/index'
 import { Route as AuthedHopeAssessmentsIndexImport } from './routes/_authed/hope/assessments/index'
+import { Route as AuthedSettingsBaaNewImport } from './routes/_authed/settings/baa/new'
+import { Route as AuthedSettingsBaaIdImport } from './routes/_authed/settings/baa/$id'
 import { Route as AuthedHopeAssessmentsNewImport } from './routes/_authed/hope/assessments/new'
 import { Route as AuthedHopeAssessmentsIdImport } from './routes/_authed/hope/assessments/$id'
 import { Route as AuthedPatientsPatientIdVisitsIndexImport } from './routes/_authed/patients/$patientId/visits/index'
@@ -140,6 +143,12 @@ const AuthedBillingAuditRoute = AuthedBillingAuditImport.update({
   getParentRoute: () => AuthedRoute,
 } as any)
 
+const AuthedSettingsBaaIndexRoute = AuthedSettingsBaaIndexImport.update({
+  id: '/settings/baa/',
+  path: '/settings/baa/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+
 const AuthedHopeAssessmentsIndexRoute = AuthedHopeAssessmentsIndexImport.update(
   {
     id: '/hope/assessments/',
@@ -147,6 +156,18 @@ const AuthedHopeAssessmentsIndexRoute = AuthedHopeAssessmentsIndexImport.update(
     getParentRoute: () => AuthedRoute,
   } as any,
 )
+
+const AuthedSettingsBaaNewRoute = AuthedSettingsBaaNewImport.update({
+  id: '/settings/baa/new',
+  path: '/settings/baa/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
+
+const AuthedSettingsBaaIdRoute = AuthedSettingsBaaIdImport.update({
+  id: '/settings/baa/$id',
+  path: '/settings/baa/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 const AuthedHopeAssessmentsNewRoute = AuthedHopeAssessmentsNewImport.update({
   id: '/hope/assessments/new',
@@ -325,11 +346,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedHopeAssessmentsNewImport
       parentRoute: typeof AuthedImport
     }
+    '/_authed/settings/baa/$id': {
+      id: '/_authed/settings/baa/$id'
+      path: '/settings/baa/$id'
+      fullPath: '/settings/baa/$id'
+      preLoaderRoute: typeof AuthedSettingsBaaIdImport
+      parentRoute: typeof AuthedImport
+    }
+    '/_authed/settings/baa/new': {
+      id: '/_authed/settings/baa/new'
+      path: '/settings/baa/new'
+      fullPath: '/settings/baa/new'
+      preLoaderRoute: typeof AuthedSettingsBaaNewImport
+      parentRoute: typeof AuthedImport
+    }
     '/_authed/hope/assessments/': {
       id: '/_authed/hope/assessments/'
       path: '/hope/assessments'
       fullPath: '/hope/assessments'
       preLoaderRoute: typeof AuthedHopeAssessmentsIndexImport
+      parentRoute: typeof AuthedImport
+    }
+    '/_authed/settings/baa/': {
+      id: '/_authed/settings/baa/'
+      path: '/settings/baa'
+      fullPath: '/settings/baa'
+      preLoaderRoute: typeof AuthedSettingsBaaIndexImport
       parentRoute: typeof AuthedImport
     }
     '/_authed/patients/$patientId/f2f/new': {
@@ -405,7 +447,10 @@ interface AuthedRouteChildren {
   AuthedSignaturesIndexRoute: typeof AuthedSignaturesIndexRoute
   AuthedHopeAssessmentsIdRoute: typeof AuthedHopeAssessmentsIdRoute
   AuthedHopeAssessmentsNewRoute: typeof AuthedHopeAssessmentsNewRoute
+  AuthedSettingsBaaIdRoute: typeof AuthedSettingsBaaIdRoute
+  AuthedSettingsBaaNewRoute: typeof AuthedSettingsBaaNewRoute
   AuthedHopeAssessmentsIndexRoute: typeof AuthedHopeAssessmentsIndexRoute
+  AuthedSettingsBaaIndexRoute: typeof AuthedSettingsBaaIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -425,7 +470,10 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSignaturesIndexRoute: AuthedSignaturesIndexRoute,
   AuthedHopeAssessmentsIdRoute: AuthedHopeAssessmentsIdRoute,
   AuthedHopeAssessmentsNewRoute: AuthedHopeAssessmentsNewRoute,
+  AuthedSettingsBaaIdRoute: AuthedSettingsBaaIdRoute,
+  AuthedSettingsBaaNewRoute: AuthedSettingsBaaNewRoute,
   AuthedHopeAssessmentsIndexRoute: AuthedHopeAssessmentsIndexRoute,
+  AuthedSettingsBaaIndexRoute: AuthedSettingsBaaIndexRoute,
 }
 
 const AuthedRouteWithChildren =
@@ -451,7 +499,10 @@ export interface FileRoutesByFullPath {
   '/signatures': typeof AuthedSignaturesIndexRoute
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
+  '/settings/baa/$id': typeof AuthedSettingsBaaIdRoute
+  '/settings/baa/new': typeof AuthedSettingsBaaNewRoute
   '/hope/assessments': typeof AuthedHopeAssessmentsIndexRoute
+  '/settings/baa': typeof AuthedSettingsBaaIndexRoute
   '/patients/$patientId/f2f/new': typeof AuthedPatientsPatientIdF2fNewRoute
   '/patients/$patientId/idg/schedule': typeof AuthedPatientsPatientIdIdgScheduleRoute
   '/patients/$patientId/visits': typeof AuthedPatientsPatientIdVisitsIndexRoute
@@ -478,7 +529,10 @@ export interface FileRoutesByTo {
   '/signatures': typeof AuthedSignaturesIndexRoute
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
+  '/settings/baa/$id': typeof AuthedSettingsBaaIdRoute
+  '/settings/baa/new': typeof AuthedSettingsBaaNewRoute
   '/hope/assessments': typeof AuthedHopeAssessmentsIndexRoute
+  '/settings/baa': typeof AuthedSettingsBaaIndexRoute
   '/patients/$patientId/f2f/new': typeof AuthedPatientsPatientIdF2fNewRoute
   '/patients/$patientId/idg/schedule': typeof AuthedPatientsPatientIdIdgScheduleRoute
   '/patients/$patientId/visits': typeof AuthedPatientsPatientIdVisitsIndexRoute
@@ -506,7 +560,10 @@ export interface FileRoutesById {
   '/_authed/signatures/': typeof AuthedSignaturesIndexRoute
   '/_authed/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/_authed/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
+  '/_authed/settings/baa/$id': typeof AuthedSettingsBaaIdRoute
+  '/_authed/settings/baa/new': typeof AuthedSettingsBaaNewRoute
   '/_authed/hope/assessments/': typeof AuthedHopeAssessmentsIndexRoute
+  '/_authed/settings/baa/': typeof AuthedSettingsBaaIndexRoute
   '/_authed/patients/$patientId/f2f/new': typeof AuthedPatientsPatientIdF2fNewRoute
   '/_authed/patients/$patientId/idg/schedule': typeof AuthedPatientsPatientIdIdgScheduleRoute
   '/_authed/patients/$patientId/visits/': typeof AuthedPatientsPatientIdVisitsIndexRoute
@@ -535,7 +592,10 @@ export interface FileRouteTypes {
     | '/signatures'
     | '/hope/assessments/$id'
     | '/hope/assessments/new'
+    | '/settings/baa/$id'
+    | '/settings/baa/new'
     | '/hope/assessments'
+    | '/settings/baa'
     | '/patients/$patientId/f2f/new'
     | '/patients/$patientId/idg/schedule'
     | '/patients/$patientId/visits'
@@ -561,7 +621,10 @@ export interface FileRouteTypes {
     | '/signatures'
     | '/hope/assessments/$id'
     | '/hope/assessments/new'
+    | '/settings/baa/$id'
+    | '/settings/baa/new'
     | '/hope/assessments'
+    | '/settings/baa'
     | '/patients/$patientId/f2f/new'
     | '/patients/$patientId/idg/schedule'
     | '/patients/$patientId/visits'
@@ -587,7 +650,10 @@ export interface FileRouteTypes {
     | '/_authed/signatures/'
     | '/_authed/hope/assessments/$id'
     | '/_authed/hope/assessments/new'
+    | '/_authed/settings/baa/$id'
+    | '/_authed/settings/baa/new'
     | '/_authed/hope/assessments/'
+    | '/_authed/settings/baa/'
     | '/_authed/patients/$patientId/f2f/new'
     | '/_authed/patients/$patientId/idg/schedule'
     | '/_authed/patients/$patientId/visits/'
@@ -644,7 +710,10 @@ export const routeTree = rootRoute
         "/_authed/signatures/",
         "/_authed/hope/assessments/$id",
         "/_authed/hope/assessments/new",
-        "/_authed/hope/assessments/"
+        "/_authed/settings/baa/$id",
+        "/_authed/settings/baa/new",
+        "/_authed/hope/assessments/",
+        "/_authed/settings/baa/"
       ]
     },
     "/login": {
@@ -720,8 +789,20 @@ export const routeTree = rootRoute
       "filePath": "_authed/hope/assessments/new.tsx",
       "parent": "/_authed"
     },
+    "/_authed/settings/baa/$id": {
+      "filePath": "_authed/settings/baa/$id.tsx",
+      "parent": "/_authed"
+    },
+    "/_authed/settings/baa/new": {
+      "filePath": "_authed/settings/baa/new.tsx",
+      "parent": "/_authed"
+    },
     "/_authed/hope/assessments/": {
       "filePath": "_authed/hope/assessments/index.tsx",
+      "parent": "/_authed"
+    },
+    "/_authed/settings/baa/": {
+      "filePath": "_authed/settings/baa/index.tsx",
       "parent": "/_authed"
     },
     "/_authed/patients/$patientId/f2f/new": {
