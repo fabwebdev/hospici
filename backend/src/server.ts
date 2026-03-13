@@ -11,6 +11,9 @@ import { claimAuditRoutes } from "@/contexts/billing/routes/claimAudit.routes.js
 import { vendorRoutes } from "@/contexts/vendors/routes/vendor.routes.js";
 import { orderRoutes, orderPatientRoutes } from "@/contexts/orders/routes/order.routes.js";
 import auditExportRoutes from "@/contexts/compliance/routes/auditExport.routes.js";
+import qapiRoutes from "@/contexts/qapi/routes/qapi.routes.js";
+import qualityAnalyticsRoutes from "@/contexts/analytics/routes/qualityAnalytics.routes.js";
+import { createQAPIOverdueCheckWorker } from "@/jobs/workers/qapi-overdue-check.worker.js";
 import { createAuditExportWorker } from "@/jobs/workers/audit-export.worker.js";
 import { setOrderEventEmitter } from "@/contexts/orders/services/order.service.js";
 import { createOrderExpiryWorker } from "@/jobs/workers/order-expiry-check.worker.js";
@@ -210,6 +213,8 @@ export async function buildApp() {
   await fastify.register(orderRoutes, { prefix: "/api/v1" });
   await fastify.register(orderPatientRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(auditExportRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(qapiRoutes, { prefix: "/api/v1/qapi" });
+  await fastify.register(qualityAnalyticsRoutes, { prefix: "/api/v1/analytics" });
 
   // ── Internal PHI Encryption Health Check ─────────────────────────────────
   // 127.0.0.1 only — not exposed through reverse proxy or auth middleware.
@@ -276,6 +281,7 @@ export async function buildApp() {
   const orderExpiryWorker = createOrderExpiryWorker(fastify.valkey);
   const orderReminderWorker = createOrderReminderWorker(fastify.valkey);
   const auditExportWorker = createAuditExportWorker(fastify.valkey);
+  const qapiOverdueWorker = createQAPIOverdueCheckWorker(fastify.valkey);
 
   fastify.addHook("onClose", async () => {
     await noeWorker.close();
@@ -292,6 +298,7 @@ export async function buildApp() {
     await orderExpiryWorker.close();
     await orderReminderWorker.close();
     await auditExportWorker.close();
+    await qapiOverdueWorker.close();
     await closeQueues();
     fastify.log.info("BullMQ workers and queues closed");
   });

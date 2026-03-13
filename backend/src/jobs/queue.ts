@@ -34,6 +34,7 @@ export const QUEUE_NAMES = {
   ORDER_EXPIRY_CHECK: "order-expiry-check",
   ORDER_REMINDER: "order-reminder",
   AUDIT_EXPORT: "audit-export",
+  QAPI_OVERDUE_CHECK: "qapi-overdue-check",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -223,6 +224,17 @@ export const claimSubmissionQueue = new Queue(QUEUE_NAMES.CLAIM_SUBMISSION, {
   },
 });
 
+// ── QAPI overdue check queue (T3-11) ─────────────────────────────────────────
+
+/**
+ * Daily QAPI action item overdue check — 08:00 UTC.
+ * Also runs quality outlier detection (first-pass decline, billing-impact rising).
+ */
+export const qapiOverdueCheckQueue = new Queue(QUEUE_NAMES.QAPI_OVERDUE_CHECK, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
 // ── Daily schedule registration ───────────────────────────────────────────────
 
 /**
@@ -359,6 +371,16 @@ export async function scheduleDailyJobs(): Promise<void> {
       jobId: "order-reminder-daily-check",
     },
   );
+
+  // QAPI overdue check + outlier detection — daily at 08:00 UTC (T3-11)
+  await qapiOverdueCheckQueue.add(
+    "daily-check",
+    {},
+    {
+      repeat: { pattern: "0 8 * * *" },
+      jobId: "qapi-daily-check",
+    },
+  );
 }
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
@@ -382,4 +404,5 @@ export async function closeQueues(): Promise<void> {
   await orderExpiryCheckQueue.close();
   await orderReminderQueue.close();
   await auditExportQueue.close();
+  await qapiOverdueCheckQueue.close();
 }

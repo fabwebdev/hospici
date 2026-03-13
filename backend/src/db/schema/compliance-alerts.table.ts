@@ -52,6 +52,11 @@ export const alertTypeEnum = pgEnum("alert_type_enum", [
   "SECURITY_REVIEW_OVERDUE",
   // T3-9 Physician Order Inbox
   "ORDER_EXPIRY",
+  // T3-11 QAPI Management + Clinician Quality Scorecards
+  "QAPI_ACTION_OVERDUE",
+  "FIRST_PASS_DECLINE",
+  "BILLING_DEFICIENCY_RISING",
+  "COMPLIANCE_DEFICIENCY_RISING",
 ]);
 
 export const alertSeverityEnum = pgEnum("alert_severity_enum", ["critical", "warning", "info"]);

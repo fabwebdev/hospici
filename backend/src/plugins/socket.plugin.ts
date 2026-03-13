@@ -253,6 +253,15 @@ async function socketPlugin(fastify: FastifyInstance) {
     io.to(`location:${data.locationId}`).emit("billing:override:approved", data);
   });
 
+  // ── QAPI Management + Quality Scorecards (T3-11) ─────────────────────────
+  complianceEvents.on("qapi:action:overdue", (data) => {
+    io.to(`location:${data.locationId}`).emit("qapi:action:overdue", data);
+  });
+
+  complianceEvents.on("quality:outlier:detected", (data) => {
+    io.emit("quality:outlier:detected", data);
+  });
+
   // ── Graceful shutdown ───────────────────────────────────────────────────────
   fastify.addHook("onClose", async () => {
     await new Promise<void>((resolve) => io.close(() => resolve()));

@@ -411,6 +411,29 @@ export interface ServerToClientEvents {
 		daysSinceSigned: number;
 	}) => void;
 
+	// QAPI Management + Clinician Quality Scorecards (T3-11)
+	"qapi:event:created": (data: {
+		eventId: string;
+		locationId: string;
+		eventType: string;
+	}) => void;
+
+	"qapi:event:closed": (data: {
+		eventId: string;
+		locationId: string;
+	}) => void;
+
+	"qapi:action:overdue": (data: {
+		eventId: string;
+		actionItemId: string;
+		assignedToId: string;
+		locationId: string;
+	}) => void;
+
+	"quality:outlier:detected": (data: {
+		outlier: import("./qapi.js").QualityOutlier;
+	}) => void;
+
 	// ADR / TPE / Survey Record Packet Export (T3-10)
 	"export:ready": (data: {
 		exportId: string;

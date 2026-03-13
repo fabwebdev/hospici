@@ -51,6 +51,11 @@ export const AlertType = {
 	SECURITY_REVIEW_OVERDUE: "SECURITY_REVIEW_OVERDUE", // securityReviewDueDate passed
 	// T3-9 — Physician Order Inbox + Paperless Order Routing
 	ORDER_EXPIRY: "ORDER_EXPIRY", // order past dueAt without signature
+	// T3-11 — QAPI Management + Clinician Quality Scorecards
+	QAPI_ACTION_OVERDUE: "QAPI_ACTION_OVERDUE", // action item past due date
+	FIRST_PASS_DECLINE: "FIRST_PASS_DECLINE", // first-pass rate dropped ≥10pp WoW
+	BILLING_DEFICIENCY_RISING: "BILLING_DEFICIENCY_RISING", // billing-impact deficiency rate rising 3+ weeks
+	COMPLIANCE_DEFICIENCY_RISING: "COMPLIANCE_DEFICIENCY_RISING", // compliance-impact deficiency rate rising 3+ weeks
 } as const;
 
 export type AlertType = (typeof AlertType)[keyof typeof AlertType];

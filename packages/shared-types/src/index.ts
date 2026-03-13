@@ -328,6 +328,28 @@ export type {
   ExceptionOrderBody,
   ResendOrderBody,
 } from "./orders.js";
+export type {
+  QAPITrendContext,
+  QAPIEventType,
+  QAPIEventStatus,
+  QAPIDiscipline,
+  QAPIActionItem,
+  QAPIEvent,
+  QAPIEventListResponse,
+  QAPICreateBody,
+  QAPIPatchBody,
+  QAPICloseBody,
+  QAPIAddActionItemBody,
+  QAPIListQuery,
+  ClinicianQualityScorecard,
+  ScorecardListResponse,
+  ScorecardQuery,
+  DeficiencyTrendPoint,
+  DeficiencyTrendReport,
+  TrendQuery,
+  QualityOutlier,
+  QualityOutlierListResponse,
+} from "./qapi.js";
 export { EXPORT_STATUS_LABELS, EXPORT_PURPOSE_LABELS, EXPORT_SECTION_LABELS, CANONICAL_SECTION_ORDER } from "./audit-export.js";
 export type {
   ExportPurpose,

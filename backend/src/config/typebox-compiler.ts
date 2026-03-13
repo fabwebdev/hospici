@@ -4,6 +4,22 @@
 // request handlers, or loops. Module-level only (here or in schema files).
 
 import {
+  ClinicianQualityScorecardSchema,
+  DeficiencyTrendReportSchema,
+  QAPIAddActionItemBodySchema,
+  QAPICloseBodySchema,
+  QAPICreateBodySchema,
+  QAPIEventListResponseSchema,
+  QAPIEventResponseSchema,
+  QAPIListQuerySchema,
+  QAPIPatchBodySchema,
+  QualityOutlierListResponseSchema,
+  QualityOutlierSchema,
+  ScorecardListResponseSchema,
+  ScorecardQuerySchema,
+  TrendQuerySchema,
+} from "@/contexts/qapi/schemas/qapi.schema.js";
+import {
   AuditDashboardResponseSchema,
   AuditFailureSchema,
   AuditResultSchema,
@@ -460,6 +476,22 @@ export const Validators = {
   AuditRecordExport: TypeCompiler.Compile(AuditRecordExportSchema),
   AuditRecordExportListResponse: TypeCompiler.Compile(AuditRecordExportListResponseSchema),
   AuditRecordExportDownloadResponse: TypeCompiler.Compile(AuditRecordExportDownloadResponseSchema),
+
+  // QAPI Management + Clinician Quality Scorecards (T3-11)
+  QAPICreateBody: TypeCompiler.Compile(QAPICreateBodySchema),
+  QAPIPatchBody: TypeCompiler.Compile(QAPIPatchBodySchema),
+  QAPICloseBody: TypeCompiler.Compile(QAPICloseBodySchema),
+  QAPIAddActionItemBody: TypeCompiler.Compile(QAPIAddActionItemBodySchema),
+  QAPIListQuery: TypeCompiler.Compile(QAPIListQuerySchema),
+  QAPIEventResponse: TypeCompiler.Compile(QAPIEventResponseSchema),
+  QAPIEventListResponse: TypeCompiler.Compile(QAPIEventListResponseSchema),
+  ScorecardQuery: TypeCompiler.Compile(ScorecardQuerySchema),
+  ScorecardListResponse: TypeCompiler.Compile(ScorecardListResponseSchema),
+  ClinicianQualityScorecard: TypeCompiler.Compile(ClinicianQualityScorecardSchema),
+  TrendQuery: TypeCompiler.Compile(TrendQuerySchema),
+  DeficiencyTrendReport: TypeCompiler.Compile(DeficiencyTrendReportSchema),
+  QualityOutlier: TypeCompiler.Compile(QualityOutlierSchema),
+  QualityOutlierListResponse: TypeCompiler.Compile(QualityOutlierListResponseSchema),
 
   // Claim Audit Rules Engine (T3-12)
   AuditFailure: TypeCompiler.Compile(AuditFailureSchema),

@@ -17,6 +17,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AuthedDashboardImport } from './routes/_authed/dashboard'
 import { Route as AuthedSignaturesIndexImport } from './routes/_authed/signatures/index'
 import { Route as AuthedReviewQueueIndexImport } from './routes/_authed/review-queue/index'
+import { Route as AuthedQapiIndexImport } from './routes/_authed/qapi/index'
 import { Route as AuthedPatientsIndexImport } from './routes/_authed/patients/index'
 import { Route as AuthedFilingsIndexImport } from './routes/_authed/filings/index'
 import { Route as AuthedCapIndexImport } from './routes/_authed/cap/index'
@@ -29,6 +30,8 @@ import { Route as AuthedHopeDashboardImport } from './routes/_authed/hope/dashbo
 import { Route as AuthedFilingsF2fQueueImport } from './routes/_authed/filings/f2f-queue'
 import { Route as AuthedComplianceRecertQueueImport } from './routes/_authed/compliance/recert-queue'
 import { Route as AuthedBillingAuditImport } from './routes/_authed/billing/audit'
+import { Route as AuthedAnalyticsScorecardsImport } from './routes/_authed/analytics/scorecards'
+import { Route as AuthedAnalyticsDeficiencyTrendsImport } from './routes/_authed/analytics/deficiency-trends'
 import { Route as AuthedSettingsBaaIndexImport } from './routes/_authed/settings/baa/index'
 import { Route as AuthedHopeAssessmentsIndexImport } from './routes/_authed/hope/assessments/index'
 import { Route as AuthedSettingsBaaNewImport } from './routes/_authed/settings/baa/new'
@@ -76,6 +79,12 @@ const AuthedSignaturesIndexRoute = AuthedSignaturesIndexImport.update({
 const AuthedReviewQueueIndexRoute = AuthedReviewQueueIndexImport.update({
   id: '/review-queue/',
   path: '/review-queue/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+
+const AuthedQapiIndexRoute = AuthedQapiIndexImport.update({
+  id: '/qapi/',
+  path: '/qapi/',
   getParentRoute: () => AuthedRoute,
 } as any)
 
@@ -151,6 +160,19 @@ const AuthedBillingAuditRoute = AuthedBillingAuditImport.update({
   path: '/billing/audit',
   getParentRoute: () => AuthedRoute,
 } as any)
+
+const AuthedAnalyticsScorecardsRoute = AuthedAnalyticsScorecardsImport.update({
+  id: '/analytics/scorecards',
+  path: '/analytics/scorecards',
+  getParentRoute: () => AuthedRoute,
+} as any)
+
+const AuthedAnalyticsDeficiencyTrendsRoute =
+  AuthedAnalyticsDeficiencyTrendsImport.update({
+    id: '/analytics/deficiency-trends',
+    path: '/analytics/deficiency-trends',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 
 const AuthedSettingsBaaIndexRoute = AuthedSettingsBaaIndexImport.update({
   id: '/settings/baa/',
@@ -264,6 +286,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardImport
       parentRoute: typeof AuthedImport
     }
+    '/_authed/analytics/deficiency-trends': {
+      id: '/_authed/analytics/deficiency-trends'
+      path: '/analytics/deficiency-trends'
+      fullPath: '/analytics/deficiency-trends'
+      preLoaderRoute: typeof AuthedAnalyticsDeficiencyTrendsImport
+      parentRoute: typeof AuthedImport
+    }
+    '/_authed/analytics/scorecards': {
+      id: '/_authed/analytics/scorecards'
+      path: '/analytics/scorecards'
+      fullPath: '/analytics/scorecards'
+      preLoaderRoute: typeof AuthedAnalyticsScorecardsImport
+      parentRoute: typeof AuthedImport
+    }
     '/_authed/billing/audit': {
       id: '/_authed/billing/audit'
       path: '/billing/audit'
@@ -346,6 +382,13 @@ declare module '@tanstack/react-router' {
       path: '/patients'
       fullPath: '/patients'
       preLoaderRoute: typeof AuthedPatientsIndexImport
+      parentRoute: typeof AuthedImport
+    }
+    '/_authed/qapi/': {
+      id: '/_authed/qapi/'
+      path: '/qapi'
+      fullPath: '/qapi'
+      preLoaderRoute: typeof AuthedQapiIndexImport
       parentRoute: typeof AuthedImport
     }
     '/_authed/review-queue/': {
@@ -481,6 +524,8 @@ const AuthedPatientsPatientIdRouteWithChildren =
 
 interface AuthedRouteChildren {
   AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedAnalyticsDeficiencyTrendsRoute: typeof AuthedAnalyticsDeficiencyTrendsRoute
+  AuthedAnalyticsScorecardsRoute: typeof AuthedAnalyticsScorecardsRoute
   AuthedBillingAuditRoute: typeof AuthedBillingAuditRoute
   AuthedComplianceRecertQueueRoute: typeof AuthedComplianceRecertQueueRoute
   AuthedFilingsF2fQueueRoute: typeof AuthedFilingsF2fQueueRoute
@@ -493,6 +538,7 @@ interface AuthedRouteChildren {
   AuthedCapIndexRoute: typeof AuthedCapIndexRoute
   AuthedFilingsIndexRoute: typeof AuthedFilingsIndexRoute
   AuthedPatientsIndexRoute: typeof AuthedPatientsIndexRoute
+  AuthedQapiIndexRoute: typeof AuthedQapiIndexRoute
   AuthedReviewQueueIndexRoute: typeof AuthedReviewQueueIndexRoute
   AuthedSignaturesIndexRoute: typeof AuthedSignaturesIndexRoute
   AuthedHopeAssessmentsIdRoute: typeof AuthedHopeAssessmentsIdRoute
@@ -505,6 +551,8 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedAnalyticsDeficiencyTrendsRoute: AuthedAnalyticsDeficiencyTrendsRoute,
+  AuthedAnalyticsScorecardsRoute: AuthedAnalyticsScorecardsRoute,
   AuthedBillingAuditRoute: AuthedBillingAuditRoute,
   AuthedComplianceRecertQueueRoute: AuthedComplianceRecertQueueRoute,
   AuthedFilingsF2fQueueRoute: AuthedFilingsF2fQueueRoute,
@@ -517,6 +565,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCapIndexRoute: AuthedCapIndexRoute,
   AuthedFilingsIndexRoute: AuthedFilingsIndexRoute,
   AuthedPatientsIndexRoute: AuthedPatientsIndexRoute,
+  AuthedQapiIndexRoute: AuthedQapiIndexRoute,
   AuthedReviewQueueIndexRoute: AuthedReviewQueueIndexRoute,
   AuthedSignaturesIndexRoute: AuthedSignaturesIndexRoute,
   AuthedHopeAssessmentsIdRoute: AuthedHopeAssessmentsIdRoute,
@@ -535,6 +584,8 @@ export interface FileRoutesByFullPath {
   '': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/analytics/deficiency-trends': typeof AuthedAnalyticsDeficiencyTrendsRoute
+  '/analytics/scorecards': typeof AuthedAnalyticsScorecardsRoute
   '/billing/audit': typeof AuthedBillingAuditRoute
   '/compliance/recert-queue': typeof AuthedComplianceRecertQueueRoute
   '/filings/f2f-queue': typeof AuthedFilingsF2fQueueRoute
@@ -547,6 +598,7 @@ export interface FileRoutesByFullPath {
   '/cap': typeof AuthedCapIndexRoute
   '/filings': typeof AuthedFilingsIndexRoute
   '/patients': typeof AuthedPatientsIndexRoute
+  '/qapi': typeof AuthedQapiIndexRoute
   '/review-queue': typeof AuthedReviewQueueIndexRoute
   '/signatures': typeof AuthedSignaturesIndexRoute
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
@@ -568,6 +620,8 @@ export interface FileRoutesByTo {
   '': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/analytics/deficiency-trends': typeof AuthedAnalyticsDeficiencyTrendsRoute
+  '/analytics/scorecards': typeof AuthedAnalyticsScorecardsRoute
   '/billing/audit': typeof AuthedBillingAuditRoute
   '/compliance/recert-queue': typeof AuthedComplianceRecertQueueRoute
   '/filings/f2f-queue': typeof AuthedFilingsF2fQueueRoute
@@ -580,6 +634,7 @@ export interface FileRoutesByTo {
   '/cap': typeof AuthedCapIndexRoute
   '/filings': typeof AuthedFilingsIndexRoute
   '/patients': typeof AuthedPatientsIndexRoute
+  '/qapi': typeof AuthedQapiIndexRoute
   '/review-queue': typeof AuthedReviewQueueIndexRoute
   '/signatures': typeof AuthedSignaturesIndexRoute
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
@@ -602,6 +657,8 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/_authed/analytics/deficiency-trends': typeof AuthedAnalyticsDeficiencyTrendsRoute
+  '/_authed/analytics/scorecards': typeof AuthedAnalyticsScorecardsRoute
   '/_authed/billing/audit': typeof AuthedBillingAuditRoute
   '/_authed/compliance/recert-queue': typeof AuthedComplianceRecertQueueRoute
   '/_authed/filings/f2f-queue': typeof AuthedFilingsF2fQueueRoute
@@ -614,6 +671,7 @@ export interface FileRoutesById {
   '/_authed/cap/': typeof AuthedCapIndexRoute
   '/_authed/filings/': typeof AuthedFilingsIndexRoute
   '/_authed/patients/': typeof AuthedPatientsIndexRoute
+  '/_authed/qapi/': typeof AuthedQapiIndexRoute
   '/_authed/review-queue/': typeof AuthedReviewQueueIndexRoute
   '/_authed/signatures/': typeof AuthedSignaturesIndexRoute
   '/_authed/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
@@ -637,6 +695,8 @@ export interface FileRouteTypes {
     | ''
     | '/login'
     | '/dashboard'
+    | '/analytics/deficiency-trends'
+    | '/analytics/scorecards'
     | '/billing/audit'
     | '/compliance/recert-queue'
     | '/filings/f2f-queue'
@@ -649,6 +709,7 @@ export interface FileRouteTypes {
     | '/cap'
     | '/filings'
     | '/patients'
+    | '/qapi'
     | '/review-queue'
     | '/signatures'
     | '/hope/assessments/$id'
@@ -669,6 +730,8 @@ export interface FileRouteTypes {
     | ''
     | '/login'
     | '/dashboard'
+    | '/analytics/deficiency-trends'
+    | '/analytics/scorecards'
     | '/billing/audit'
     | '/compliance/recert-queue'
     | '/filings/f2f-queue'
@@ -681,6 +744,7 @@ export interface FileRouteTypes {
     | '/cap'
     | '/filings'
     | '/patients'
+    | '/qapi'
     | '/review-queue'
     | '/signatures'
     | '/hope/assessments/$id'
@@ -701,6 +765,8 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/login'
     | '/_authed/dashboard'
+    | '/_authed/analytics/deficiency-trends'
+    | '/_authed/analytics/scorecards'
     | '/_authed/billing/audit'
     | '/_authed/compliance/recert-queue'
     | '/_authed/filings/f2f-queue'
@@ -713,6 +779,7 @@ export interface FileRouteTypes {
     | '/_authed/cap/'
     | '/_authed/filings/'
     | '/_authed/patients/'
+    | '/_authed/qapi/'
     | '/_authed/review-queue/'
     | '/_authed/signatures/'
     | '/_authed/hope/assessments/$id'
@@ -764,6 +831,8 @@ export const routeTree = rootRoute
       "filePath": "_authed.tsx",
       "children": [
         "/_authed/dashboard",
+        "/_authed/analytics/deficiency-trends",
+        "/_authed/analytics/scorecards",
         "/_authed/billing/audit",
         "/_authed/compliance/recert-queue",
         "/_authed/filings/f2f-queue",
@@ -776,6 +845,7 @@ export const routeTree = rootRoute
         "/_authed/cap/",
         "/_authed/filings/",
         "/_authed/patients/",
+        "/_authed/qapi/",
         "/_authed/review-queue/",
         "/_authed/signatures/",
         "/_authed/hope/assessments/$id",
@@ -791,6 +861,14 @@ export const routeTree = rootRoute
     },
     "/_authed/dashboard": {
       "filePath": "_authed/dashboard.tsx",
+      "parent": "/_authed"
+    },
+    "/_authed/analytics/deficiency-trends": {
+      "filePath": "_authed/analytics/deficiency-trends.tsx",
+      "parent": "/_authed"
+    },
+    "/_authed/analytics/scorecards": {
+      "filePath": "_authed/analytics/scorecards.tsx",
       "parent": "/_authed"
     },
     "/_authed/billing/audit": {
@@ -847,6 +925,10 @@ export const routeTree = rootRoute
     },
     "/_authed/patients/": {
       "filePath": "_authed/patients/index.tsx",
+      "parent": "/_authed"
+    },
+    "/_authed/qapi/": {
+      "filePath": "_authed/qapi/index.tsx",
       "parent": "/_authed"
     },
     "/_authed/review-queue/": {
