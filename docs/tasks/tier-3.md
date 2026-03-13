@@ -1483,21 +1483,157 @@ Drizzle table `orders` + RLS.
 
 ---
 
-## T3-10 · ADR audit record export `MEDIUM`
+## T3-10 · ADR / TPE / Survey Record Packet Export `HIGH`
 
-> When CMS issues ADR or TPE audit, agencies need complete chronological record within minutes.
+> Upgraded from MEDIUM based on competitor research (2026-03-12). Agencies need a complete, packaged, downloadable audit record within minutes of CMS ADR/TPE requests or survey arrival. Current wording was operationally thin — this replaces it with a full packet-export lifecycle.
 
-`needs:` T3-5 (signatures/hashing), T2-4 (IDG), T2-5 (care plan), T3-2 (NOE/NOTR)
+`needs:` T3-5 (signatures/hashing), T2-4 (IDG), T2-5 (care plan), T3-2a (NOE/NOTR)
+`optional:` T3-13 (completeness summary — consumed as optional toggle if available)
 
-**Route:** `GET /api/v1/patients/:id/audit-export?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `super_admin` + `compliance_officer` roles only
-- Returns structured PDF-ready JSON: all encounters + notes, all orders + signatures, all HOPE assessments, all medications + MAR, all IDG meeting records, all NOE/NOTR filings, all `audit_log` entries for this patient
-- Async via BullMQ job (202 → polling → download) to avoid request timeout on large records
-- Output is signed and tamper-evident: SHA-256 hash of full payload stored in `audit_logs`
+`read:` `BE-SPEC`, `DB-ARCH`
 
-**Audit:** Export action logged with `action: 'ADR_EXPORT'`, requestor, date range, export hash.
+---
 
-**Done when:** Export covers all 7 record categories; hash verifiable; async job completes within 30s for 6-month patient record; unauthorized role returns 403
+### DB migration
+
+**New table `audit_record_exports`** (Migration 0016 or next available):
+```typescript
+{
+  id: uuid PK;
+  patientId: uuid FK → patients.id;
+  locationId: uuid FK;              // RLS
+  requestedByUserId: uuid FK → users.id;
+  purpose: 'ADR' | 'TPE' | 'SURVEY' | 'LEGAL' | 'PAYER_REQUEST';
+  status: 'REQUESTED' | 'GENERATING' | 'READY' | 'EXPORTED' | 'FAILED';
+  dateRangeFrom: date;
+  dateRangeTo: date;
+  selectedSections: text[];         // which section keys were requested
+  includeAuditLog: boolean;
+  includeCompletenessSummary: boolean;
+  exportHash: varchar;              // SHA-256 of manifest JSON
+  manifestJson: jsonb;              // AuditRecordExportManifest (see below)
+  pdfStorageKey: varchar;           // storage path for merged PDF
+  zipStorageKey: varchar;           // storage path for section ZIP
+  generationStartedAt: timestamptz;
+  generationCompletedAt: timestamptz;
+  exportedAt: timestamptz;          // set on first download
+  errorMessage: text;
+  createdAt: timestamptz;
+  updatedAt: timestamptz;
+}
+```
+
+RLS: `location_read` + `location_insert` + `location_update`. Drizzle table definition in `backend/src/db/schema/auditRecordExports.ts`.
+
+---
+
+### TypeBox schemas
+
+Add to `packages/shared-types` or `backend/src/schemas/audit/`:
+
+- **`AuditRecordExportRequestSchema`** — input: `{ patientId, purpose, dateRangeFrom, dateRangeTo, selectedSections, includeAuditLog, includeCompletenessSummary }`
+- **`AuditRecordExportSchema`** — full export row shape (mirrors DB, camelCase)
+- **`AuditRecordExportManifestSchema`**:
+  ```typescript
+  {
+    exportId: string;
+    patientId: string;
+    purpose: ExportPurpose;
+    requestedAt: string;           // ISO timestamp
+    requestedBy: string;           // user display name
+    dateRange: { from: string; to: string };
+    includedSections: {
+      name: string;
+      documentCount: number;
+      hash: string;                // SHA-256 of section PDF bytes
+    }[];
+    omittedSections: {
+      name: string;
+      reason: string;              // e.g. "no records in date range", "not selected"
+    }[];
+    totalDocuments: number;
+    exportHash: string;            // SHA-256 of manifest JSON itself
+    generatedAt: string;
+  }
+  ```
+- **`AuditRecordExportSectionSchema`** — enum of valid section keys (see canonical order below)
+
+Compile all four in `backend/src/config/typebox-compiler.ts`.
+
+---
+
+### Routes
+
+New file: `backend/src/contexts/compliance/routes/auditExport.routes.ts`
+
+| Method | Path | Roles | Description |
+|--------|------|-------|-------------|
+| `POST` | `/api/v1/patients/:id/audit-exports` | `super_admin`, `compliance_officer` | Create export request; enqueue BullMQ job; return 202 + `{ exportId }` |
+| `GET` | `/api/v1/patients/:id/audit-exports` | `super_admin`, `compliance_officer` | List export history for this patient (paginated, most recent first) |
+| `GET` | `/api/v1/patients/:id/audit-exports/:exportId` | `super_admin`, `compliance_officer` | Poll export status; returns full export row including manifest when READY |
+| `GET` | `/api/v1/patients/:id/audit-exports/:exportId/download` | `super_admin`, `compliance_officer` | Returns time-limited signed download URL (15-min expiry) for PDF or ZIP; logs `ADR_EXPORT_DOWNLOADED` |
+
+Download query param: `?format=pdf|zip` (default `pdf`).
+
+---
+
+### BullMQ job `audit-record-export`
+
+Queue: `audit-export`
+
+Steps:
+1. Mark export row `GENERATING`
+2. Assemble sections in **canonical order** (see below) filtering by `dateRangeFrom/To` and `selectedSections`
+3. Render each section to PDF
+4. Compute SHA-256 of each section PDF bytes
+5. Merge all section PDFs into single packet PDF
+6. Package section PDFs into ZIP with sub-folders by section name
+7. If `includeCompletenessSummary` and T3-13 route is live: fetch `GET /api/v1/patients/:id/chart-audit` and attach as cover-sheet section
+8. Build `AuditRecordExportManifest` (counts, hashes, omissions)
+9. Store merged PDF + ZIP (local filesystem in dev, configurable storage key in prod)
+10. Update export row: `status = READY`, `pdfStorageKey`, `zipStorageKey`, `exportHash`, `manifestJson`, `generationCompletedAt`
+11. On error: set `status = FAILED`, `errorMessage`
+
+Performance target: completes within 30s for a 6-month patient record.
+
+---
+
+### Canonical section order
+
+Sections assembled in this order regardless of input:
+1. `DEMOGRAPHICS` — patient + admission info
+2. `NOE_NOTR` — all filings with status
+3. `BENEFIT_PERIODS` — certifications and recertifications
+4. `HOPE_ASSESSMENTS` — all HOPE-A, HOPE-UV, HOPE-D
+5. `CARE_PLAN` — active and historical
+6. `ENCOUNTERS` — visit notes chronological (oldest → newest)
+7. `ORDERS` — orders + signatures
+8. `IDG` — IDG meeting records
+9. `MEDICATIONS_MAR` — active meds + MAR history
+10. `CONSENTS` — consents + signature status
+11. `AUDIT_LOG` — audit log extract (only if `includeAuditLog = true`)
+12. `COMPLETENESS_SUMMARY` — T3-13 readiness report (only if `includeCompletenessSummary = true` and T3-13 is available)
+
+---
+
+### Audit logging
+
+All actions logged in `audit_logs`:
+- `ADR_EXPORT_REQUESTED` — on POST; fields: `{ patientId, purpose, dateRange, selectedSections }`
+- `ADR_EXPORT_GENERATED` — on job completion; fields: `{ exportId, exportHash, sectionCount, totalDocuments }`
+- `ADR_EXPORT_DOWNLOADED` — on download; fields: `{ exportId, format, downloadedByUserId }`
+- `ADR_EXPORT_FAILED` — on job failure; fields: `{ exportId, errorMessage }`
+
+---
+
+**Done when:**
+- Compliance officer submits export request; status advances `REQUESTED → GENERATING → READY`
+- Merged PDF and ZIP both downloadable via signed URL
+- Manifest contains per-section document counts and hashes plus omitted-section list with reasons
+- Export history route returns previous exports for patient
+- Download events logged with `ADR_EXPORT_DOWNLOADED`
+- Unauthorized role returns 403 on all routes
+- Job completes within 30s for 6-month patient record
 
 ---
 
@@ -1679,6 +1815,7 @@ Dashboard route: `GET /api/v1/billing/audit-dashboard`
 > Full chart-level audit capability — from individual note QA to survey-readiness packet completeness. Deferred from T2-9 because it requires T3-5 (signatures), T3-1 (HOPE), T3-2 (NOE/NOTR), and T3-9 (orders) to be complete.
 
 `needs:` T2-9 (note review), T3-1 (HOPE), T3-2 (NOE/NOTR), T3-5 (electronic signatures), T3-9 (physician orders)
+`feeds:` T3-10 (completeness summary consumed as optional cover-sheet section in audit packet export)
 
 `read:` `BE-SPEC`, `DB-ARCH`
 

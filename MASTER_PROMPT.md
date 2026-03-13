@@ -113,7 +113,7 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | T3-7b | ERA 835 + Remittance Reconciliation + Denial Management (ingest, auto-match, auto-post, exception queue) | ⬜ | HIGH |
 | T3-8  | Vendor Governance + BAA Registry + Security Hardening      | ⬜     | HIGH   |
 | T3-9  | Physician order inbox                                      | ⬜     | MEDIUM |
-| T3-10 | ADR audit record export                                    | ⬜     | MEDIUM |
+| T3-10 | ADR / TPE / Survey Record Packet Export — async lifecycle (REQUESTED→GENERATING→READY→EXPORTED), section-selective assembly, merged PDF + ZIP packaging, per-file manifest with SHA-256 hashes, export history, time-limited signed download URLs; optional T3-13 completeness summary on cover sheet | ⬜ | HIGH |
 | T3-11 | QAPI management + clinician quality scorecards (revision frequency, first-pass approval rate, common deficiency types, turnaround time) + branch/discipline deficiency trend reporting | ⬜     | MEDIUM |
 | T3-12 | Claim Audit Rules Engine (12 rule groups, BLOCK/WARN, audit snapshots, bill-hold policy engine) + billing alert dashboard | ⬜ | HIGH |
 | T3-13 | Chart audit mode — discipline-specific review checklists, survey-readiness packet completeness, missing-document indicators, bulk QA actions, saved filter views (DB-persisted) | ⬜ | MEDIUM |
