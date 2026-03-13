@@ -28,3 +28,5 @@ export * from "./hope-reporting-periods.table.js";
 export * from "./hope-quality-measures.table.js";
 export * from "./orders.table.js";
 export * from "./face-to-face-encounters.table.js";
+export * from "./cap-snapshots.table.js";
+export * from "./cap-patient-contributions.table.js";

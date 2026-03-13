@@ -1,8 +1,8 @@
 // tests/contract/assessment.functions.test.ts
 // Contract tests: verify fetchTrajectory handler logic against API shape
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrajectoryResponse } from "@hospici/shared-types";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock env.server before importing functions
 vi.mock("@/lib/env.server.js", () => ({
@@ -103,9 +103,7 @@ describe("fetchTrajectory", () => {
   });
 
   it("throws 'Patient not found' on 404", async () => {
-    vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response("", { status: 404 }),
-    );
+    vi.mocked(global.fetch).mockResolvedValueOnce(new Response("", { status: 404 }));
 
     await expect(fetchTrajectory(PATIENT_ID, COOKIE)).rejects.toThrow("Patient not found");
   });
@@ -119,9 +117,7 @@ describe("fetchTrajectory", () => {
   });
 
   it("throws with fallback message on malformed error body", async () => {
-    vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response("not json", { status: 500 }),
-    );
+    vi.mocked(global.fetch).mockResolvedValueOnce(new Response("not json", { status: 500 }));
 
     await expect(fetchTrajectory(PATIENT_ID, COOKIE)).rejects.toThrow("Failed to fetch trajectory");
   });

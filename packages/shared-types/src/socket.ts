@@ -45,7 +45,17 @@ export interface ServerToClientEvents {
 		locationId: string;
 		capYear: number;
 		utilizationPercent: number;
-		projectedOverage: number;
+		projectedYearEndPercent: number;
+		threshold: string;
+	}) => void;
+
+	"cap:calculation:complete": (data: {
+		locationId: string;
+		capYear: number;
+		snapshotId: string;
+		utilizationPercent: number;
+		projectedYearEndPercent: number;
+		calculatedAt: string;
 	}) => void;
 
 	"aide:supervision:overdue": (data: {

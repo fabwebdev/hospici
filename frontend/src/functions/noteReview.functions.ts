@@ -70,14 +70,11 @@ export async function assignReviewer(
   body: AssignReviewInput,
   cookieHeader: string,
 ): Promise<ReviewQueueItem> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/review-queue/${encounterId}/assign`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/review-queue/${encounterId}/assign`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string };
@@ -92,14 +89,11 @@ export async function escalateReview(
   body: EscalateReviewInput,
   cookieHeader: string,
 ): Promise<ReviewQueueItem> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/encounters/${encounterId}/review/escalate`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/encounters/${encounterId}/review/escalate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
@@ -116,11 +110,15 @@ export async function escalateReview(
 export async function fetchReviewHistory(
   encounterId: string,
   cookieHeader: string,
-): Promise<{ encounterId: string; currentStatus: string; currentDraft: string | null; history: object[] }> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/encounters/${encounterId}/review/history`,
-    { headers: { cookie: cookieHeader } },
-  );
+): Promise<{
+  encounterId: string;
+  currentStatus: string;
+  currentDraft: string | null;
+  history: object[];
+}> {
+  const response = await fetch(`${env.apiUrl}/api/v1/encounters/${encounterId}/review/history`, {
+    headers: { cookie: cookieHeader },
+  });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       error?: { message?: string };
@@ -169,9 +167,7 @@ export const getReviewQueueFn = createServerFn({ method: "GET" })
   });
 
 export const submitReviewFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (data: unknown) => data as { encounterId: string; body: SubmitReviewInput },
-  )
+  .inputValidator((data: unknown) => data as { encounterId: string; body: SubmitReviewInput })
   .handler(async ({ data }) => {
     const request = getRequest();
     const cookieHeader = request.headers.get("cookie") ?? "";
@@ -179,9 +175,7 @@ export const submitReviewFn = createServerFn({ method: "POST" })
   });
 
 export const assignReviewerFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (data: unknown) => data as { encounterId: string; body: AssignReviewInput },
-  )
+  .inputValidator((data: unknown) => data as { encounterId: string; body: AssignReviewInput })
   .handler(async ({ data }) => {
     const request = getRequest();
     const cookieHeader = request.headers.get("cookie") ?? "";
@@ -189,9 +183,7 @@ export const assignReviewerFn = createServerFn({ method: "POST" })
   });
 
 export const escalateReviewFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (data: unknown) => data as { encounterId: string; body: EscalateReviewInput },
-  )
+  .inputValidator((data: unknown) => data as { encounterId: string; body: EscalateReviewInput })
   .handler(async ({ data }) => {
     const request = getRequest();
     const cookieHeader = request.headers.get("cookie") ?? "";

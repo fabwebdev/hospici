@@ -23,14 +23,6 @@
  *   GET  /filings/queue
  */
 
-import { AlertService } from "@/contexts/compliance/services/alert.service.js";
-import {
-  FilingAuthorizationError,
-  InvalidFilingTransitionError,
-  NOENotFoundError,
-  NOEService,
-  NOTRNotFoundError,
-} from "@/contexts/billing/services/noe.service.js";
 import {
   CMSResponseBodySchema,
   CorrectNOEBodySchema,
@@ -45,6 +37,14 @@ import {
   NOTRResponseSchema,
   ReadinessResponseSchema,
 } from "@/contexts/billing/schemas/noe.schema.js";
+import {
+  FilingAuthorizationError,
+  InvalidFilingTransitionError,
+  NOENotFoundError,
+  NOEService,
+  NOTRNotFoundError,
+} from "@/contexts/billing/services/noe.service.js";
+import { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import type { FastifyInstance, FastifyReply } from "fastify";
 
 // ── UUID params schema ────────────────────────────────────────────────────────
@@ -91,11 +91,7 @@ function handleFilingError(err: unknown, reply: FastifyReply): void {
 // ── Patient-scoped routes ─────────────────────────────────────────────────────
 
 export default async function noePatientRoutes(fastify: FastifyInstance): Promise<void> {
-  const service = new NOEService(
-    fastify.valkey,
-    fastify.log,
-    new AlertService(fastify.valkey),
-  );
+  const service = new NOEService(fastify.valkey, fastify.log, new AlertService(fastify.valkey));
 
   /**
    * POST /api/v1/patients/:patientId/noe
@@ -118,7 +114,8 @@ export default async function noePatientRoutes(fastify: FastifyInstance): Promis
     },
     async (request, reply) => {
       const { patientId } = request.params as { patientId: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.createNOE(
@@ -153,7 +150,8 @@ export default async function noePatientRoutes(fastify: FastifyInstance): Promis
     },
     async (request, reply) => {
       const { patientId } = request.params as { patientId: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.getNOE(patientId, user.locationId, user.id);
@@ -193,7 +191,8 @@ export default async function noePatientRoutes(fastify: FastifyInstance): Promis
     },
     async (request, reply) => {
       const { patientId } = request.params as { patientId: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const body = request.body as Parameters<typeof service.createNOTR>[4] & { noeId: string };
 
       try {
@@ -236,7 +235,8 @@ export default async function noePatientRoutes(fastify: FastifyInstance): Promis
     },
     async (request, reply) => {
       const { patientId } = request.params as { patientId: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.getNOTR(patientId, user.locationId, user.id);
@@ -251,11 +251,7 @@ export default async function noePatientRoutes(fastify: FastifyInstance): Promis
 // ── Standalone routes ─────────────────────────────────────────────────────────
 
 export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<void> {
-  const service = new NOEService(
-    fastify.valkey,
-    fastify.log,
-    new AlertService(fastify.valkey),
-  );
+  const service = new NOEService(fastify.valkey, fastify.log, new AlertService(fastify.valkey));
 
   // ── NOE standalone ───────────────────────────────────────────────────────────
 
@@ -278,7 +274,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.submitNOE(id, user.id, user.locationId);
@@ -309,7 +306,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.recordCMSResponse(
@@ -344,7 +342,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.correctNOE(
@@ -382,7 +381,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.lateOverride(
@@ -417,7 +417,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.checkNOEReadiness(id, user.locationId, user.id);
@@ -446,7 +447,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.getNOEHistory(id, user.locationId, user.id);
@@ -478,7 +480,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.submitNOTR(id, user.id, user.locationId);
@@ -509,7 +512,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.recordNOTRCMSResponse(
@@ -544,7 +548,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.correctNOTR(
@@ -581,7 +586,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.lateOverrideNOTR(
@@ -616,7 +622,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.checkNOTRReadiness(id, user.locationId, user.id);
@@ -645,7 +652,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.getNOTRHistory(id, user.locationId, user.id);
@@ -672,7 +680,8 @@ export async function noeStandaloneRoutes(fastify: FastifyInstance): Promise<voi
       },
     },
     async (request, reply) => {
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const query = request.query as Parameters<typeof service.getFilingQueue>[2];
 
       const result = await service.getFilingQueue(user.locationId, user.id, query);

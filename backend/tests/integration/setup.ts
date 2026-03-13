@@ -14,9 +14,9 @@
  *   afterAll  → cleanupFixtures → (pool.end() if needed)
  */
 
+import { readFile, readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readdir, readFile } from "node:fs/promises";
 import { Pool, type PoolClient } from "pg";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -28,9 +28,7 @@ const MIGRATIONS_DIR = join(__dirname, "../../database/migrations/drizzle");
 function getTestDatabaseUrl(): string {
   const url = process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL;
   if (!url) {
-    throw new Error(
-      "DATABASE_URL_TEST or DATABASE_URL must be set for integration tests",
-    );
+    throw new Error("DATABASE_URL_TEST or DATABASE_URL must be set for integration tests");
   }
   return url;
 }
@@ -84,9 +82,7 @@ export const TEST_IDS = {
 export async function runMigrations(): Promise<void> {
   const pool = new Pool({ connectionString: getTestDatabaseUrl() });
   try {
-    const files = (await readdir(MIGRATIONS_DIR))
-      .filter((f) => f.endsWith(".sql"))
-      .sort();
+    const files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith(".sql")).sort();
 
     for (const file of files) {
       const sql = await readFile(join(MIGRATIONS_DIR, file), "utf8");
@@ -174,12 +170,32 @@ export async function seedFixtures(client: PoolClient): Promise<void> {
       TEST_IDS.userVolunteer,
       TEST_IDS.userSuperAdmin,
       TEST_IDS.userIntake,
-      JSON.stringify({ locationIds: [TEST_IDS.locationA], role: "registered_nurse", permissions: [] }),
-      JSON.stringify({ locationIds: [TEST_IDS.locationB], role: "registered_nurse", permissions: [] }),
-      JSON.stringify({ locationIds: [TEST_IDS.locationA], role: "billing_specialist", permissions: [] }),
+      JSON.stringify({
+        locationIds: [TEST_IDS.locationA],
+        role: "registered_nurse",
+        permissions: [],
+      }),
+      JSON.stringify({
+        locationIds: [TEST_IDS.locationB],
+        role: "registered_nurse",
+        permissions: [],
+      }),
+      JSON.stringify({
+        locationIds: [TEST_IDS.locationA],
+        role: "billing_specialist",
+        permissions: [],
+      }),
       JSON.stringify({ locationIds: [TEST_IDS.locationA], role: "volunteer", permissions: [] }),
-      JSON.stringify({ locationIds: [TEST_IDS.locationA, TEST_IDS.locationB], role: "super_admin", permissions: [] }),
-      JSON.stringify({ locationIds: [TEST_IDS.locationA], role: "intake_coordinator", permissions: [] }),
+      JSON.stringify({
+        locationIds: [TEST_IDS.locationA, TEST_IDS.locationB],
+        role: "super_admin",
+        permissions: [],
+      }),
+      JSON.stringify({
+        locationIds: [TEST_IDS.locationA],
+        role: "intake_coordinator",
+        permissions: [],
+      }),
     ],
   );
 
@@ -187,12 +203,16 @@ export async function seedFixtures(client: PoolClient): Promise<void> {
   // Uses PHI_ENCRYPTION_KEY from env (test value: 64 zeros)
   const phiKey = process.env.PHI_ENCRYPTION_KEY ?? "0".repeat(64);
   const patientAlphaJson = JSON.stringify({
-    identifier: [], name: [{ family: "Alpha", given: ["Patient"] }],
-    birthDate: "1950-01-01", hospiceLocationId: TEST_IDS.locationA,
+    identifier: [],
+    name: [{ family: "Alpha", given: ["Patient"] }],
+    birthDate: "1950-01-01",
+    hospiceLocationId: TEST_IDS.locationA,
   });
   const patientBetaJson = JSON.stringify({
-    identifier: [], name: [{ family: "Beta", given: ["Patient"] }],
-    birthDate: "1950-01-01", hospiceLocationId: TEST_IDS.locationB,
+    identifier: [],
+    name: [{ family: "Beta", given: ["Patient"] }],
+    birthDate: "1950-01-01",
+    hospiceLocationId: TEST_IDS.locationB,
   });
   await client.query(
     `INSERT INTO patients (id, location_id, data)
@@ -201,9 +221,12 @@ export async function seedFixtures(client: PoolClient): Promise<void> {
        ($2, $4, to_jsonb(encode(pgp_sym_encrypt($6::text, $7), 'base64')))
      ON CONFLICT (id) DO NOTHING`,
     [
-      TEST_IDS.patientA, TEST_IDS.patientB,
-      TEST_IDS.locationA, TEST_IDS.locationB,
-      patientAlphaJson, patientBetaJson,
+      TEST_IDS.patientA,
+      TEST_IDS.patientB,
+      TEST_IDS.locationA,
+      TEST_IDS.locationB,
+      patientAlphaJson,
+      patientBetaJson,
       phiKey,
     ],
   );
@@ -225,38 +248,32 @@ export async function seedFixtures(client: PoolClient): Promise<void> {
  * Deletes in reverse FK dependency order.
  */
 export async function cleanupFixtures(client: PoolClient): Promise<void> {
-  await client.query(
-    `DELETE FROM notice_of_election WHERE id IN ($1, $2)`,
-    [TEST_IDS.noeA, TEST_IDS.noeFriday],
-  );
-  await client.query(
-    `DELETE FROM pain_assessments WHERE id = $1`,
-    [TEST_IDS.painAssessmentA],
-  );
-  await client.query(
-    `DELETE FROM patients WHERE id IN ($1, $2)`,
-    [TEST_IDS.patientA, TEST_IDS.patientB],
-  );
+  await client.query("DELETE FROM notice_of_election WHERE id IN ($1, $2)", [
+    TEST_IDS.noeA,
+    TEST_IDS.noeFriday,
+  ]);
+  await client.query("DELETE FROM pain_assessments WHERE id = $1", [TEST_IDS.painAssessmentA]);
+  await client.query("DELETE FROM patients WHERE id IN ($1, $2)", [
+    TEST_IDS.patientA,
+    TEST_IDS.patientB,
+  ]);
   // Delete audit_logs before users — audit_logs.user_id FK references users
-  await client.query(
-    `DELETE FROM audit_logs WHERE location_id IN ($1, $2)`,
-    [TEST_IDS.locationA, TEST_IDS.locationB],
-  );
-  await client.query(
-    `DELETE FROM users WHERE id IN ($1, $2, $3, $4, $5, $6)`,
-    [
-      TEST_IDS.userA,
-      TEST_IDS.userB,
-      TEST_IDS.userBilling,
-      TEST_IDS.userVolunteer,
-      TEST_IDS.userSuperAdmin,
-      TEST_IDS.userIntake,
-    ],
-  );
-  await client.query(
-    `DELETE FROM locations WHERE id IN ($1, $2)`,
-    [TEST_IDS.locationA, TEST_IDS.locationB],
-  );
+  await client.query("DELETE FROM audit_logs WHERE location_id IN ($1, $2)", [
+    TEST_IDS.locationA,
+    TEST_IDS.locationB,
+  ]);
+  await client.query("DELETE FROM users WHERE id IN ($1, $2, $3, $4, $5, $6)", [
+    TEST_IDS.userA,
+    TEST_IDS.userB,
+    TEST_IDS.userBilling,
+    TEST_IDS.userVolunteer,
+    TEST_IDS.userSuperAdmin,
+    TEST_IDS.userIntake,
+  ]);
+  await client.query("DELETE FROM locations WHERE id IN ($1, $2)", [
+    TEST_IDS.locationA,
+    TEST_IDS.locationB,
+  ]);
 }
 
 // ── RLS context helper ────────────────────────────────────────────────────────
@@ -295,18 +312,9 @@ export async function withRlsContext(
     await client.query("SET LOCAL ROLE TO hospici_app");
 
     // Inject the three config values that every policy reads
-    await client.query(
-      "SELECT set_config('app.current_user_id', $1, true)",
-      [ctx.userId],
-    );
-    await client.query(
-      "SELECT set_config('app.current_location_id', $1, true)",
-      [ctx.locationId],
-    );
-    await client.query(
-      "SELECT set_config('app.current_role', $1, true)",
-      [ctx.role],
-    );
+    await client.query("SELECT set_config('app.current_user_id', $1, true)", [ctx.userId]);
+    await client.query("SELECT set_config('app.current_location_id', $1, true)", [ctx.locationId]);
+    await client.query("SELECT set_config('app.current_role', $1, true)", [ctx.role]);
 
     await fn(client);
 

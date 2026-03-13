@@ -42,12 +42,10 @@ function AlertBanner() {
     return () => window.removeEventListener("compliance:alert", handler);
   }, [queryClient]);
 
-  const criticalCount = data?.data.filter(
-    (a) => a.severity === "critical" && a.status !== "resolved",
-  ).length ?? 0;
-  const warningCount = data?.data.filter(
-    (a) => a.severity === "warning" && a.status !== "resolved",
-  ).length ?? 0;
+  const criticalCount =
+    data?.data.filter((a) => a.severity === "critical" && a.status !== "resolved").length ?? 0;
+  const warningCount =
+    data?.data.filter((a) => a.severity === "warning" && a.status !== "resolved").length ?? 0;
 
   if (criticalCount === 0 && warningCount === 0) return null;
 
@@ -98,6 +96,9 @@ function AuthedLayout() {
                 </a>
                 <Link to="/filings" className="px-3 py-2 text-gray-700 hover:text-blue-600">
                   Filings
+                </Link>
+                <Link to="/cap" className="px-3 py-2 text-gray-700 hover:text-blue-600">
+                  Cap
                 </Link>
                 {/* TODO T3-7: replace with <Link> once route is implemented */}
                 <a href="/billing" className="px-3 py-2 text-gray-700 hover:text-blue-600">

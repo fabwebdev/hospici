@@ -2,8 +2,8 @@
 // Contract tests for NOE/NOTR filing workbench server function handlers — T3-2a
 
 import type {
-  FilingQueueResponse,
   FilingHistoryEvent,
+  FilingQueueResponse,
   NOEResponse,
   NOEWithHistoryResponse,
   NOTRResponse,
@@ -201,11 +201,9 @@ describe("createNOE", () => {
       ),
     );
 
-    const err = (await createNOE(
-      PATIENT_ID,
-      { electionDate: "2026-03-10" },
-      COOKIE,
-    ).catch((e: unknown) => e)) as Error & { code?: string };
+    const err = (await createNOE(PATIENT_ID, { electionDate: "2026-03-10" }, COOKIE).catch(
+      (e: unknown) => e,
+    )) as Error & { code?: string };
     expect(err.code).toBe("DUPLICATE_NOE");
   });
 });
@@ -248,9 +246,9 @@ describe("submitNOE", () => {
       ),
     );
 
-    const err = (await submitNOE(NOE_ID, COOKIE).catch(
-      (e: unknown) => e,
-    )) as Error & { code?: string };
+    const err = (await submitNOE(NOE_ID, COOKIE).catch((e: unknown) => e)) as Error & {
+      code?: string;
+    };
     expect(err.code).toBe("INVALID_TRANSITION");
   });
 });
@@ -398,10 +396,7 @@ describe("fetchNOTR", () => {
 
   it("calls GET /api/v1/patients/:id/notr with cookie", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ notr: sampleNOTR, history: [] }),
-        { status: 200 },
-      ),
+      new Response(JSON.stringify({ notr: sampleNOTR, history: [] }), { status: 200 }),
     );
 
     const result = await fetchNOTR(PATIENT_ID, COOKIE);
@@ -568,10 +563,7 @@ describe("fetchFilingQueue", () => {
 
   it("throws on non-ok response", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ error: { message: "Unauthorized" } }),
-        { status: 401 },
-      ),
+      new Response(JSON.stringify({ error: { message: "Unauthorized" } }), { status: 401 }),
     );
 
     await expect(fetchFilingQueue({}, COOKIE)).rejects.toThrow("Unauthorized");

@@ -13,12 +13,8 @@ import {
   getReviewQueueFn,
   submitReviewFn,
 } from "@/functions/noteReview.functions.js";
-import type {
-  NoteReviewStatus,
-  ReviewQueueItem,
-  RevisionRequest,
-} from "@hospici/shared-types";
-import { DeficiencyType } from "@hospici/shared-types";
+import type { NoteReviewStatus, ReviewQueueItem, RevisionRequest } from "@hospici/shared-types";
+import type { DeficiencyType } from "@hospici/shared-types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { diffWords } from "diff";
@@ -123,11 +119,8 @@ function RevisionHistoryPanel({
   });
 
   const previousDraft =
-    ((data?.history[0] as { draftSnapshot?: string } | undefined)?.draftSnapshot) ?? null;
-  const diffResult =
-    previousDraft && currentDraft
-      ? diffWords(previousDraft, currentDraft)
-      : null;
+    (data?.history[0] as { draftSnapshot?: string } | undefined)?.draftSnapshot ?? null;
+  const diffResult = previousDraft && currentDraft ? diffWords(previousDraft, currentDraft) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-16">
@@ -269,9 +262,7 @@ function ReviewCard({
                 Due: {new Date(item.dueBy).toLocaleDateString()}
               </span>
             )}
-            {item.revisionCount > 0 && (
-              <span>Revisions: {item.revisionCount}</span>
-            )}
+            {item.revisionCount > 0 && <span>Revisions: {item.revisionCount}</span>}
             {item.firstPassApproved && (
               <span className="text-green-700 font-medium">✓ First pass</span>
             )}
@@ -281,10 +272,7 @@ function ReviewCard({
           {uniqueDeficiencies.length > 0 && (
             <div className="flex gap-1 flex-wrap mt-2">
               {uniqueDeficiencies.map((dt) => (
-                <span
-                  key={dt}
-                  className={`text-xs px-2 py-0.5 rounded-full ${deficiencyChip(dt)}`}
-                >
+                <span key={dt} className={`text-xs px-2 py-0.5 rounded-full ${deficiencyChip(dt)}`}>
                   {dt.replace(/_/g, " ")}
                 </span>
               ))}
@@ -315,17 +303,14 @@ function ReviewCard({
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    onStatusChange(item.encounterId, "REVISION_REQUESTED")
-                  }
+                  onClick={() => onStatusChange(item.encounterId, "REVISION_REQUESTED")}
                   className="text-xs px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600"
                 >
                   Request Revision
                 </button>
               </>
             )}
-            {(item.reviewStatus === "IN_REVIEW" ||
-              item.reviewStatus === "REVISION_REQUESTED") && (
+            {(item.reviewStatus === "IN_REVIEW" || item.reviewStatus === "REVISION_REQUESTED") && (
               <button
                 type="button"
                 onClick={() => onEscalate(item.encounterId)}
@@ -424,7 +409,12 @@ function ReviewQueuePage() {
     ];
 
     // Access the socket from window if available (set up in _authed.tsx)
-    const win = window as unknown as { __hospiciSocket?: { on: (e: string, cb: () => void) => void; off: (e: string, cb: () => void) => void } };
+    const win = window as unknown as {
+      __hospiciSocket?: {
+        on: (e: string, cb: () => void) => void;
+        off: (e: string, cb: () => void) => void;
+      };
+    };
     const socket = win.__hospiciSocket;
     if (!socket) return;
 
@@ -453,9 +443,7 @@ function ReviewQueuePage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Note Review Queue</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {data?.total ?? 0} items in queue
-            </p>
+            <p className="text-sm text-gray-500 mt-1">{data?.total ?? 0} items in queue</p>
           </div>
           {allItems.filter((i) => i.reviewStatus === "PENDING").length > 0 && (
             <button
@@ -464,17 +452,15 @@ function ReviewQueuePage() {
                 const pendingIds = allItems
                   .filter((i) => i.reviewStatus === "PENDING")
                   .map((i) => i.encounterId);
-                bulkAcknowledgeFn({ data: { encounterIds: pendingIds } }).then(
-                  () => {
-                    queryClient.invalidateQueries({ queryKey: ["review-queue"] });
-                    showToast(`${pendingIds.length} items acknowledged`);
-                  },
-                );
+                bulkAcknowledgeFn({ data: { encounterIds: pendingIds } }).then(() => {
+                  queryClient.invalidateQueries({ queryKey: ["review-queue"] });
+                  showToast(`${pendingIds.length} items acknowledged`);
+                });
               }}
               className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Acknowledge All Pending (
-              {allItems.filter((i) => i.reviewStatus === "PENDING").length})
+              Acknowledge All Pending ({allItems.filter((i) => i.reviewStatus === "PENDING").length}
+              )
             </button>
           )}
         </div>
@@ -496,9 +482,7 @@ function ReviewQueuePage() {
               {tab.count > 0 && (
                 <span
                   className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                    activeTab === tab.id
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-gray-100 text-gray-600"
+                    activeTab === tab.id ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
                   }`}
                 >
                   {tab.count}
@@ -512,9 +496,7 @@ function ReviewQueuePage() {
         {isLoading ? (
           <div className="text-center py-12 text-gray-400">Loading queue…</div>
         ) : tabItems.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            No items in this view
-          </div>
+          <div className="text-center py-12 text-gray-400">No items in this view</div>
         ) : (
           <div>
             {tabItems.map((item) => (

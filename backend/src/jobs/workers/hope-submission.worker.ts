@@ -16,14 +16,14 @@
 
 import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
+import { sha256 } from "@/contexts/analytics/services/hope.service.js";
 import { db } from "@/db/client.js";
 import { hopeAssessments } from "@/db/schema/hope-assessments.table.js";
 import { hopeIqiesSubmissions } from "@/db/schema/hope-iqies-submissions.table.js";
 import { complianceEvents } from "@/events/compliance-events.js";
-import { sha256 } from "@/contexts/analytics/services/hope.service.js";
-import { and, eq, max } from "drizzle-orm";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
+import { and, eq, max } from "drizzle-orm";
 import pino from "pino";
 import { QUEUE_NAMES, createBullMQConnection, hopeSubmissionDlq } from "../queue.js";
 
@@ -65,12 +65,7 @@ export async function hopeSubmissionHandler(
   const [assessment] = await db
     .select()
     .from(hopeAssessments)
-    .where(
-      and(
-        eq(hopeAssessments.id, assessmentId),
-        eq(hopeAssessments.locationId, locationId),
-      ),
-    )
+    .where(and(eq(hopeAssessments.id, assessmentId), eq(hopeAssessments.locationId, locationId)))
     .limit(1);
 
   if (!assessment) {
@@ -116,7 +111,7 @@ export async function hopeSubmissionHandler(
   // ────────────────────────────────────────────────────────────────────────────
 
   const iqiesTrackingId: string | null = null; // stub until sandbox wired
-  const submissionStatus = "pending" as const;  // will flip to accepted/rejected via webhook
+  const submissionStatus = "pending" as const; // will flip to accepted/rejected via webhook
 
   // Record submission in DB
   const [submissionRow] = await db

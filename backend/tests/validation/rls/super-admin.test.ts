@@ -11,8 +11,8 @@
  * Phase 1 exit gate (T1-9)
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PoolClient } from "pg";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   TEST_IDS,
   cleanupFixtures,
@@ -55,10 +55,9 @@ describe("super_admin can perform privileged operations", () => {
         role: "super_admin",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM patients WHERE id = $1",
-          [TEST_IDS.patientA],
-        );
+        const { rows } = await client.query("SELECT id FROM patients WHERE id = $1", [
+          TEST_IDS.patientA,
+        ]);
         expect(rows).toHaveLength(1);
       },
     );
@@ -81,10 +80,9 @@ describe("super_admin can perform privileged operations", () => {
           ["a9a9a9a9-9999-9999-9999-999999999999", TEST_IDS.locationA],
         );
 
-        const deleteResult = await client.query(
-          "DELETE FROM patients WHERE id = $1 RETURNING id",
-          ["a9a9a9a9-9999-9999-9999-999999999999"],
-        );
+        const deleteResult = await client.query("DELETE FROM patients WHERE id = $1 RETURNING id", [
+          "a9a9a9a9-9999-9999-9999-999999999999",
+        ]);
         expect(deleteResult.rows).toHaveLength(1);
       },
     );
@@ -145,10 +143,9 @@ describe("super_admin location filter", () => {
         role: "super_admin",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM patients WHERE id = $1",
-          [TEST_IDS.patientB],
-        );
+        const { rows } = await client.query("SELECT id FROM patients WHERE id = $1", [
+          TEST_IDS.patientB,
+        ]);
         expect(rows).toHaveLength(1);
       },
     );
@@ -206,10 +203,7 @@ describe("super_admin audit log access", () => {
           role: "super_admin",
         },
         async (client) => {
-          const { rows } = await client.query(
-            "SELECT id FROM audit_logs WHERE id = $1",
-            [auditId],
-          );
+          const { rows } = await client.query("SELECT id FROM audit_logs WHERE id = $1", [auditId]);
           expect(rows).toHaveLength(1);
         },
       );
@@ -253,10 +247,7 @@ describe("super_admin audit log access", () => {
           role: "registered_nurse",
         },
         async (client) => {
-          const { rows } = await client.query(
-            "SELECT id FROM audit_logs WHERE id = $1",
-            [auditId],
-          );
+          const { rows } = await client.query("SELECT id FROM audit_logs WHERE id = $1", [auditId]);
           expect(rows).toHaveLength(0);
         },
       );

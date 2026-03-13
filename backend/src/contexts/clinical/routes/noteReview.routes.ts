@@ -21,6 +21,7 @@
 
 import { Validators } from "@/config/typebox-compiler.js";
 import { AlertService } from "@/contexts/compliance/services/alert.service.js";
+import type { FastifyInstance } from "fastify";
 import type {
   AssignReviewBodyType,
   BulkAcknowledgeBodyType,
@@ -42,7 +43,6 @@ import {
   NoteReviewNotFoundError,
   NoteReviewService,
 } from "../services/noteReview.service.js";
-import type { FastifyInstance } from "fastify";
 
 const EncounterIdParamsSchema = {
   type: "object",
@@ -73,7 +73,15 @@ export default async function noteReviewRoutes(fastify: FastifyInstance): Promis
           properties: {
             status: {
               type: "string",
-              enum: ["PENDING", "IN_REVIEW", "REVISION_REQUESTED", "RESUBMITTED", "APPROVED", "LOCKED", "ESCALATED"],
+              enum: [
+                "PENDING",
+                "IN_REVIEW",
+                "REVISION_REQUESTED",
+                "RESUBMITTED",
+                "APPROVED",
+                "LOCKED",
+                "ESCALATED",
+              ],
             },
             priority: { type: "integer", minimum: 0, maximum: 2 },
             assignedReviewerId: { type: "string", format: "uuid" },
@@ -88,7 +96,8 @@ export default async function noteReviewRoutes(fastify: FastifyInstance): Promis
       },
     },
     async (request, reply) => {
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const query = request.query as ReviewQueueQueryType;
       const response = await noteReviewService.listQueue(user, query);
       return reply.send(response);
@@ -124,7 +133,8 @@ export default async function noteReviewRoutes(fastify: FastifyInstance): Promis
       ],
     },
     async (request, reply) => {
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const { id } = request.params as { id: string };
       const body = request.body as SubmitReviewBodyType;
 
@@ -165,10 +175,14 @@ export default async function noteReviewRoutes(fastify: FastifyInstance): Promis
           return reply.code(422).send({ error: { message: err.message, code: "NOTE_LOCKED" } });
         }
         if (err instanceof NoteReviewInvalidTransitionError) {
-          return reply.code(422).send({ error: { message: err.message, code: "INVALID_TRANSITION" } });
+          return reply
+            .code(422)
+            .send({ error: { message: err.message, code: "INVALID_TRANSITION" } });
         }
         if (err instanceof NoteReviewEscalationReasonRequired) {
-          return reply.code(400).send({ error: { message: err.message, code: "ESCALATION_REASON_REQUIRED" } });
+          return reply
+            .code(400)
+            .send({ error: { message: err.message, code: "ESCALATION_REASON_REQUIRED" } });
         }
         throw err;
       }
@@ -204,7 +218,8 @@ export default async function noteReviewRoutes(fastify: FastifyInstance): Promis
       ],
     },
     async (request, reply) => {
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const { encounterId } = request.params as { encounterId: string };
       const body = request.body as AssignReviewBodyType;
 
@@ -256,7 +271,8 @@ export default async function noteReviewRoutes(fastify: FastifyInstance): Promis
       ],
     },
     async (request, reply) => {
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const { id } = request.params as { id: string };
       const body = request.body as EscalateReviewBodyType;
 
@@ -275,10 +291,14 @@ export default async function noteReviewRoutes(fastify: FastifyInstance): Promis
           return reply.code(404).send({ error: { message: err.message } });
         }
         if (err instanceof NoteReviewInvalidTransitionError) {
-          return reply.code(422).send({ error: { message: err.message, code: "INVALID_TRANSITION" } });
+          return reply
+            .code(422)
+            .send({ error: { message: err.message, code: "INVALID_TRANSITION" } });
         }
         if (err instanceof NoteReviewEscalationReasonRequired) {
-          return reply.code(400).send({ error: { message: err.message, code: "ESCALATION_REASON_REQUIRED" } });
+          return reply
+            .code(400)
+            .send({ error: { message: err.message, code: "ESCALATION_REASON_REQUIRED" } });
         }
         throw err;
       }
@@ -297,7 +317,8 @@ export default async function noteReviewRoutes(fastify: FastifyInstance): Promis
       },
     },
     async (request, reply) => {
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const { id } = request.params as { id: string };
 
       try {
@@ -339,7 +360,8 @@ export default async function noteReviewRoutes(fastify: FastifyInstance): Promis
       ],
     },
     async (request, reply) => {
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const body = request.body as BulkAcknowledgeBodyType;
 
       const result = await noteReviewService.bulkAcknowledge(body.encounterIds, user);

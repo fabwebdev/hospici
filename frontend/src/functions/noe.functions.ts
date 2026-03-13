@@ -7,12 +7,12 @@ import type {
   CorrectNOEInput,
   CreateNOEInput,
   CreateNOTRInput,
-  FilingQueueResponse,
   FilingHistoryEvent,
+  FilingQueueResponse,
   LateOverrideInput,
   NOEResponse,
-  NOTRResponse,
   NOEWithHistoryResponse,
+  NOTRResponse,
   NoticeFilingStatus,
   ReadinessResponse,
 } from "@hospici/shared-types";
@@ -25,10 +25,9 @@ export async function fetchNOE(
   patientId: string,
   cookieHeader: string,
 ): Promise<NOEWithHistoryResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/patients/${patientId}/noe`,
-    { headers: { cookie: cookieHeader } },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/patients/${patientId}/noe`, {
+    headers: { cookie: cookieHeader },
+  });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       error?: { message?: string };
@@ -43,14 +42,11 @@ export async function createNOE(
   body: CreateNOEInput,
   cookieHeader: string,
 ): Promise<NOEResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/patients/${patientId}/noe`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/patients/${patientId}/noe`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
@@ -64,18 +60,12 @@ export async function createNOE(
   return (await response.json()) as NOEResponse;
 }
 
-export async function submitNOE(
-  noeId: string,
-  cookieHeader: string,
-): Promise<NOEResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/noe/${noeId}/submit`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify({}),
-    },
-  );
+export async function submitNOE(noeId: string, cookieHeader: string): Promise<NOEResponse> {
+  const response = await fetch(`${env.apiUrl}/api/v1/noe/${noeId}/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify({}),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
@@ -94,14 +84,11 @@ export async function correctNOE(
   body: CorrectNOEInput,
   cookieHeader: string,
 ): Promise<NOEResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/noe/${noeId}/correct`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/noe/${noeId}/correct`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
@@ -120,14 +107,11 @@ export async function lateOverrideNOE(
   body: LateOverrideInput,
   cookieHeader: string,
 ): Promise<NOEResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/noe/${noeId}/late-override`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/noe/${noeId}/late-override`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
@@ -145,10 +129,9 @@ export async function fetchNOEReadiness(
   noeId: string,
   cookieHeader: string,
 ): Promise<ReadinessResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/noe/${noeId}/readiness`,
-    { headers: { cookie: cookieHeader } },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/noe/${noeId}/readiness`, {
+    headers: { cookie: cookieHeader },
+  });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       error?: { message?: string };
@@ -162,10 +145,9 @@ export async function fetchNOEHistory(
   noeId: string,
   cookieHeader: string,
 ): Promise<{ events: FilingHistoryEvent[] }> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/noe/${noeId}/history`,
-    { headers: { cookie: cookieHeader } },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/noe/${noeId}/history`, {
+    headers: { cookie: cookieHeader },
+  });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       error?: { message?: string };
@@ -181,10 +163,9 @@ export async function fetchNOTR(
   patientId: string,
   cookieHeader: string,
 ): Promise<{ notr: NOTRResponse; history: FilingHistoryEvent[] }> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/patients/${patientId}/notr`,
-    { headers: { cookie: cookieHeader } },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/patients/${patientId}/notr`, {
+    headers: { cookie: cookieHeader },
+  });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       error?: { message?: string };
@@ -199,14 +180,11 @@ export async function createNOTR(
   body: CreateNOTRInput,
   cookieHeader: string,
 ): Promise<NOTRResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/patients/${patientId}/notr`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/patients/${patientId}/notr`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
@@ -220,18 +198,12 @@ export async function createNOTR(
   return (await response.json()) as NOTRResponse;
 }
 
-export async function submitNOTR(
-  notrId: string,
-  cookieHeader: string,
-): Promise<NOTRResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/notr/${notrId}/submit`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify({}),
-    },
-  );
+export async function submitNOTR(notrId: string, cookieHeader: string): Promise<NOTRResponse> {
+  const response = await fetch(`${env.apiUrl}/api/v1/notr/${notrId}/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify({}),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
@@ -250,14 +222,11 @@ export async function correctNOTR(
   body: CreateNOTRInput,
   cookieHeader: string,
 ): Promise<NOTRResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/notr/${notrId}/correct`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/notr/${notrId}/correct`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
@@ -276,19 +245,18 @@ export async function lateOverrideNOTR(
   body: LateOverrideInput,
   cookieHeader: string,
 ): Promise<NOTRResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/notr/${notrId}/late-override`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/notr/${notrId}/late-override`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
     };
-    const err = new Error(parsed.error?.message ?? "Failed to approve NOTR late override") as Error & {
+    const err = new Error(
+      parsed.error?.message ?? "Failed to approve NOTR late override",
+    ) as Error & {
       code?: string;
     };
     err.code = parsed.error?.code;
@@ -301,10 +269,9 @@ export async function fetchNOTRReadiness(
   notrId: string,
   cookieHeader: string,
 ): Promise<ReadinessResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/notr/${notrId}/readiness`,
-    { headers: { cookie: cookieHeader } },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/notr/${notrId}/readiness`, {
+    headers: { cookie: cookieHeader },
+  });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       error?: { message?: string };
@@ -345,14 +312,11 @@ export async function recordCMSResponseNOE(
   body: CMSResponseInput,
   cookieHeader: string,
 ): Promise<NOEResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/noe/${noeId}/cms-response`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/noe/${noeId}/cms-response`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };

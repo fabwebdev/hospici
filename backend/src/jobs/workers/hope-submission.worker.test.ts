@@ -65,12 +65,10 @@ vi.mock("@/db/client.js", () => {
             ? Promise.resolve([fakeAssessment])
             : Promise.resolve([{ maxAttempt: null }]);
 
+        const whereResult = Object.assign(resolved, { limit: () => resolved });
         const chain: Record<string, unknown> = {
           from: () => chain,
-          where: () => ({
-            limit: () => resolved,
-            then: (onFulfilled: (v: unknown) => unknown) => resolved.then(onFulfilled),
-          }),
+          where: () => whereResult,
         };
         return chain;
       },

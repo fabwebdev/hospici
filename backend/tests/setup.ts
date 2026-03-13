@@ -1,5 +1,5 @@
-import { config } from "dotenv";
 import { FormatRegistry } from "@sinclair/typebox";
+import { config } from "dotenv";
 
 // Load test environment — falls back to .env if .env.test not present
 config({ path: ".env.test", override: false });

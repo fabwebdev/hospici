@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import { addBusinessDays, getCapYear } from "@/utils/business-days.ts";
+import { describe, expect, it } from "vitest";
 
 describe("addBusinessDays", () => {
   it("adds 5 business days from a Monday", () => {

@@ -172,7 +172,12 @@ describe("submitReview", () => {
   it("throws INVALID_TRANSITION error with code", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
       new Response(
-        JSON.stringify({ error: { message: "Invalid transition: APPROVED → IN_REVIEW", code: "INVALID_TRANSITION" } }),
+        JSON.stringify({
+          error: {
+            message: "Invalid transition: APPROVED → IN_REVIEW",
+            code: "INVALID_TRANSITION",
+          },
+        }),
         { status: 422 },
       ),
     );
@@ -187,7 +192,9 @@ describe("submitReview", () => {
   it("throws NOTE_LOCKED on attempt to edit approved note", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
       new Response(
-        JSON.stringify({ error: { message: "APPROVED and LOCKED notes cannot be edited", code: "NOTE_LOCKED" } }),
+        JSON.stringify({
+          error: { message: "APPROVED and LOCKED notes cannot be edited", code: "NOTE_LOCKED" },
+        }),
         { status: 422 },
       ),
     );
@@ -211,11 +218,7 @@ describe("assignReviewer", () => {
       new Response(JSON.stringify(assigned), { status: 200 }),
     );
 
-    const result = await assignReviewer(
-      ENCOUNTER_ID,
-      { assignedReviewerId: REVIEWER_ID },
-      COOKIE,
-    );
+    const result = await assignReviewer(ENCOUNTER_ID, { assignedReviewerId: REVIEWER_ID }, COOKIE);
 
     expect(vi.mocked(global.fetch)).toHaveBeenCalledWith(
       `http://localhost:3000/api/v1/review-queue/${ENCOUNTER_ID}/assign`,
@@ -266,7 +269,9 @@ describe("escalateReview", () => {
   it("throws ESCALATION_REASON_REQUIRED when reason is empty", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
       new Response(
-        JSON.stringify({ error: { message: "escalationReason is required", code: "ESCALATION_REASON_REQUIRED" } }),
+        JSON.stringify({
+          error: { message: "escalationReason is required", code: "ESCALATION_REASON_REQUIRED" },
+        }),
         { status: 400 },
       ),
     );
@@ -289,7 +294,11 @@ describe("bulkAcknowledge", () => {
       new Response(JSON.stringify({ acknowledged: 3 }), { status: 200 }),
     );
 
-    const ids = [ENCOUNTER_ID, "aaaaaaaa-0000-0000-0000-000000000002", "aaaaaaaa-0000-0000-0000-000000000003"];
+    const ids = [
+      ENCOUNTER_ID,
+      "aaaaaaaa-0000-0000-0000-000000000002",
+      "aaaaaaaa-0000-0000-0000-000000000003",
+    ];
     const result = await bulkAcknowledge({ encounterIds: ids }, COOKIE);
 
     expect(vi.mocked(global.fetch)).toHaveBeenCalledWith(
@@ -307,9 +316,9 @@ describe("bulkAcknowledge", () => {
       new Response(JSON.stringify({ error: { message: "Bad request" } }), { status: 400 }),
     );
 
-    await expect(
-      bulkAcknowledge({ encounterIds: [ENCOUNTER_ID] }, COOKIE),
-    ).rejects.toThrow("Bad request");
+    await expect(bulkAcknowledge({ encounterIds: [ENCOUNTER_ID] }, COOKIE)).rejects.toThrow(
+      "Bad request",
+    );
   });
 });
 

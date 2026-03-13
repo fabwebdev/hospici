@@ -20,9 +20,8 @@
  */
 
 import { Validators } from "@/config/typebox-compiler.js";
-import { db } from "@/db/client.js";
-import { hopeSubmissionQueue } from "@/jobs/queue.js";
 import {
+  CreateHOPEAssessmentBodySchema,
   HOPEAssessmentListQuerySchema,
   HOPEAssessmentListResponseSchema,
   HOPEAssessmentResponseSchema,
@@ -32,8 +31,12 @@ import {
   HOPESubmissionListResponseSchema,
   HOPESubmissionRowSchema,
   HOPEValidationResultSchema,
-  CreateHOPEAssessmentBodySchema,
   PatchHOPEAssessmentBodySchema,
+} from "@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js";
+import type {
+  CreateHOPEAssessmentBody,
+  HOPEAssessmentListQuery,
+  PatchHOPEAssessmentBody,
 } from "@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js";
 import {
   HOPEApprovalError,
@@ -41,6 +44,8 @@ import {
   HOPEWindowViolationError,
 } from "@/contexts/analytics/services/hope.service.js";
 import { AuditService } from "@/contexts/identity/services/audit.service.js";
+import { db } from "@/db/client.js";
+import { hopeSubmissionQueue } from "@/jobs/queue.js";
 import { Type } from "@sinclair/typebox";
 import type { FastifyInstance } from "fastify";
 
@@ -98,10 +103,11 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const userId = request.user!.id;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const userId = request.user.id;
       try {
         const assessment = await svc.createAssessment(
-          request.body as import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").CreateHOPEAssessmentBody,
+          request.body as CreateHOPEAssessmentBody,
           userId,
         );
         return reply.code(201).send(assessment);
@@ -149,9 +155,10 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const locationId = request.user!.locationId;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const locationId = request.user.locationId;
       const result = await svc.listAssessments(
-        request.query as import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").HOPEAssessmentListQuery,
+        request.query as HOPEAssessmentListQuery,
         locationId,
       );
       return reply.code(200).send(result);
@@ -174,7 +181,8 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const locationId = request.user!.locationId;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const locationId = request.user.locationId;
       const { id } = request.params as { id: string };
       try {
         const assessment = await svc.getAssessment(id, locationId);
@@ -219,12 +227,13 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const userId = request.user!.id;
-      const locationId = request.user!.locationId;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const userId = request.user.id;
+      const locationId = request.user.locationId;
       const { id } = request.params as { id: string };
       const assessment = await svc.patchAssessment(
         id,
-        request.body as import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").PatchHOPEAssessmentBody,
+        request.body as PatchHOPEAssessmentBody,
         userId,
         locationId,
       );
@@ -250,7 +259,8 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const locationId = request.user!.locationId;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const locationId = request.user.locationId;
       const { id } = request.params as { id: string };
       try {
         const result = await svc.validateAssessment(id, locationId);
@@ -283,10 +293,11 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const { id: userId, role, locationId } = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const { id } = request.params as { id: string };
       try {
-        const assessment = await svc.approveAssessment(id, userId, role, locationId);
+        const assessment = await svc.approveAssessment(id, user.id, user.role, user.locationId);
         return reply.code(200).send(assessment);
       } catch (err) {
         if (err instanceof HOPEApprovalError) {
@@ -309,7 +320,8 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       schema: {
         tags: ["HOPE"],
         summary: "Reprocess a rejected iQIES submission (attempt N+1)",
-        description: "Creates a new submission attempt for a rejected submission. Increments attemptNumber.",
+        description:
+          "Creates a new submission attempt for a rejected submission. Increments attemptNumber.",
         params: UuidParamsSchema,
         response: {
           200: HOPESubmissionRowSchema,
@@ -319,10 +331,11 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const { id: userId, locationId } = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const { id } = request.params as { id: string };
       try {
-        const submission = await svc.reprocessSubmission(id, locationId, userId);
+        const submission = await svc.reprocessSubmission(id, user.locationId, user.id);
         return reply.code(200).send(submission);
       } catch (err) {
         if (err instanceof Error && err.message.includes("not found")) {
@@ -358,8 +371,9 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const { locationId } = request.user!;
-      const dashboard = await svc.getDashboard(locationId);
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
+      const dashboard = await svc.getDashboard(user.locationId);
       return reply.code(200).send(dashboard);
     },
   );
@@ -380,10 +394,11 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const { locationId } = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const { patientId } = request.params as { patientId: string };
       try {
-        const timeline = await svc.getPatientTimeline(patientId, locationId);
+        const timeline = await svc.getPatientTimeline(patientId, user.locationId);
         return reply.code(200).send(timeline);
       } catch {
         return reply.code(404).send({
@@ -410,9 +425,10 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const { locationId } = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const { id } = request.params as { id: string };
-      const result = await svc.getSubmissionsByAssessment(id, locationId);
+      const result = await svc.getSubmissionsByAssessment(id, user.locationId);
       return reply.code(200).send(result);
     },
   );
@@ -436,10 +452,11 @@ export default async function hopeRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     async (request, reply) => {
-      const { id: userId, role, locationId } = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const { id } = request.params as { id: string };
       try {
-        const assessment = await svc.revertToReview(id, locationId, userId, role);
+        const assessment = await svc.revertToReview(id, user.locationId, user.id, user.role);
         return reply.code(200).send(assessment);
       } catch (err) {
         if (err instanceof HOPEApprovalError) {
@@ -489,8 +506,9 @@ export async function analyticsRoutes(fastify: FastifyInstance): Promise<void> {
       },
     },
     async (request, reply) => {
-      const { locationId } = request.user!;
-      const benchmarks = await svc.getQualityBenchmarks(locationId);
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
+      const benchmarks = await svc.getQualityBenchmarks(user.locationId);
       return reply.code(200).send(benchmarks);
     },
   );

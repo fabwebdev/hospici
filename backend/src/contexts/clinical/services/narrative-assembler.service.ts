@@ -144,9 +144,7 @@ export class NarrativeAssemblerService {
       }
 
       const sectionFragments: string[] = [];
-      const sortedFragments = [...section.fragments].sort(
-        (a, b) => a.priority - b.priority,
-      );
+      const sortedFragments = [...section.fragments].sort((a, b) => a.priority - b.priority);
 
       for (const fragment of sortedFragments) {
         if (fragment.condition && !this.evaluateCondition(fragment.condition, input)) {
@@ -210,13 +208,8 @@ export class NarrativeAssemblerService {
 
     result.narrative = assembledSections.join("\n\n");
     result.metadata.wordCount = result.narrative.split(/\s+/).filter(Boolean).length;
-    result.metadata.estimatedReadingTime = Math.ceil(
-      result.metadata.wordCount / 200,
-    );
-    result.metadata.completenessPercent = this.calculateCompletenessPercent(
-      template,
-      input,
-    );
+    result.metadata.estimatedReadingTime = Math.ceil(result.metadata.wordCount / 200);
+    result.metadata.completenessPercent = this.calculateCompletenessPercent(template, input);
 
     return result;
   }
@@ -241,7 +234,7 @@ export class NarrativeAssemblerService {
       case "truthy":
         return Boolean(this.resolvePath(input, condition.path));
       case "falsy":
-        return !Boolean(this.resolvePath(input, condition.path));
+        return !this.resolvePath(input, condition.path);
       case "arrayLength": {
         const arr = this.resolvePath(input, condition.path);
         const len = Array.isArray(arr) ? arr.length : 0;
@@ -255,15 +248,13 @@ export class NarrativeAssemblerService {
       case "arrayAny": {
         const arr = this.resolvePath(input, condition.path);
         return (
-          Array.isArray(arr) &&
-          arr.some((item) => this.evaluateCondition(condition.where, item))
+          Array.isArray(arr) && arr.some((item) => this.evaluateCondition(condition.where, item))
         );
       }
       case "arrayEvery": {
         const arr = this.resolvePath(input, condition.path);
         return (
-          Array.isArray(arr) &&
-          arr.every((item) => this.evaluateCondition(condition.where, item))
+          Array.isArray(arr) && arr.every((item) => this.evaluateCondition(condition.where, item))
         );
       }
       case "and":
@@ -301,8 +292,17 @@ export class NarrativeAssemblerService {
         return Array.isArray(value) ? value.join("; ") : value;
       case "numericToWord": {
         const words = [
-          "zero","one","two","three","four","five",
-          "six","seven","eight","nine","ten",
+          "zero",
+          "one",
+          "two",
+          "three",
+          "four",
+          "five",
+          "six",
+          "seven",
+          "eight",
+          "nine",
+          "ten",
         ];
         const n = Number(value);
         return Number.isNaN(n) ? String(value) : (words[n] ?? String(value));

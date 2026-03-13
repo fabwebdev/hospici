@@ -174,7 +174,10 @@ export async function noeDeadlineHandler(_job: Job): Promise<NoeDeadlineJobResul
             nextAction: `Submit Notice of Election by ${deadline}`,
           })
           .catch((err: unknown) =>
-            log.error({ err, patientId: noe.patientId }, "alertService.upsertAlert failed (NOE upcoming)"),
+            log.error(
+              { err, patientId: noe.patientId },
+              "alertService.upsertAlert failed (NOE upcoming)",
+            ),
           );
 
         complianceEvents.emit("compliance:alert", {
@@ -229,7 +232,10 @@ export async function noeDeadlineHandler(_job: Job): Promise<NoeDeadlineJobResul
             nextAction: `Submit Notice of Termination/Revocation by ${deadline}`,
           })
           .catch((err: unknown) =>
-            log.error({ err, patientId: notr.patientId }, "alertService.upsertAlert failed (NOTR upcoming)"),
+            log.error(
+              { err, patientId: notr.patientId },
+              "alertService.upsertAlert failed (NOTR upcoming)",
+            ),
           );
 
         complianceEvents.emit("compliance:alert", {
@@ -300,10 +306,14 @@ export async function noeDeadlineHandler(_job: Job): Promise<NoeDeadlineJobResul
             daysRemaining: -daysOverdue,
             description: `NOE filing deadline OVERDUE by ${daysOverdue} day(s). Claims are blocked. 42 CFR §418.21`,
             rootCause: "NOE not submitted — deadline passed",
-            nextAction: "Submit NOE immediately with supervisor late-override approval and contact CMS MAC",
+            nextAction:
+              "Submit NOE immediately with supervisor late-override approval and contact CMS MAC",
           })
           .catch((err: unknown) =>
-            log.error({ err, patientId: noe.patientId }, "alertService.upsertAlert failed (NOE overdue)"),
+            log.error(
+              { err, patientId: noe.patientId },
+              "alertService.upsertAlert failed (NOE overdue)",
+            ),
           );
 
         complianceEvents.emit("compliance:alert", {
@@ -373,10 +383,14 @@ export async function noeDeadlineHandler(_job: Job): Promise<NoeDeadlineJobResul
             daysRemaining: -daysOverdue,
             description: `NOTR filing deadline OVERDUE by ${daysOverdue} day(s). Claims are blocked.`,
             rootCause: "NOTR not submitted — deadline passed",
-            nextAction: "Submit NOTR immediately with supervisor late-override approval and contact CMS MAC",
+            nextAction:
+              "Submit NOTR immediately with supervisor late-override approval and contact CMS MAC",
           })
           .catch((err: unknown) =>
-            log.error({ err, patientId: notr.patientId }, "alertService.upsertAlert failed (NOTR overdue)"),
+            log.error(
+              { err, patientId: notr.patientId },
+              "alertService.upsertAlert failed (NOTR overdue)",
+            ),
           );
 
         complianceEvents.emit("compliance:alert", {

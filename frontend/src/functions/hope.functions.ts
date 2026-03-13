@@ -226,12 +226,11 @@ export const revertHOPEToReviewFn = createServerFn({ method: "POST" })
     return revertHOPEToReview(data.submissionId, cookie);
   });
 
-export const getQualityBenchmarksFn = createServerFn({ method: "GET" })
-  .handler(async () => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
-    return fetchQualityBenchmarks(cookie);
-  });
+export const getQualityBenchmarksFn = createServerFn({ method: "GET" }).handler(async () => {
+  const request = getRequest();
+  const cookie = request.headers.get("cookie") ?? "";
+  return fetchQualityBenchmarks(cookie);
+});
 
 // ── T3-1b: Dashboard + Timeline + Submission history ─────────────────────────
 
@@ -264,9 +263,12 @@ export async function fetchHOPESubmissionsByAssessment(
   assessmentId: string,
   cookieHeader: string,
 ): Promise<HOPESubmissionListResponse> {
-  const response = await fetch(`${env.apiUrl}/api/v1/hope/assessments/${assessmentId}/submissions`, {
-    headers: { cookie: cookieHeader },
-  });
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/hope/assessments/${assessmentId}/submissions`,
+    {
+      headers: { cookie: cookieHeader },
+    },
+  );
   if (!response.ok) {
     const data = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
     throw new Error(data.error?.message ?? "Failed to fetch HOPE submissions");
@@ -274,12 +276,11 @@ export async function fetchHOPESubmissionsByAssessment(
   return (await response.json()) as HOPESubmissionListResponse;
 }
 
-export const getHOPEDashboardFn = createServerFn({ method: "GET" })
-  .handler(async () => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
-    return fetchHOPEDashboard(cookie);
-  });
+export const getHOPEDashboardFn = createServerFn({ method: "GET" }).handler(async () => {
+  const request = getRequest();
+  const cookie = request.headers.get("cookie") ?? "";
+  return fetchHOPEDashboard(cookie);
+});
 
 export const getHOPEPatientTimelineFn = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => data as { patientId: string })

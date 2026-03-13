@@ -155,7 +155,8 @@ describe("compliance event bridge", () => {
       locationId: "loc-1",
       capYear: 2026,
       utilizationPercent: 0.82,
-      projectedOverage: 15000,
+      projectedYearEndPercent: 1.05,
+      threshold: "CAP_THRESHOLD_80",
     });
 
     expect(received).toHaveLength(1);

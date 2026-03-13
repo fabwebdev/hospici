@@ -20,23 +20,23 @@
  *   - PHI NEVER sent to Layer 2 — only assembled draft text
  */
 
-import { Validators } from "@/config/typebox-compiler.js";
 import { env } from "@/config/env.js";
-import { checkLLMRateLimit, enhanceWithLLM } from "../services/vantageChart.llm.js";
-import { VantageChartService } from "../services/vantageChart.service.js";
+import { Validators } from "@/config/typebox-compiler.js";
+import { logAudit } from "@/contexts/identity/services/audit.service.js";
 import { Type } from "@sinclair/typebox";
 import type { FastifyInstance } from "fastify";
 import {
   CreateEncounterBodySchema,
-  EnhanceNarrativeBodySchema,
   EncounterListResponseSchema,
   EncounterResponseSchema,
+  EnhanceNarrativeBodySchema,
+  EnhanceNarrativeResponseSchema,
   GenerateNarrativeBodySchema,
   GenerateNarrativeResponseSchema,
-  EnhanceNarrativeResponseSchema,
   PatchEncounterBodySchema,
 } from "../schemas/encounter.schema.js";
-import { logAudit } from "@/contexts/identity/services/audit.service.js";
+import { checkLLMRateLimit, enhanceWithLLM } from "../services/vantageChart.llm.js";
+import { VantageChartService } from "../services/vantageChart.service.js";
 
 const PatientEncounterParamsSchema = {
   type: "object",
@@ -60,9 +60,7 @@ const ErrorSchema = Type.Object({
   error: Type.Object({ code: Type.String(), message: Type.String() }),
 });
 
-export default async function vantageChartRoutes(
-  fastify: FastifyInstance,
-): Promise<void> {
+export default async function vantageChartRoutes(fastify: FastifyInstance): Promise<void> {
   const svc = new VantageChartService(fastify.valkey);
 
   // ── POST /patients/:patientId/encounters ──────────────────────────────────
@@ -79,9 +77,10 @@ export default async function vantageChartRoutes(
       preValidation: [
         async (req, reply) => {
           if (!Validators.CreateEncounterBody.Check(req.body)) {
-            const errors = [...Validators.CreateEncounterBody.Errors(req.body)].map(
-              (e) => ({ path: e.path, message: e.message }),
-            );
+            const errors = [...Validators.CreateEncounterBody.Errors(req.body)].map((e) => ({
+              path: e.path,
+              message: e.message,
+            }));
             return reply.code(400).send({
               success: false,
               error: { code: "VALIDATION_ERROR", message: JSON.stringify(errors) },
@@ -92,7 +91,9 @@ export default async function vantageChartRoutes(
     },
     async (req, reply) => {
       const { patientId } = req.params as { patientId: string };
-      const result = await svc.createEncounter(patientId, req.body as never, req.user!);
+      if (!req.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = req.user;
+      const result = await svc.createEncounter(patientId, req.body as never, user);
       return reply.code(201).send(result);
     },
   );
@@ -110,7 +111,9 @@ export default async function vantageChartRoutes(
     },
     async (req, reply) => {
       const { patientId } = req.params as { patientId: string };
-      const result = await svc.listEncounters(patientId, req.user!);
+      if (!req.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = req.user;
+      const result = await svc.listEncounters(patientId, user);
       return reply.send(result);
     },
   );
@@ -131,7 +134,9 @@ export default async function vantageChartRoutes(
         patientId: string;
         encounterId: string;
       };
-      const result = await svc.getEncounter(patientId, encounterId, req.user!);
+      if (!req.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = req.user;
+      const result = await svc.getEncounter(patientId, encounterId, user);
       if (!result) {
         return reply.code(404).send({
           success: false,
@@ -156,9 +161,10 @@ export default async function vantageChartRoutes(
       preValidation: [
         async (req, reply) => {
           if (!Validators.PatchEncounterBody.Check(req.body)) {
-            const errors = [...Validators.PatchEncounterBody.Errors(req.body)].map(
-              (e) => ({ path: e.path, message: e.message }),
-            );
+            const errors = [...Validators.PatchEncounterBody.Errors(req.body)].map((e) => ({
+              path: e.path,
+              message: e.message,
+            }));
             return reply.code(400).send({
               success: false,
               error: { code: "VALIDATION_ERROR", message: JSON.stringify(errors) },
@@ -172,12 +178,9 @@ export default async function vantageChartRoutes(
         patientId: string;
         encounterId: string;
       };
-      const result = await svc.patchEncounter(
-        patientId,
-        encounterId,
-        req.body as never,
-        req.user!,
-      );
+      if (!req.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = req.user;
+      const result = await svc.patchEncounter(patientId, encounterId, req.body as never, user);
       if (!result) {
         return reply.code(404).send({
           success: false,
@@ -219,9 +222,10 @@ export default async function vantageChartRoutes(
       preValidation: [
         async (req, reply) => {
           if (!Validators.GenerateNarrativeBody.Check(req.body)) {
-            const errors = [...Validators.GenerateNarrativeBody.Errors(req.body)].map(
-              (e) => ({ path: e.path, message: e.message }),
-            );
+            const errors = [...Validators.GenerateNarrativeBody.Errors(req.body)].map((e) => ({
+              path: e.path,
+              message: e.message,
+            }));
             return reply.code(400).send({
               success: false,
               error: { code: "VALIDATION_ERROR", message: JSON.stringify(errors) },
@@ -236,12 +240,9 @@ export default async function vantageChartRoutes(
         encounterId: string;
       };
       const body = req.body as { input: Parameters<typeof svc.generateNarrative>[2] };
-      const result = await svc.generateNarrative(
-        patientId,
-        encounterId,
-        body.input,
-        req.user!,
-      );
+      if (!req.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = req.user;
+      const result = await svc.generateNarrative(patientId, encounterId, body.input, user);
       return reply.send(result);
     },
   );
@@ -285,11 +286,12 @@ export default async function vantageChartRoutes(
         });
       }
 
+      if (!req.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
       const { patientId, encounterId } = req.params as {
         patientId: string;
         encounterId: string;
       };
-      const userId = req.user!.id;
+      const userId = req.user.id;
 
       // Rate limit check
       const { allowed, remaining } = await checkLLMRateLimit(fastify.valkey, userId);
@@ -309,8 +311,8 @@ export default async function vantageChartRoutes(
 
       // Audit — never log draft text or patient identifiers
       await logAudit("update", userId, patientId, {
-        userRole: req.user!.role,
-        locationId: req.user!.locationId,
+        userRole: req.user.role,
+        locationId: req.user.locationId,
         resourceType: "vantage_chart",
         resourceId: encounterId,
         details: { method: "LLM", tokensUsed: llmResult.tokensUsed },

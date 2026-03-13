@@ -1,12 +1,12 @@
+import { readFile, readdir } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 /**
  * Vitest globalSetup — runs once in the main process before any test workers start.
  * Applies migrations to the test database exactly once so parallel test suites
  * do not race each other to apply the same DDL.
  */
 import { config } from "dotenv";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { readdir, readFile } from "node:fs/promises";
 import { Pool } from "pg";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -32,12 +32,10 @@ export async function setup() {
     `);
 
     const migrationsDir = join(__dirname, "../database/migrations/drizzle");
-    const files = (await readdir(migrationsDir))
-      .filter((f) => f.endsWith(".sql"))
-      .sort();
+    const files = (await readdir(migrationsDir)).filter((f) => f.endsWith(".sql")).sort();
 
     const { rows: applied } = await pool.query<{ name: string }>(
-      "SELECT name FROM _test_migrations"
+      "SELECT name FROM _test_migrations",
     );
     const appliedSet = new Set(applied.map((r) => r.name));
 
@@ -45,11 +43,14 @@ export async function setup() {
     // run before this tracking was added), pre-populate without re-running the SQL.
     if (appliedSet.size === 0) {
       const { rows: existing } = await pool.query<{ exists: boolean }>(
-        "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'locations') AS exists"
+        "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'locations') AS exists",
       );
       if (existing[0]?.exists) {
         for (const file of files) {
-          await pool.query("INSERT INTO _test_migrations (name) VALUES ($1) ON CONFLICT DO NOTHING", [file]);
+          await pool.query(
+            "INSERT INTO _test_migrations (name) VALUES ($1) ON CONFLICT DO NOTHING",
+            [file],
+          );
           appliedSet.add(file);
         }
       }

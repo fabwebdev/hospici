@@ -14,11 +14,9 @@ vi.mock("@tanstack/react-start/server", () => ({
   })),
 }));
 
-const {
-  fetchScheduledVisits,
-  createScheduledVisit,
-  patchVisitStatus,
-} = await import("@/functions/visitSchedule.functions.js");
+const { fetchScheduledVisits, createScheduledVisit, patchVisitStatus } = await import(
+  "@/functions/visitSchedule.functions.js"
+);
 
 const COOKIE = "session=test";
 const PATIENT_ID = "aaaaaaaa-0000-0000-0000-000000000001";
@@ -141,7 +139,11 @@ describe("createScheduledVisit", () => {
 
     const result = await createScheduledVisit(
       PATIENT_ID,
-      { ...createBody, clinicianId: "dddddddd-0000-0000-0000-000000000001", notes: "Per POC order" },
+      {
+        ...createBody,
+        clinicianId: "dddddddd-0000-0000-0000-000000000001",
+        notes: "Per POC order",
+      },
       COOKIE,
     );
 
@@ -157,11 +159,9 @@ describe("createScheduledVisit", () => {
       ),
     );
 
-    const err = (await createScheduledVisit(
-      PATIENT_ID,
-      createBody,
-      COOKIE,
-    ).catch((e: unknown) => e)) as Error & { code?: string };
+    const err = (await createScheduledVisit(PATIENT_ID, createBody, COOKIE).catch(
+      (e: unknown) => e,
+    )) as Error & { code?: string };
     expect(err.code).toBe("VALIDATION_ERROR");
   });
 });
@@ -237,11 +237,9 @@ describe("patchVisitStatus", () => {
       ),
     );
 
-    const err = (await patchVisitStatus(
-      VISIT_ID,
-      { status: "scheduled" },
-      COOKIE,
-    ).catch((e: unknown) => e)) as Error & { code?: string };
+    const err = (await patchVisitStatus(VISIT_ID, { status: "scheduled" }, COOKIE).catch(
+      (e: unknown) => e,
+    )) as Error & { code?: string };
 
     expect(err.code).toBe("INVALID_TRANSITION");
     expect(err.message).toContain("Cannot transition");

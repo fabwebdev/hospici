@@ -23,7 +23,11 @@ vi.mock("@tanstack/react-start/server", () => ({
   })),
 }));
 // createServerFn chains .inputValidator(...).handler(...) or .handler(...) — provide no-op stubs
-const chainable = { inputValidator: () => chainable, validator: () => chainable, handler: () => {} };
+const chainable = {
+  inputValidator: () => chainable,
+  validator: () => chainable,
+  handler: () => {},
+};
 vi.mock("@tanstack/react-start", () => ({
   createServerFn: () => chainable,
 }));
@@ -227,15 +231,14 @@ describe("fetchHOPEAssessment", () => {
 
   it("throws NOT_FOUND on missing assessment", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ error: { message: "HOPE assessment not found" } }),
-        { status: 404 },
-      ),
+      new Response(JSON.stringify({ error: { message: "HOPE assessment not found" } }), {
+        status: 404,
+      }),
     );
 
-    await expect(fetchHOPEAssessment("00000000-0000-0000-0000-000000000000", COOKIE)).rejects.toThrow(
-      "HOPE assessment not found",
-    );
+    await expect(
+      fetchHOPEAssessment("00000000-0000-0000-0000-000000000000", COOKIE),
+    ).rejects.toThrow("HOPE assessment not found");
   });
 
   it("throws fallback on malformed error body", async () => {
@@ -377,10 +380,9 @@ describe("patchHOPEAssessment", () => {
 
   it("throws on invalid status transition", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ error: { message: "Invalid status transition" } }),
-        { status: 422 },
-      ),
+      new Response(JSON.stringify({ error: { message: "Invalid status transition" } }), {
+        status: 422,
+      }),
     );
 
     await expect(
@@ -442,7 +444,13 @@ describe("validateHOPEAssessment", () => {
     const withWarnings: HOPEValidationResult = {
       completenessScore: 90,
       blockingErrors: [],
-      warnings: [{ field: "sectionJ.J0100A", code: "CLINICAL_NOTE", message: "Consider documenting pain severity" }],
+      warnings: [
+        {
+          field: "sectionJ.J0100A",
+          code: "CLINICAL_NOTE",
+          message: "Consider documenting pain severity",
+        },
+      ],
       inconsistencies: ["Symptom score marked 0 but follow-up required flag is set"],
       missingRequiredFields: [],
       suggestedNextActions: ["Review Section J pain assessment"],
@@ -459,10 +467,7 @@ describe("validateHOPEAssessment", () => {
 
   it("throws on non-ok response", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ error: { message: "Assessment not found" } }),
-        { status: 404 },
-      ),
+      new Response(JSON.stringify({ error: { message: "Assessment not found" } }), { status: 404 }),
     );
 
     await expect(validateHOPEAssessment(ASSESSMENT_ID, COOKIE)).rejects.toThrow(
@@ -573,15 +578,12 @@ describe("reprocessHOPESubmission", () => {
 
   it("throws on not found submission", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ error: { message: "Submission not found" } }),
-        { status: 404 },
-      ),
+      new Response(JSON.stringify({ error: { message: "Submission not found" } }), { status: 404 }),
     );
 
-    await expect(reprocessHOPESubmission("00000000-0000-0000-0000-000000000000", COOKIE)).rejects.toThrow(
-      "Submission not found",
-    );
+    await expect(
+      reprocessHOPESubmission("00000000-0000-0000-0000-000000000000", COOKIE),
+    ).rejects.toThrow("Submission not found");
   });
 
   it("throws fallback on malformed error body", async () => {
@@ -619,10 +621,9 @@ describe("revertHOPEToReview", () => {
 
   it("throws when revert is not allowed (e.g. accepted status)", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ error: { message: "Cannot revert accepted assessment" } }),
-        { status: 422 },
-      ),
+      new Response(JSON.stringify({ error: { message: "Cannot revert accepted assessment" } }), {
+        status: 422,
+      }),
     );
 
     await expect(revertHOPEToReview(SUBMISSION_ID, COOKIE)).rejects.toThrow(
@@ -664,10 +665,42 @@ describe("fetchQualityBenchmarks", () => {
     const fullBenchmark: HOPEQualityBenchmark = {
       ...sampleBenchmark,
       measures: [
-        { measureCode: "NQF_3235", measureName: "Comprehensive Assessment", locationRate: 0.82, nationalAverage: 0.79, targetRate: 0.85, atRisk: false, trend: [] },
-        { measureCode: "NQF_3633", measureName: "Treatment Preferences", locationRate: 0.71, nationalAverage: 0.68, targetRate: 0.75, atRisk: false, trend: [] },
-        { measureCode: "NQF_3634A", measureName: "HVLDL Part A", locationRate: 0.64, nationalAverage: 0.61, targetRate: 0.70, atRisk: false, trend: [] },
-        { measureCode: "HCI", measureName: "Hospice Care Index", locationRate: 0.55, nationalAverage: 0.52, targetRate: 0.60, atRisk: false, trend: [] },
+        {
+          measureCode: "NQF_3235",
+          measureName: "Comprehensive Assessment",
+          locationRate: 0.82,
+          nationalAverage: 0.79,
+          targetRate: 0.85,
+          atRisk: false,
+          trend: [],
+        },
+        {
+          measureCode: "NQF_3633",
+          measureName: "Treatment Preferences",
+          locationRate: 0.71,
+          nationalAverage: 0.68,
+          targetRate: 0.75,
+          atRisk: false,
+          trend: [],
+        },
+        {
+          measureCode: "NQF_3634A",
+          measureName: "HVLDL Part A",
+          locationRate: 0.64,
+          nationalAverage: 0.61,
+          targetRate: 0.7,
+          atRisk: false,
+          trend: [],
+        },
+        {
+          measureCode: "HCI",
+          measureName: "Hospice Care Index",
+          locationRate: 0.55,
+          nationalAverage: 0.52,
+          targetRate: 0.6,
+          atRisk: false,
+          trend: [],
+        },
       ],
     };
     vi.mocked(global.fetch).mockResolvedValueOnce(
@@ -697,10 +730,9 @@ describe("fetchQualityBenchmarks", () => {
 
   it("throws on non-ok response", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ error: { message: "No reporting period found" } }),
-        { status: 404 },
-      ),
+      new Response(JSON.stringify({ error: { message: "No reporting period found" } }), {
+        status: 404,
+      }),
     );
 
     await expect(fetchQualityBenchmarks(COOKIE)).rejects.toThrow("No reporting period found");
@@ -888,10 +920,7 @@ describe("fetchHOPEPatientTimeline", () => {
 
   it("throws on patient not found", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ error: { message: "Patient not found" } }),
-        { status: 404 },
-      ),
+      new Response(JSON.stringify({ error: { message: "Patient not found" } }), { status: 404 }),
     );
 
     await expect(
@@ -917,8 +946,18 @@ describe("fetchHOPESubmissionsByAssessment", () => {
   const sampleSubmissionList: HOPESubmissionListResponse = {
     assessmentId: ASSESSMENT_ID,
     data: [
-      { ...sampleSubmission, attemptNumber: 1, submissionStatus: "rejected", rejectionCodes: ["WINDOW_VIOLATION"] },
-      { ...sampleSubmission, id: "ffffffff-0000-0000-0000-000000000001", attemptNumber: 2, submissionStatus: "accepted" },
+      {
+        ...sampleSubmission,
+        attemptNumber: 1,
+        submissionStatus: "rejected",
+        rejectionCodes: ["WINDOW_VIOLATION"],
+      },
+      {
+        ...sampleSubmission,
+        id: "ffffffff-0000-0000-0000-000000000001",
+        attemptNumber: 2,
+        submissionStatus: "accepted",
+      },
     ],
   };
 
@@ -959,10 +998,7 @@ describe("fetchHOPESubmissionsByAssessment", () => {
 
   it("throws on non-ok response", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ error: { message: "Assessment not found" } }),
-        { status: 404 },
-      ),
+      new Response(JSON.stringify({ error: { message: "Assessment not found" } }), { status: 404 }),
     );
 
     await expect(

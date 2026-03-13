@@ -143,8 +143,4 @@ export const HOPE_STATUS_TRANSITIONS: Record<string, string[]> = {
 };
 
 /** Statuses that block submission — must have 0 fatal errors to leave these */
-export const HOPE_BLOCKING_STATUSES = [
-  "draft",
-  "in_progress",
-  "ready_for_review",
-] as const;
+export const HOPE_BLOCKING_STATUSES = ["draft", "in_progress", "ready_for_review"] as const;

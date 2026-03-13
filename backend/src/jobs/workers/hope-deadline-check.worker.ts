@@ -17,9 +17,9 @@ import { createLoggingConfig } from "@/config/logging.config.js";
 import { db } from "@/db/client.js";
 import { hopeAssessments } from "@/db/schema/hope-assessments.table.js";
 import { complianceEvents } from "@/events/compliance-events.js";
-import { and, inArray, lte, sql } from "drizzle-orm";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
+import { and, inArray, lte, sql } from "drizzle-orm";
 import pino from "pino";
 import { QUEUE_NAMES, createBullMQConnection } from "../queue.js";
 
@@ -125,7 +125,11 @@ export async function hopeDeadlineHandler(_job: Job): Promise<HopeDeadlineJobRes
   }
 
   log.info(
-    { checkedAt: today.toISOString(), upcomingCount: upcoming.length, overdueCount: overdue.length },
+    {
+      checkedAt: today.toISOString(),
+      upcomingCount: upcoming.length,
+      overdueCount: overdue.length,
+    },
     "hope-deadline-check: completed",
   );
 

@@ -29,16 +29,9 @@ export const visitTypeEnum = pgEnum("visit_type", [
   "discharge",
 ]);
 
-export const encounterStatusEnum = pgEnum("encounter_status", [
-  "DRAFT",
-  "COMPLETED",
-  "SIGNED",
-]);
+export const encounterStatusEnum = pgEnum("encounter_status", ["DRAFT", "COMPLETED", "SIGNED"]);
 
-export const vantageChartMethodEnum = pgEnum("vantage_chart_method", [
-  "TEMPLATE",
-  "LLM",
-]);
+export const vantageChartMethodEnum = pgEnum("vantage_chart_method", ["TEMPLATE", "LLM"]);
 
 export const noteReviewStatusEnum = pgEnum("note_review_status", [
   "PENDING",
@@ -99,15 +92,9 @@ export const encounters = pgTable(
     firstPassApproved: boolean("first_pass_approved").notNull().default(false),
     revisionCount: integer("revision_count").notNull().default(0),
 
-    visitedAt: timestamp("visited_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    visitedAt: timestamp("visited_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index("idx_encounters_patient_id").on(t.patientId),

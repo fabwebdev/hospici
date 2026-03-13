@@ -2,20 +2,17 @@
 // HOPE Command Center — location-wide operational dashboard (T3-1b)
 // Tracks HOPE-A / HOPE-UV / HOPE-D windows, symptom follow-ups, iQIES status, HQRP penalty risk
 
+import { getHOPEDashboardFn, reprocessHOPESubmissionFn } from "@/functions/hope.functions.js";
 import {
-  getHOPEDashboardFn,
-  reprocessHOPESubmissionFn,
-} from "@/functions/hope.functions.js";
-import {
-  HOPE_ASSESSMENT_TYPE_LABELS,
-  HOPE_STATUS_LABELS,
-  IQIES_ERROR_GUIDANCE,
   type HOPEAssessmentStatus,
   type HOPEDashboardAssessmentItem,
   type HOPEDashboardResponse,
+  HOPE_ASSESSMENT_TYPE_LABELS,
+  HOPE_STATUS_LABELS,
+  IQIES_ERROR_GUIDANCE,
 } from "@hospici/shared-types";
-import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authed/hope/dashboard")({
@@ -40,7 +37,9 @@ const STATUS_COLORS: Record<HOPEAssessmentStatus, string> = {
 
 function StatusBadge({ status }: { status: HOPEAssessmentStatus }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}
+    >
       {HOPE_STATUS_LABELS[status]}
     </span>
   );
@@ -89,6 +88,7 @@ function CompletenessRing({ score }: { score: number }) {
   const color = score >= 80 ? "#22c55e" : score >= 50 ? "#f59e0b" : "#ef4444";
   return (
     <svg width={40} height={40} className="shrink-0" aria-label={`${score}% complete`}>
+      <title>{score}% complete</title>
       <circle cx={20} cy={20} r={r} fill="none" stroke="#e2e8f0" strokeWidth="3" />
       <circle
         cx={20}
@@ -122,9 +122,8 @@ function WidgetCard({
   pulse?: boolean;
 }) {
   const displayValue = typeof value === "boolean" ? (value ? "YES" : "NO") : value;
-  const valueColor = typeof value === "boolean"
-    ? value ? "text-red-600" : "text-green-600"
-    : color;
+  const valueColor =
+    typeof value === "boolean" ? (value ? "text-red-600" : "text-green-600") : color;
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -263,8 +262,17 @@ function HOPEDashboardPage() {
         <WidgetCard label="Due Today" value={data.dueToday} color="text-red-600" pulse />
         <WidgetCard label="Due 48h" value={data.due48h} color="text-amber-600" pulse />
         <WidgetCard label="Overdue" value={data.overdue} color="text-red-700" pulse />
-        <WidgetCard label="Symptom Follow-Up" value={data.needsSymptomFollowUp} color="text-orange-600" />
-        <WidgetCard label="Rejected by iQIES" value={data.rejectedByIQIES} color="text-red-600" pulse />
+        <WidgetCard
+          label="Symptom Follow-Up"
+          value={data.needsSymptomFollowUp}
+          color="text-orange-600"
+        />
+        <WidgetCard
+          label="Rejected by iQIES"
+          value={data.rejectedByIQIES}
+          color="text-red-600"
+          pulse
+        />
         <WidgetCard label="Ready to Submit" value={data.readyToSubmit} color="text-purple-600" />
         <WidgetCard label="HQRP Penalty Risk" value={data.hqrpPenaltyRisk} color="text-red-600" />
       </div>
@@ -285,13 +293,27 @@ function HOPEDashboardPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-gray-100">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deadline</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Complete</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Follow-Up</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Next Action</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Patient
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Type
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Deadline
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Complete
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Follow-Up
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Next Action
+                  </th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>

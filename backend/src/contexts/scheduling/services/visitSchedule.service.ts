@@ -14,18 +14,18 @@
  * PHI: patientName encrypted via PHIEncryptionService before alert upsert.
  */
 
+import type { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import { logAudit } from "@/contexts/identity/services/audit.service.js";
-import { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import { db } from "@/db/client.js";
 import { scheduledVisits } from "@/db/schema/scheduled-visits.table.js";
-import { and, eq, gte, lt, lte, sql } from "drizzle-orm";
-import type Valkey from "iovalkey";
 import type {
-  ScheduledVisitResponse,
-  ScheduledVisitListResponse,
   CreateScheduledVisitInput,
   PatchScheduledVisitStatusInput,
+  ScheduledVisitListResponse,
+  ScheduledVisitResponse,
 } from "@hospici/shared-types";
+import { and, eq, gte, lt, lte, sql } from "drizzle-orm";
+import type Valkey from "iovalkey";
 
 type UserCtx = { id: string; locationId: string; role: string };
 
@@ -106,10 +106,7 @@ export class VisitScheduleService {
    * List scheduled visits for a patient (location-scoped via RLS).
    * Returns from Valkey cache if available.
    */
-  async listVisits(
-    patientId: string,
-    user: UserCtx,
-  ): Promise<ScheduledVisitListResponse> {
+  async listVisits(patientId: string, user: UserCtx): Promise<ScheduledVisitListResponse> {
     const key = cacheKey(user.locationId, patientId);
     const cached = await this.valkey.get(key);
     if (cached) {
@@ -158,7 +155,7 @@ export class VisitScheduleService {
           patientId,
           locationId: user.locationId,
           clinicianId: input.clinicianId ?? null,
-          visitType: input.visitType as typeof scheduledVisits.$inferInsert["visitType"],
+          visitType: input.visitType as (typeof scheduledVisits.$inferInsert)["visitType"],
           discipline: input.discipline,
           scheduledDate: input.scheduledDate,
           frequencyPlan: input.frequencyPlan as unknown as Record<string, unknown>,
@@ -180,7 +177,11 @@ export class VisitScheduleService {
       locationId: user.locationId,
       resourceType: "scheduled_visit",
       resourceId: row.id,
-      details: { visitType: row.visitType, discipline: row.discipline, scheduledDate: row.scheduledDate },
+      details: {
+        visitType: row.visitType,
+        discipline: row.discipline,
+        scheduledDate: row.scheduledDate,
+      },
     });
 
     return rowToResponse(row);
@@ -289,10 +290,7 @@ export class VisitScheduleService {
       .update(scheduledVisits)
       .set({ status: "missed", updatedAt: new Date() })
       .where(
-        and(
-          eq(scheduledVisits.status, "scheduled"),
-          lt(scheduledVisits.scheduledDate, todayStr),
-        ),
+        and(eq(scheduledVisits.status, "scheduled"), lt(scheduledVisits.scheduledDate, todayStr)),
       )
       .returning({
         id: scheduledVisits.id,

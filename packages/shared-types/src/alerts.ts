@@ -26,6 +26,11 @@ export const AlertType = {
 	// T3-2b — F2F Validity Engine
 	F2F_MISSING: "F2F_MISSING", // no valid F2F for period 3+ recertification
 	F2F_INVALID: "F2F_INVALID", // F2F exists but failed CMS validity rules
+	// T3-3 — Cap Intelligence Module
+	CAP_THRESHOLD_70: "CAP_THRESHOLD_70",
+	CAP_THRESHOLD_80: "CAP_THRESHOLD_80",
+	CAP_THRESHOLD_90: "CAP_THRESHOLD_90",
+	CAP_PROJECTED_OVERAGE: "CAP_PROJECTED_OVERAGE",
 } as const;
 
 export type AlertType = (typeof AlertType)[keyof typeof AlertType];

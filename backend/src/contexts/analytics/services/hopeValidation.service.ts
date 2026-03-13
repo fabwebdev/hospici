@@ -33,10 +33,10 @@ const SECTION_WEIGHTS_HOPE_A: Record<string, number> = {
   sectionF: 15, // Functional ADLs — NQF #3235 domain
   sectionJ: 15, // Pain — NQF #3235 domain
   sectionK: 10, // Nutritional — NQF #3235 domain
-  sectionM: 5,  // Medications
+  sectionM: 5, // Medications
   sectionN: 10, // Diagnoses — terminal + ICD-10
-  sectionO: 5,  // Special treatments
-  sectionQ: 5,  // Participation
+  sectionO: 5, // Special treatments
+  sectionQ: 5, // Participation
 };
 
 const SECTION_WEIGHTS_HOPE_UV: Record<string, number> = {
@@ -334,8 +334,7 @@ export class HOPEValidationService {
       blockingErrors.push({
         field: "sectionN.terminalDiagnosisIcd10",
         code: "ICD10_FORMAT_INVALID",
-        message:
-          "ICD-10 code format invalid — must match pattern [A-Z][0-9A-Z]{1,6} (e.g. C349).",
+        message: "ICD-10 code format invalid — must match pattern [A-Z][0-9A-Z]{1,6} (e.g. C349).",
       });
     }
 

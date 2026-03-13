@@ -14,16 +14,16 @@
  *   - RLS context injected via parameterized sql tag (never string interpolation)
  */
 
+import type { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import { logAudit } from "@/contexts/identity/services/audit.service.js";
-import { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import { db } from "@/db/client.js";
 import { noticesOfElection } from "@/db/schema/noe.table.js";
 import { noticesOfTerminationRevocation } from "@/db/schema/notr.table.js";
-import { addBusinessDays } from "@/utils/business-days.js";
 import { complianceEvents } from "@/events/compliance-events.js";
+import { addBusinessDays } from "@/utils/business-days.js";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
-import type Valkey from "iovalkey";
 import type { FastifyBaseLogger } from "fastify";
+import type Valkey from "iovalkey";
 import type {
   CMSResponseBody,
   CorrectNOEBody,
@@ -127,9 +127,7 @@ function noeRowToResponse(row: typeof noticesOfElection.$inferSelect): NOERespon
   };
 }
 
-function notrRowToResponse(
-  row: typeof noticesOfTerminationRevocation.$inferSelect,
-): NOTRResponse {
+function notrRowToResponse(row: typeof noticesOfTerminationRevocation.$inferSelect): NOTRResponse {
   return {
     id: row.id,
     noeId: row.noeId,
@@ -249,8 +247,7 @@ export class NOEService {
 
     // Most recent non-voided, or last if all voided
     const active =
-      rows.find((r) => r.status !== "voided" && r.status !== "closed") ??
-      rows[rows.length - 1];
+      rows.find((r) => r.status !== "voided" && r.status !== "closed") ?? rows[rows.length - 1];
 
     if (!active) {
       throw new NOENotFoundError(patientId);
@@ -395,7 +392,10 @@ export class NOEService {
       details: { transition: `submitted → ${nextStatus}`, responseCode: body.responseCode },
     });
 
-    this.log.info({ noeId: id, nextStatus, responseCode: body.responseCode }, "CMS response recorded for NOE");
+    this.log.info(
+      { noeId: id, nextStatus, responseCode: body.responseCode },
+      "CMS response recorded for NOE",
+    );
     return noeRowToResponse(row);
   }
 
@@ -501,9 +501,7 @@ export class NOEService {
     locationId: string,
   ): Promise<NOEResponse> {
     if (userRole !== "supervisor" && userRole !== "admin" && userRole !== "super_admin") {
-      throw new FilingAuthorizationError(
-        "Late override requires supervisor or admin role",
-      );
+      throw new FilingAuthorizationError("Late override requires supervisor or admin role");
     }
 
     const [existing] = await db
@@ -567,9 +565,7 @@ export class NOEService {
     const [row] = await db
       .select()
       .from(noticesOfElection)
-      .where(
-        and(eq(noticesOfElection.id, id), eq(noticesOfElection.locationId, locationId)),
-      )
+      .where(and(eq(noticesOfElection.id, id), eq(noticesOfElection.locationId, locationId)))
       .limit(1);
 
     if (!row) {
@@ -629,9 +625,7 @@ export class NOEService {
     const [base] = await db
       .select()
       .from(noticesOfElection)
-      .where(
-        and(eq(noticesOfElection.id, id), eq(noticesOfElection.locationId, locationId)),
-      )
+      .where(and(eq(noticesOfElection.id, id), eq(noticesOfElection.locationId, locationId)))
       .limit(1);
 
     if (!base) {
@@ -753,8 +747,7 @@ export class NOEService {
     }
 
     const active =
-      rows.find((r) => r.status !== "voided" && r.status !== "closed") ??
-      rows[rows.length - 1];
+      rows.find((r) => r.status !== "voided" && r.status !== "closed") ?? rows[rows.length - 1];
 
     if (!active) {
       throw new NOTRNotFoundError(patientId);
@@ -995,9 +988,7 @@ export class NOEService {
     locationId: string,
   ): Promise<NOTRResponse> {
     if (userRole !== "supervisor" && userRole !== "admin" && userRole !== "super_admin") {
-      throw new FilingAuthorizationError(
-        "Late override requires supervisor or admin role",
-      );
+      throw new FilingAuthorizationError("Late override requires supervisor or admin role");
     }
 
     const [existing] = await db

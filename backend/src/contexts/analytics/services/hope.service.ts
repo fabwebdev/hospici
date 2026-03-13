@@ -17,39 +17,38 @@
  * All DB operations run inside RLS context (location_id set in session).
  */
 
-import type {
-  CreateHOPEAssessmentBody,
-  HOPEAssessmentListQuery,
-  HOPEAssessmentResponse,
-  HOPEAssessmentListResponse,
-  HOPEValidationResult,
-  HOPESubmissionRow,
-  HOPEQualityBenchmark,
-  HOPEDashboardResponse,
-  HOPEPatientTimeline,
-  HOPESubmissionListResponse,
-  PatchHOPEAssessmentBody,
-} from "@/contexts/analytics/schemas/hopeAssessmentCrud.schema";
+import { createHash } from "node:crypto";
 import {
   validateHOPEAdmissionWindow,
   validateHOPEDischargeWindow,
 } from "@/contexts/analytics/schemas/hope.schema";
-import { HOPEValidationService } from "@/contexts/analytics/services/hopeValidation.service.js";
-import { AuditService } from "@/contexts/identity/services/audit.service.js";
 import type {
-  HopeAssessmentSelect,
-} from "@/db/schema/hope-assessments.table.js";
+  CreateHOPEAssessmentBody,
+  HOPEAssessmentListQuery,
+  HOPEAssessmentListResponse,
+  HOPEAssessmentResponse,
+  HOPEAssessmentStatus,
+  HOPEDashboardResponse,
+  HOPEPatientTimeline,
+  HOPEQualityBenchmark,
+  HOPESubmissionListResponse,
+  HOPESubmissionRow,
+  HOPEValidationResult,
+  PatchHOPEAssessmentBody,
+} from "@/contexts/analytics/schemas/hopeAssessmentCrud.schema";
+import { HOPEValidationService } from "@/contexts/analytics/services/hopeValidation.service.js";
+import type { AuditService } from "@/contexts/identity/services/audit.service.js";
+import type { HopeAssessmentSelect } from "@/db/schema/hope-assessments.table.js";
 import {
   HQRP_NATIONAL_AVERAGES,
   HQRP_TARGET_RATES,
 } from "@/db/schema/hope-quality-measures.table.js";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, asc, count, desc, eq, gte, inArray, lt, lte, sql } from "drizzle-orm";
 import type * as schema from "@/db/schema/index.js";
-import { createHash } from "node:crypto";
+import type { Queue } from "bullmq";
+import { and, asc, count, desc, eq, gte, inArray, lt, lte, sql } from "drizzle-orm";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { FastifyBaseLogger } from "fastify";
 import type Valkey from "iovalkey";
-import type { Queue } from "bullmq";
 
 // ---------------------------------------------------------------------------
 // Errors
@@ -110,7 +109,7 @@ function toResponse(row: HopeAssessmentSelect): HOPEAssessmentResponse {
     windowStart: row.windowStart,
     windowDeadline: row.windowDeadline,
     assignedClinicianId: row.assignedClinicianId ?? null,
-    status: row.status as import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema").HOPEAssessmentStatus,
+    status: row.status as HOPEAssessmentStatus,
     completenessScore: row.completenessScore,
     fatalErrorCount: row.fatalErrorCount,
     warningCount: row.warningCount,
@@ -245,8 +244,7 @@ export class HOPEService {
     if (query.status) conditions.push(eq(hopeAssessments.status, query.status));
     if (query.assignedClinicianId)
       conditions.push(eq(hopeAssessments.assignedClinicianId, query.assignedClinicianId));
-    if (query.dateFrom)
-      conditions.push(gte(hopeAssessments.assessmentDate, query.dateFrom));
+    if (query.dateFrom) conditions.push(gte(hopeAssessments.assessmentDate, query.dateFrom));
     if (query.dateTo) conditions.push(lte(hopeAssessments.assessmentDate, query.dateTo));
     if (query.windowOverdueOnly) {
       const today = new Date().toISOString().split("T")[0] ?? "";
@@ -378,7 +376,9 @@ export class HOPEService {
     const { hopeAssessments } = await import("@/db/schema/hope-assessments.table.js");
 
     if (role !== "supervisor" && role !== "admin" && role !== "super_admin") {
-      throw new HOPEApprovalError("Only supervisors and admins can approve assessments for iQIES submission.");
+      throw new HOPEApprovalError(
+        "Only supervisors and admins can approve assessments for iQIES submission.",
+      );
     }
 
     const [existing] = await db
@@ -484,7 +484,10 @@ export class HOPEService {
       .limit(1);
 
     if (!existing) throw new Error(`Submission ${submissionId} not found`);
-    if (existing.submissionStatus !== "rejected" && existing.submissionStatus !== "correction_pending") {
+    if (
+      existing.submissionStatus !== "rejected" &&
+      existing.submissionStatus !== "correction_pending"
+    ) {
       throw new Error(`Cannot reprocess submission with status '${existing.submissionStatus}'`);
     }
 
@@ -618,14 +621,24 @@ export class HOPEService {
     const in48h = new Date(Date.now() + 2 * 86_400_000).toISOString().split("T")[0] ?? "";
 
     // Fetch all non-terminal assessments for this location
-    const activeStatuses = ["draft", "in_progress", "ready_for_review", "approved_for_submission", "submitted", "rejected", "needs_correction"] as const;
+    const activeStatuses = [
+      "draft",
+      "in_progress",
+      "ready_for_review",
+      "approved_for_submission",
+      "submitted",
+      "rejected",
+      "needs_correction",
+    ] as const;
     const rows = await db
       .select()
       .from(hopeAssessments)
-      .where(and(
-        eq(hopeAssessments.locationId, locationId),
-        inArray(hopeAssessments.status, [...activeStatuses]),
-      ))
+      .where(
+        and(
+          eq(hopeAssessments.locationId, locationId),
+          inArray(hopeAssessments.status, [...activeStatuses]),
+        ),
+      )
       .orderBy(asc(hopeAssessments.windowDeadline));
 
     // Count widgets
@@ -657,16 +670,19 @@ export class HOPEService {
 
     // Build patient name map (decrypt in parallel)
     const uniquePatientIds = [...new Set(rows.map((r) => r.patientId))];
-    const patientRows = uniquePatientIds.length > 0
-      ? await db.select().from(patients).where(inArray(patients.id, uniquePatientIds))
-      : [];
+    const patientRows =
+      uniquePatientIds.length > 0
+        ? await db.select().from(patients).where(inArray(patients.id, uniquePatientIds))
+        : [];
 
     const nameMap = new Map<string, string>();
     await Promise.all(
       patientRows.map(async (p) => {
         try {
           const plaintext = await decryptPhi(p.data as string);
-          const fhirData = JSON.parse(plaintext) as { name?: Array<{ given: string[]; family: string }> };
+          const fhirData = JSON.parse(plaintext) as {
+            name?: Array<{ given: string[]; family: string }>;
+          };
           const humanName = fhirData.name?.[0];
           const formatted = humanName
             ? `${humanName.given.join(" ")} ${humanName.family}`.trim()
@@ -693,7 +709,7 @@ export class HOPEService {
       id: r.id,
       patientName: nameMap.get(r.patientId) ?? `Patient ${r.patientId.slice(0, 8)}`,
       assessmentType: r.assessmentType as "01" | "02" | "03",
-      status: r.status as import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").HOPEAssessmentStatus,
+      status: r.status as HOPEAssessmentStatus,
       windowDeadline: r.windowDeadline,
       completenessScore: r.completenessScore,
       symptomFollowUpRequired: r.symptomFollowUpRequired,
@@ -727,10 +743,9 @@ export class HOPEService {
     const rows = await db
       .select()
       .from(hopeAssessments)
-      .where(and(
-        eq(hopeAssessments.patientId, patientId),
-        eq(hopeAssessments.locationId, locationId),
-      ))
+      .where(
+        and(eq(hopeAssessments.patientId, patientId), eq(hopeAssessments.locationId, locationId)),
+      )
       .orderBy(asc(hopeAssessments.assessmentDate));
 
     const admissions = rows.filter((r) => r.assessmentType === "01");
@@ -743,9 +758,7 @@ export class HOPEService {
 
     // Symptom follow-up: any active assessment with symptomFollowUpRequired=true
     const followUpRow = rows.find((r) => r.symptomFollowUpRequired && r.status !== "accepted");
-    const followUpCompleted = followUpRow
-      ? followUpRow.status === "accepted"
-      : true;
+    const followUpCompleted = followUpRow ? followUpRow.status === "accepted" : true;
 
     // HQRP penalty exposure: check current quarter measures
     const today = new Date();
@@ -755,11 +768,13 @@ export class HOPEService {
     const [period] = await db
       .select()
       .from(hopeReportingPeriods)
-      .where(and(
-        eq(hopeReportingPeriods.locationId, locationId),
-        eq(hopeReportingPeriods.calendarYear, year),
-        eq(hopeReportingPeriods.quarter, quarter),
-      ))
+      .where(
+        and(
+          eq(hopeReportingPeriods.locationId, locationId),
+          eq(hopeReportingPeriods.calendarYear, year),
+          eq(hopeReportingPeriods.quarter, quarter),
+        ),
+      )
       .limit(1);
 
     const measureShortfalls: string[] = [];
@@ -779,13 +794,13 @@ export class HOPEService {
 
     // Next UV due: roughly 60 days after last UV or election date (clinical estimate, not CMS mandated)
     const nextUVDue = latestUV
-      ? new Date(new Date(latestUV.assessmentDate).getTime() + 60 * 86_400_000)
+      ? (new Date(new Date(latestUV.assessmentDate).getTime() + 60 * 86_400_000)
           .toISOString()
-          .split("T")[0] ?? null
+          .split("T")[0] ?? null)
       : latestAdmission
-        ? new Date(new Date(latestAdmission.electionDate).getTime() + 60 * 86_400_000)
+        ? (new Date(new Date(latestAdmission.electionDate).getTime() + 60 * 86_400_000)
             .toISOString()
-            .split("T")[0] ?? null
+            .split("T")[0] ?? null)
         : null;
 
     return {
@@ -793,7 +808,9 @@ export class HOPEService {
       hopeA: {
         required: true, // all admitted patients need HOPE-A
         windowDeadline: latestAdmission?.windowDeadline ?? null,
-        status: (latestAdmission?.status ?? null) as import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").HOPEAssessmentStatus | null,
+        status: (latestAdmission?.status ?? null) as
+          | import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").HOPEAssessmentStatus
+          | null,
         assessmentId: latestAdmission?.id ?? null,
       },
       hopeUV: {
@@ -804,7 +821,9 @@ export class HOPEService {
       hopeD: {
         required: discharges.length > 0, // HOPE-D required if discharge event occurred
         windowDeadline: latestDischarge?.windowDeadline ?? null,
-        status: (latestDischarge?.status ?? null) as import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").HOPEAssessmentStatus | null,
+        status: (latestDischarge?.status ?? null) as
+          | import("@/contexts/analytics/schemas/hopeAssessmentCrud.schema.js").HOPEAssessmentStatus
+          | null,
         assessmentId: latestDischarge?.id ?? null,
       },
       symptomFollowUp: {
@@ -831,10 +850,12 @@ export class HOPEService {
     const rows = await db
       .select()
       .from(hopeIqiesSubmissions)
-      .where(and(
-        eq(hopeIqiesSubmissions.assessmentId, assessmentId),
-        eq(hopeIqiesSubmissions.locationId, locationId),
-      ))
+      .where(
+        and(
+          eq(hopeIqiesSubmissions.assessmentId, assessmentId),
+          eq(hopeIqiesSubmissions.locationId, locationId),
+        ),
+      )
       .orderBy(asc(hopeIqiesSubmissions.attemptNumber));
 
     return {

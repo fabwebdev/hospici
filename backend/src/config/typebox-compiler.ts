@@ -33,6 +33,13 @@ import {
 } from "@/contexts/analytics/schemas/hopeQualityMeasures.schema";
 import { BenefitPeriodSchema, CapCalculationSchema } from "@/contexts/billing/schemas";
 import {
+  CapPatientListResponseSchema,
+  CapSnapshotResponseSchema,
+  CapSummaryResponseSchema,
+  CapTrendResponseSchema,
+  RecalculateCapResponseSchema,
+} from "@/contexts/billing/schemas/capIntelligence.schema.js";
+import {
   CMSResponseBodySchema,
   CorrectNOEBodySchema,
   CreateNOEBodySchema,
@@ -66,13 +73,13 @@ import {
   PatchCarePlanBodySchema,
   PhysicianReviewBodySchema,
 } from "@/contexts/clinical/schemas/carePlan.schema";
-import { EsasScaleSchema } from "@/contexts/clinical/schemas/esasScale.schema";
 import {
   CreateEncounterBodySchema,
   EnhanceNarrativeBodySchema,
   GenerateNarrativeBodySchema,
   PatchEncounterBodySchema,
 } from "@/contexts/clinical/schemas/encounter.schema";
+import { EsasScaleSchema } from "@/contexts/clinical/schemas/esasScale.schema";
 import {
   CreateAllergyBodySchema,
   CreateMedicationBodySchema,
@@ -84,19 +91,6 @@ import {
   PatientAllergySchema,
   RecordAdministrationBodySchema,
 } from "@/contexts/clinical/schemas/medication.schema";
-import { NrsScaleSchema } from "@/contexts/clinical/schemas/nrsScale.schema";
-import { PainadScaleSchema } from "@/contexts/clinical/schemas/painadScale.schema";
-import { WongBakerScaleSchema } from "@/contexts/clinical/schemas/wongBakerScale.schema";
-import {
-	AlertListResponseSchema,
-	AlertStatusPatchBodySchema,
-} from "@/contexts/compliance/schemas/alert.schema.js";
-import {
-  CreateScheduledVisitBodySchema,
-  PatchScheduledVisitStatusBodySchema,
-  ScheduledVisitListResponseSchema,
-  ScheduledVisitResponseSchema,
-} from "@/contexts/scheduling/schemas/visitSchedule.schema.js";
 import {
   AssignReviewBodySchema,
   BulkAcknowledgeBodySchema,
@@ -106,6 +100,13 @@ import {
   ReviewQueueResponseSchema,
   SubmitReviewBodySchema,
 } from "@/contexts/clinical/schemas/noteReview.schema.js";
+import { NrsScaleSchema } from "@/contexts/clinical/schemas/nrsScale.schema";
+import { PainadScaleSchema } from "@/contexts/clinical/schemas/painadScale.schema";
+import { WongBakerScaleSchema } from "@/contexts/clinical/schemas/wongBakerScale.schema";
+import {
+  AlertListResponseSchema,
+  AlertStatusPatchBodySchema,
+} from "@/contexts/compliance/schemas/alert.schema.js";
 import {
   CreateF2FBodySchema,
   F2FEncounterListResponseSchema,
@@ -126,6 +127,12 @@ import {
   IDGMeetingResponseSchema,
   IDGMeetingSchema,
 } from "@/contexts/scheduling/schemas";
+import {
+  CreateScheduledVisitBodySchema,
+  PatchScheduledVisitStatusBodySchema,
+  ScheduledVisitListResponseSchema,
+  ScheduledVisitResponseSchema,
+} from "@/contexts/scheduling/schemas/visitSchedule.schema.js";
 
 /**
  * Central validator registry - compiled ONCE at application startup
@@ -262,6 +269,13 @@ export const Validators = {
   F2FEncounterResponse: TypeCompiler.Compile(F2FEncounterResponseSchema),
   F2FEncounterListResponse: TypeCompiler.Compile(F2FEncounterListResponseSchema),
   F2FQueueResponse: TypeCompiler.Compile(F2FQueueResponseSchema),
+
+  // Cap Intelligence (T3-3)
+  CapSummaryResponse: TypeCompiler.Compile(CapSummaryResponseSchema),
+  CapPatientListResponse: TypeCompiler.Compile(CapPatientListResponseSchema),
+  CapTrendResponse: TypeCompiler.Compile(CapTrendResponseSchema),
+  CapSnapshotResponse: TypeCompiler.Compile(CapSnapshotResponseSchema),
+  RecalculateCapResponse: TypeCompiler.Compile(RecalculateCapResponseSchema),
 };
 
 /**

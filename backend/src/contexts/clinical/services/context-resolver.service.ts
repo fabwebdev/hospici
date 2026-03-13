@@ -12,8 +12,8 @@
 import { db } from "@/db/client.js";
 import { encounters } from "@/db/schema/encounters.table.js";
 import { painAssessments } from "@/db/schema/pain-assessments.table.js";
-import type Iovalkey from "iovalkey";
 import { desc, eq } from "drizzle-orm";
+import type Iovalkey from "iovalkey";
 
 const CACHE_TTL_SECONDS = 300;
 const CACHE_KEY_PREFIX = "vantage:context:";
@@ -136,8 +136,7 @@ export class ContextResolverService {
       // Suggest caregiver coping if < 7 days since last visit
       if (daysSince < 7) {
         const data = lastEncounter.data as Record<string, unknown> | null;
-        const caregiverCoping = (data?.psychosocial as Record<string, unknown>)
-          ?.caregiverCoping;
+        const caregiverCoping = (data?.psychosocial as Record<string, unknown>)?.caregiverCoping;
         if (caregiverCoping) {
           result.suggestions["psychosocial.caregiverCoping"] = caregiverCoping;
         }

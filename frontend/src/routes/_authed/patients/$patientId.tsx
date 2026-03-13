@@ -379,6 +379,7 @@ function HOPECompletenessRing({ score }: { score: number }) {
   const color = score >= 80 ? "#22c55e" : score >= 50 ? "#f59e0b" : "#ef4444";
   return (
     <svg width={36} height={36} aria-label={`${score}% complete`} className="shrink-0">
+      <title>{score}% complete</title>
       <circle cx={18} cy={18} r={r} fill="none" stroke="#e2e8f0" strokeWidth="3" />
       <circle
         cx={18}
@@ -403,7 +404,8 @@ function HOPEPanel({ patientId }: { patientId: string }) {
 
   const { data: timeline, isLoading: timelineLoading } = useQuery<HOPEPatientTimeline>({
     queryKey: ["hope", "patient-timeline", patientId],
-    queryFn: () => getHOPEPatientTimelineFn({ data: { patientId } }) as Promise<HOPEPatientTimeline>,
+    queryFn: () =>
+      getHOPEPatientTimelineFn({ data: { patientId } }) as Promise<HOPEPatientTimeline>,
   });
 
   const { data: assessmentList } = useQuery<HOPEAssessmentListResponse>({
@@ -415,7 +417,9 @@ function HOPEPanel({ patientId }: { patientId: string }) {
   const { data: submissions } = useQuery<HOPESubmissionListResponse>({
     queryKey: ["hope", "submissions", showHistory],
     queryFn: () =>
-      getHOPESubmissionsByAssessmentFn({ data: { assessmentId: showHistory! } }) as Promise<HOPESubmissionListResponse>,
+      getHOPESubmissionsByAssessmentFn({
+        data: { assessmentId: showHistory ?? "" },
+      }) as Promise<HOPESubmissionListResponse>,
     enabled: showHistory !== null,
   });
 
@@ -436,10 +440,7 @@ function HOPEPanel({ patientId }: { patientId: string }) {
     <div className="bg-white rounded-lg shadow p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">HOPE Assessment Timeline</h2>
-        <Link
-          to="/hope/dashboard"
-          className="text-xs text-blue-600 hover:underline"
-        >
+        <Link to="/hope/dashboard" className="text-xs text-blue-600 hover:underline">
           HOPE Command Center →
         </Link>
       </div>
@@ -512,7 +513,9 @@ function HOPEPanel({ patientId }: { patientId: string }) {
             <>
               <HOPEStatusBadge status={timeline.hopeD.status} />
               {timeline.hopeD.windowDeadline && (
-                <p className="mt-1 text-xs text-gray-500">Deadline: {timeline.hopeD.windowDeadline}</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Deadline: {timeline.hopeD.windowDeadline}
+                </p>
               )}
               {hopeDAssessment && (
                 <div className="mt-2 flex items-center gap-2">
@@ -551,7 +554,8 @@ function HOPEPanel({ patientId }: { patientId: string }) {
       {showHistory && submissions && (
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            iQIES Submission History ({submissions.data.length} attempt{submissions.data.length !== 1 ? "s" : ""})
+            iQIES Submission History ({submissions.data.length} attempt
+            {submissions.data.length !== 1 ? "s" : ""})
           </h3>
           {submissions.data.length === 0 ? (
             <p className="text-xs text-gray-400 italic">No submission attempts yet.</p>
@@ -591,7 +595,9 @@ function HOPEPanel({ patientId }: { patientId: string }) {
                       {sub.rejectionCodes.length > 0 ? (
                         <div className="space-y-0.5">
                           {sub.rejectionCodes.map((code) => (
-                            <div key={code} className="text-red-600 font-mono">{code}</div>
+                            <div key={code} className="text-red-600 font-mono">
+                              {code}
+                            </div>
                           ))}
                         </div>
                       ) : (
@@ -614,16 +620,13 @@ function HOPEPanel({ patientId }: { patientId: string }) {
 function F2FPanel({ patientId }: { patientId: string }) {
   const { data, isLoading } = useQuery<F2FEncounterListResponse>({
     queryKey: ["f2f-encounters", patientId],
-    queryFn: () =>
-      getPatientF2FFn({ data: { patientId } }) as Promise<F2FEncounterListResponse>,
+    queryFn: () => getPatientF2FFn({ data: { patientId } }) as Promise<F2FEncounterListResponse>,
   });
 
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">
-          Face-to-Face Certification
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">Face-to-Face Certification</h2>
         <div className="text-xs text-gray-400">Loading F2F status…</div>
       </div>
     );
@@ -644,9 +647,7 @@ function F2FPanel({ patientId }: { patientId: string }) {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Face-to-Face Certification
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900">Face-to-Face Certification</h2>
         <span className="text-xs text-gray-400">42 CFR §418.22</span>
       </div>
 
@@ -660,7 +661,7 @@ function F2FPanel({ patientId }: { patientId: string }) {
             F2F certification required from benefit period 3 onwards
           </span>
         </div>
-      ) : latestPeriod3 && latestPeriod3.isValidForRecert ? (
+      ) : latestPeriod3?.isValidForRecert ? (
         // Period >= 3 and valid F2F exists
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -674,8 +675,7 @@ function F2FPanel({ patientId }: { patientId: string }) {
           </div>
           {latestPeriod3.f2fProviderRole && (
             <p className="text-xs text-gray-500 capitalize">
-              Provider role: {latestPeriod3.f2fProviderRole} ·{" "}
-              {latestPeriod3.encounterSetting}
+              Provider role: {latestPeriod3.f2fProviderRole} · {latestPeriod3.encounterSetting}
             </p>
           )}
         </div>
@@ -684,9 +684,7 @@ function F2FPanel({ patientId }: { patientId: string }) {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-              {latestPeriod3 && !latestPeriod3.isValidForRecert
-                ? "F2F Invalid"
-                : "F2F Required"}
+              {latestPeriod3 && !latestPeriod3.isValidForRecert ? "F2F Invalid" : "F2F Required"}
             </span>
             {latestPeriod3?.invalidationReason && (
               <span className="text-xs text-red-600 truncate max-w-xs">

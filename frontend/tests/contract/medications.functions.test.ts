@@ -1,7 +1,6 @@
 // tests/contract/medications.functions.test.ts
 // Contract tests: verify medication handler logic against API shape
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   AdministrationListResponse,
   AllergyListResponse,
@@ -9,6 +8,7 @@ import type {
   MedicationResponse,
   PatientAllergy,
 } from "@hospici/shared-types";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/env.server.js", () => ({
   env: { apiUrl: "http://localhost:3000", betterAuthSecret: "test" },
@@ -66,8 +66,12 @@ const sampleMedList: MedicationListResponse = {
 };
 
 describe("fetchMedications", () => {
-  beforeEach(() => { vi.stubGlobal("fetch", vi.fn()); });
-  afterEach(() => { vi.unstubAllGlobals(); });
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it("calls GET /api/v1/patients/:id/medications with cookie", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
@@ -101,14 +105,22 @@ describe("fetchMedications", () => {
 });
 
 describe("postMedication", () => {
-  beforeEach(() => { vi.stubGlobal("fetch", vi.fn()); });
-  afterEach(() => { vi.unstubAllGlobals(); });
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it("POSTs to /api/v1/patients/:id/medications and returns interaction warnings", async () => {
     const medWithWarning: MedicationResponse = {
       ...sampleMed,
       interactionWarnings: [
-        { description: "May increase CNS depression", severity: "moderate", interactingDrug: "Lorazepam" },
+        {
+          description: "May increase CNS depression",
+          severity: "moderate",
+          interactingDrug: "Lorazepam",
+        },
       ],
     };
     vi.mocked(global.fetch).mockResolvedValueOnce(
@@ -139,20 +151,23 @@ describe("postMedication", () => {
 
   it("throws on validation error (400)", async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ error: { message: "Medication validation failed" } }),
-        { status: 400 },
-      ),
+      new Response(JSON.stringify({ error: { message: "Medication validation failed" } }), {
+        status: 400,
+      }),
     );
-    await expect(
-      postMedication(PATIENT_ID, {} as never, COOKIE),
-    ).rejects.toThrow("Medication validation failed");
+    await expect(postMedication(PATIENT_ID, {} as never, COOKIE)).rejects.toThrow(
+      "Medication validation failed",
+    );
   });
 });
 
 describe("patchMedication", () => {
-  beforeEach(() => { vi.stubGlobal("fetch", vi.fn()); });
-  afterEach(() => { vi.unstubAllGlobals(); });
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it("PATCHes medication status to DISCONTINUED", async () => {
     const discontinued: MedicationResponse = {
@@ -199,8 +214,12 @@ describe("patchMedication", () => {
 });
 
 describe("postAdministration (MAR)", () => {
-  beforeEach(() => { vi.stubGlobal("fetch", vi.fn()); });
-  afterEach(() => { vi.unstubAllGlobals(); });
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it("records a GIVEN administration with effectiveness rating", async () => {
     const admin = {
@@ -273,8 +292,12 @@ describe("postAdministration (MAR)", () => {
 });
 
 describe("fetchAdministrations", () => {
-  beforeEach(() => { vi.stubGlobal("fetch", vi.fn()); });
-  afterEach(() => { vi.unstubAllGlobals(); });
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it("calls GET /medications/:medId/administrations", async () => {
     const listResponse: AdministrationListResponse = { administrations: [], total: 0 };
@@ -293,8 +316,12 @@ describe("fetchAdministrations", () => {
 });
 
 describe("fetchAllergies / postAllergy / patchAllergy", () => {
-  beforeEach(() => { vi.stubGlobal("fetch", vi.fn()); });
-  afterEach(() => { vi.unstubAllGlobals(); });
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   const sampleAllergy: PatientAllergy = {
     id: ALLERGY_ID,

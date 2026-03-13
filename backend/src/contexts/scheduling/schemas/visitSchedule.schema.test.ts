@@ -138,9 +138,7 @@ describe("ScheduledVisitResponseSchema", () => {
   });
 
   it("accepts with clinicianId", () => {
-    expect(
-      v.Check({ ...valid, clinicianId: "dddddddd-0000-0000-0000-000000000001" }),
-    ).toBe(true);
+    expect(v.Check({ ...valid, clinicianId: "dddddddd-0000-0000-0000-000000000001" })).toBe(true);
   });
 
   it("rejects missing id", () => {

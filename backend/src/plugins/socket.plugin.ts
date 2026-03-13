@@ -206,6 +206,10 @@ async function socketPlugin(fastify: FastifyInstance) {
     io.to(`location:${data.locationId}`).emit("cap:threshold:alert", data);
   });
 
+  complianceEvents.on("cap:calculation:complete", (data) => {
+    io.to(`location:${data.locationId}`).emit("cap:calculation:complete", data);
+  });
+
   complianceEvents.on("idg:due:warning", (data) => {
     io.emit("idg:due:warning", data);
   });

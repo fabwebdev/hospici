@@ -6,9 +6,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { NarrativeAssemblerService } from "./narrative-assembler.service.js";
 import type { RuleCondition } from "../schemas/narrative-template.schema.js";
 import type { VantageChartInput } from "../schemas/vantagechart-input.schema.js";
+import { NarrativeAssemblerService } from "./narrative-assembler.service.js";
 import { ROUTINE_RN_TEMPLATE } from "./vantageChart.templates.js";
 
 const assembler = new NarrativeAssemblerService();
@@ -26,13 +26,21 @@ describe("NarrativeAssemblerService.evaluateCondition", () => {
   };
 
   it("eq: returns true when path equals value", () => {
-    expect(assembler.evaluateCondition({ op: "eq", path: "name", value: "alice" }, input)).toBe(true);
-    expect(assembler.evaluateCondition({ op: "eq", path: "name", value: "bob" }, input)).toBe(false);
+    expect(assembler.evaluateCondition({ op: "eq", path: "name", value: "alice" }, input)).toBe(
+      true,
+    );
+    expect(assembler.evaluateCondition({ op: "eq", path: "name", value: "bob" }, input)).toBe(
+      false,
+    );
   });
 
   it("neq: returns true when path does not equal value", () => {
-    expect(assembler.evaluateCondition({ op: "neq", path: "name", value: "bob" }, input)).toBe(true);
-    expect(assembler.evaluateCondition({ op: "neq", path: "name", value: "alice" }, input)).toBe(false);
+    expect(assembler.evaluateCondition({ op: "neq", path: "name", value: "bob" }, input)).toBe(
+      true,
+    );
+    expect(assembler.evaluateCondition({ op: "neq", path: "name", value: "alice" }, input)).toBe(
+      false,
+    );
   });
 
   it("gt / gte / lt / lte: numeric comparisons", () => {
@@ -49,9 +57,15 @@ describe("NarrativeAssemblerService.evaluateCondition", () => {
   });
 
   it("arrayLength: checks array size", () => {
-    expect(assembler.evaluateCondition({ op: "arrayLength", path: "arr", gt: 2 }, input)).toBe(true);
-    expect(assembler.evaluateCondition({ op: "arrayLength", path: "arr", eq: 3 }, input)).toBe(true);
-    expect(assembler.evaluateCondition({ op: "arrayLength", path: "arr", lt: 2 }, input)).toBe(false);
+    expect(assembler.evaluateCondition({ op: "arrayLength", path: "arr", gt: 2 }, input)).toBe(
+      true,
+    );
+    expect(assembler.evaluateCondition({ op: "arrayLength", path: "arr", eq: 3 }, input)).toBe(
+      true,
+    );
+    expect(assembler.evaluateCondition({ op: "arrayLength", path: "arr", lt: 2 }, input)).toBe(
+      false,
+    );
   });
 
   it("arrayAny: true when at least one element matches", () => {
@@ -110,9 +124,7 @@ describe("NarrativeAssemblerService.evaluateCondition", () => {
   });
 
   it("handles nested dot-path", () => {
-    expect(
-      assembler.evaluateCondition({ op: "eq", path: "nested.x", value: 7 }, input),
-    ).toBe(true);
+    expect(assembler.evaluateCondition({ op: "eq", path: "nested.x", value: 7 }, input)).toBe(true);
   });
 });
 

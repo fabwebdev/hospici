@@ -284,7 +284,8 @@ export const ROUTINE_RN_TEMPLATE: NarrativeTemplate = {
         },
         {
           id: "safety-concerns",
-          template: " SAFETY CONCERNS identified: {{formatSafetyConcerns safety}}. Immediate attention required.",
+          template:
+            " SAFETY CONCERNS identified: {{formatSafetyConcerns safety}}. Immediate attention required.",
           condition: {
             op: "or",
             conditions: [
@@ -367,7 +368,8 @@ export const ROUTINE_RN_TEMPLATE: NarrativeTemplate = {
     {
       trigger: { op: "eq", path: "patientStatus.overallCondition", value: "deceased" },
       action: "addPhrase",
-      value: " Patient expired. Notify attending physician, hospice medical director, and family per protocol.",
+      value:
+        " Patient expired. Notify attending physician, hospice medical director, and family per protocol.",
     },
     {
       trigger: { op: "gte", path: "painAssessment.painScale", value: 7 },

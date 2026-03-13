@@ -14,25 +14,25 @@
 
 import {
   correctNOEFn,
+  correctNOTRFn,
   getFilingQueueFn,
   getNOEHistoryFn,
   getNOEReadinessFn,
+  getNOTRReadinessFn,
   lateOverrideNOEFn,
   lateOverrideNOTRFn,
   submitNOEFn,
   submitNOTRFn,
-  correctNOTRFn,
-  getNOTRReadinessFn,
 } from "@/functions/noe.functions.js";
 import type {
-  FilingQueueItem,
-  FilingQueueResponse,
-  NoticeFilingStatus,
-  ReadinessCheckItem,
-  FilingHistoryEvent,
   CorrectNOEInput,
   CreateNOTRInput,
+  FilingHistoryEvent,
+  FilingQueueItem,
+  FilingQueueResponse,
   LateOverrideInput,
+  NoticeFilingStatus,
+  ReadinessCheckItem,
   ReadinessResponse,
 } from "@hospici/shared-types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -169,8 +169,8 @@ function HistoryDrawer({
           <p className="text-sm text-gray-500">No history events yet.</p>
         ) : (
           <ol className="relative border-l border-gray-200">
-            {events.map((ev, i) => (
-              <li key={i} className="mb-6 ml-4">
+            {events.map((ev) => (
+              <li key={`${ev.event}-${ev.timestamp}`} className="mb-6 ml-4">
                 <div className="absolute -left-1.5 w-3 h-3 rounded-full bg-blue-500" />
                 <div className="text-xs text-gray-500 mb-1">
                   {new Date(ev.timestamp).toLocaleString()}
@@ -232,9 +232,7 @@ function LateOverrideModal({
         />
         <p className="text-xs text-gray-400 mb-4">{reason.length} / 20 min</p>
         {override.error && (
-          <p className="text-sm text-red-600 mb-3">
-            {(override.error as Error).message}
-          </p>
+          <p className="text-sm text-red-600 mb-3">{(override.error as Error).message}</p>
         )}
         <div className="flex gap-2 justify-end">
           <button
@@ -305,8 +303,8 @@ function CorrectionModal({
           Correct & Resubmit — {item.type.toUpperCase()}
         </h3>
         <p className="text-sm text-gray-500 mb-4">
-          A new filing row will be created. The current row will be voided.
-          Attempt #{item.attemptCount + 1}.
+          A new filing row will be created. The current row will be voided. Attempt #
+          {item.attemptCount + 1}.
         </p>
 
         {/* Prior snapshot summary */}
@@ -316,18 +314,25 @@ function CorrectionModal({
           <p className="text-gray-500">Attempts: {item.attemptCount}</p>
         </div>
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">{dateLabel}</label>
+        <label htmlFor="correction-date" className="block text-sm font-medium text-gray-700 mb-1">
+          {dateLabel}
+        </label>
         <input
+          id="correction-date"
           type="date"
           value={electionDate}
           onChange={(e) => setElectionDate(e.target.value)}
           className="w-full border rounded p-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="correction-late-reason"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Late reason (if applicable)
         </label>
         <input
+          id="correction-late-reason"
           type="text"
           value={lateReason}
           onChange={(e) => setLateReason(e.target.value)}
@@ -417,9 +422,7 @@ function FilingRow({
         <DaysRemainingPill days={daysRemaining} />
       </td>
       <td className="px-4 py-3 text-sm text-gray-500">{item.attemptCount}</td>
-      <td className="px-4 py-3 text-xs text-gray-400">
-        {item.isLate ? "Late" : "—"}
-      </td>
+      <td className="px-4 py-3 text-xs text-gray-400">{item.isLate ? "Late" : "—"}</td>
       <td className="px-4 py-3">
         {item.isClaimBlocking && (
           <span className="inline-flex px-2 py-0.5 rounded bg-red-100 text-red-800 text-xs font-bold">
@@ -431,18 +434,14 @@ function FilingRow({
         <div className="flex gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() =>
-              onOpenModal({ type: "history", itemId: item.id, itemType })
-            }
+            onClick={() => onOpenModal({ type: "history", itemId: item.id, itemType })}
             className="text-xs text-blue-600 hover:underline"
           >
             History
           </button>
           <button
             type="button"
-            onClick={() =>
-              onOpenModal({ type: "readiness", itemId: item.id, itemType })
-            }
+            onClick={() => onOpenModal({ type: "readiness", itemId: item.id, itemType })}
             className="text-xs text-gray-500 hover:underline"
           >
             Readiness
@@ -469,9 +468,7 @@ function FilingRow({
           {item.status === "late_pending_override" && (
             <button
               type="button"
-              onClick={() =>
-                onOpenModal({ type: "late_override", itemId: item.id, itemType })
-              }
+              onClick={() => onOpenModal({ type: "late_override", itemId: item.id, itemType })}
               className="text-xs bg-red-600 text-white px-2 py-0.5 rounded hover:bg-red-700"
             >
               Request Override
@@ -507,9 +504,7 @@ function ReadinessDrawer({
   return (
     <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-50 flex flex-col">
       <div className="flex items-center justify-between p-4 border-b">
-        <h3 className="font-semibold text-gray-900">
-          {itemType.toUpperCase()} Readiness Check
-        </h3>
+        <h3 className="font-semibold text-gray-900">{itemType.toUpperCase()} Readiness Check</h3>
         <button
           type="button"
           onClick={onClose}
@@ -551,9 +546,7 @@ function HistoryDrawerContainer({
     );
   }
 
-  return (
-    <HistoryDrawer events={data?.events ?? []} onClose={onClose} />
-  );
+  return <HistoryDrawer events={data?.events ?? []} onClose={onClose} />;
 }
 
 // ── Tab ───────────────────────────────────────────────────────────────────────
@@ -601,7 +594,8 @@ function FilingWorkbench() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Filing Workbench</h1>
         <p className="text-sm text-gray-500 mt-1">
-          CMS Notice of Election (NOE) and Notice of Termination/Revocation (NOTR) — 5-day rule (42 CFR §418.24)
+          CMS Notice of Election (NOE) and Notice of Termination/Revocation (NOTR) — 5-day rule (42
+          CFR §418.24)
         </p>
       </div>
 
@@ -633,7 +627,8 @@ function FilingWorkbench() {
         <div className="flex gap-3">
           {items.filter((i) => i.status === "late_pending_override").length > 0 && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">
-              🔒 {items.filter((i) => i.status === "late_pending_override").length} Override Required
+              🔒 {items.filter((i) => i.status === "late_pending_override").length} Override
+              Required
             </span>
           )}
           {items.filter((i) => i.status === "rejected").length > 0 && (
@@ -649,13 +644,17 @@ function FilingWorkbench() {
             return days > 0 && days <= 2;
           }).length > 0 && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
-              ⚠ {items.filter((i) => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const d = new Date(i.deadlineDate);
-                const days = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                return days > 0 && days <= 2;
-              }).length} Due Soon
+              ⚠{" "}
+              {
+                items.filter((i) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const d = new Date(i.deadlineDate);
+                  const days = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  return days > 0 && days <= 2;
+                }).length
+              }{" "}
+              Due Soon
             </span>
           )}
           {items.filter((i) => i.isClaimBlocking).length > 0 && (

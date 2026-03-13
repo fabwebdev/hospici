@@ -37,13 +37,13 @@ vi.mock("@/config/logging.config.js", () => ({
 }));
 
 describe("capRecalculationHandler()", () => {
-  it("returns a result with the correct cap year label and zero counts (T3-3 stub)", async () => {
+  it("returns a result with the correct cap year and zero counts when valkey not set", async () => {
     const { capRecalculationHandler } = await import("./cap-recalculation.worker.js");
-    const result = await capRecalculationHandler(
-      {} as Parameters<typeof capRecalculationHandler>[0],
-    );
+    const mockJob = { data: {} } as Parameters<typeof capRecalculationHandler>[0];
+    const result = await capRecalculationHandler(mockJob);
 
-    expect(result.capYear).toMatch(/^\d{4}-\d{4}$/);
+    expect(result.capYear).toBeTypeOf("number");
+    expect(result.capYear).toBeGreaterThan(2000);
     expect(result.locationsChecked).toBe(0);
     expect(result.locationsAtThreshold).toBe(0);
     expect(result.locationsOverCap).toBe(0);

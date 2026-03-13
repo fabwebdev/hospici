@@ -58,9 +58,7 @@ function getISOWeek(dateStr: string): string {
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
-function groupByWeek(
-  visits: ScheduledVisitResponse[],
-): Map<string, ScheduledVisitResponse[]> {
+function groupByWeek(visits: ScheduledVisitResponse[]): Map<string, ScheduledVisitResponse[]> {
   const map = new Map<string, ScheduledVisitResponse[]>();
   for (const v of visits) {
     const wk = getISOWeek(v.scheduledDate);
@@ -79,7 +77,14 @@ interface NewVisitFormProps {
 }
 
 const DISCIPLINES: VisitScheduleDiscipline[] = ["RN", "SW", "CHAPLAIN", "THERAPY", "AIDE"];
-const VISIT_TYPES = ["routine_rn", "admission", "recertification", "supervisory", "prn", "discharge"];
+const VISIT_TYPES = [
+  "routine_rn",
+  "admission",
+  "recertification",
+  "supervisory",
+  "prn",
+  "discharge",
+];
 
 function NewVisitForm({ patientId, onSuccess }: NewVisitFormProps) {
   const [visitType, setVisitType] = useState("routine_rn");
@@ -123,7 +128,10 @@ function NewVisitForm({ patientId, onSuccess }: NewVisitFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white rounded-lg border border-gray-200 p-4 space-y-4"
+    >
       <h3 className="text-sm font-semibold text-gray-900">Schedule New Visit</h3>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -154,7 +162,9 @@ function NewVisitForm({ patientId, onSuccess }: NewVisitFormProps) {
             className="block w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
           >
             {DISCIPLINES.map((d) => (
-              <option key={d} value={d}>{d}</option>
+              <option key={d} value={d}>
+                {d}
+              </option>
             ))}
           </select>
         </div>
@@ -201,7 +211,9 @@ function NewVisitForm({ patientId, onSuccess }: NewVisitFormProps) {
         />
       </div>
       {formError && (
-        <p role="alert" className="text-xs text-red-600">{formError}</p>
+        <p role="alert" className="text-xs text-red-600">
+          {formError}
+        </p>
       )}
       <button
         type="submit"
@@ -236,9 +248,7 @@ function VisitRow({ visit, onStatusChange, isPending }: VisitRowProps) {
     <div className="flex items-start justify-between gap-4 py-3 border-b border-gray-100 last:border-0">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-900">
-            {visit.scheduledDate}
-          </span>
+          <span className="text-sm font-medium text-gray-900">{visit.scheduledDate}</span>
           <StatusBadge status={visit.status} />
           <span className="text-xs text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
             {visit.discipline}
@@ -396,7 +406,11 @@ function VisitSchedulePage() {
         {[
           { label: "Scheduled", count: scheduledCount, color: "bg-blue-50 text-blue-700" },
           { label: "Completed", count: completedCount, color: "bg-green-50 text-green-700" },
-          { label: "Missed", count: missedCount, color: missedCount > 0 ? "bg-red-50 text-red-700" : "bg-gray-50 text-gray-500" },
+          {
+            label: "Missed",
+            count: missedCount,
+            color: missedCount > 0 ? "bg-red-50 text-red-700" : "bg-gray-50 text-gray-500",
+          },
         ].map(({ label, count, color }) => (
           <div key={label} className={`rounded-lg p-3 text-center ${color}`}>
             <div className="text-2xl font-bold">{count}</div>
@@ -431,7 +445,8 @@ function VisitSchedulePage() {
           {weeks.map(([week, weekVisits]) => {
             const weekCompleted = weekVisits.filter((v) => v.status === "completed").length;
             const weekPlanned = weekVisits[0]?.frequencyPlan.visitsPerWeek ?? 0;
-            const isVariance = weekCompleted < weekPlanned && weekVisits.every((v) => v.status !== "scheduled");
+            const isVariance =
+              weekCompleted < weekPlanned && weekVisits.every((v) => v.status !== "scheduled");
 
             return (
               <div key={week} className="bg-white rounded-lg border border-gray-200">

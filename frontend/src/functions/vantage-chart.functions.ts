@@ -4,12 +4,13 @@
 import { env } from "@/lib/env.server.js";
 import type {
   CreateEncounterInput,
-  EnhanceNarrativeResponse,
   EncounterListResponse,
   EncounterResponse,
+  EnhanceNarrativeResponse,
   GenerateNarrativeResponse,
   PatchEncounterInput,
   PatientContextResponse,
+  TraceabilityEntry,
   VantageChartInput,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
@@ -50,10 +51,9 @@ export async function fetchGetEncounter(
   encounterId: string,
   cookieHeader: string,
 ): Promise<EncounterResponse> {
-  const res = await fetch(
-    `${env.apiUrl}/api/v1/patients/${patientId}/encounters/${encounterId}`,
-    { headers: { cookie: cookieHeader } },
-  );
+  const res = await fetch(`${env.apiUrl}/api/v1/patients/${patientId}/encounters/${encounterId}`, {
+    headers: { cookie: cookieHeader },
+  });
   if (res.status === 404) throw new Error("Encounter not found");
   if (!res.ok) throw new Error("Failed to fetch encounter");
   return (await res.json()) as EncounterResponse;
@@ -65,14 +65,11 @@ export async function fetchPatchEncounter(
   body: PatchEncounterInput,
   cookieHeader: string,
 ): Promise<EncounterResponse> {
-  const res = await fetch(
-    `${env.apiUrl}/api/v1/patients/${patientId}/encounters/${encounterId}`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const res = await fetch(`${env.apiUrl}/api/v1/patients/${patientId}/encounters/${encounterId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!res.ok) throw new Error("Failed to update encounter");
   return (await res.json()) as EncounterResponse;
 }
@@ -131,9 +128,7 @@ export async function fetchEnhanceNarrative(
 // ── Server functions ──────────────────────────────────────────────────────────
 
 export const createEncounterFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (data: unknown) => data as { patientId: string; body: CreateEncounterInput },
-  )
+  .inputValidator((data: unknown) => data as { patientId: string; body: CreateEncounterInput })
   .handler(async ({ data }) => {
     const req = getRequest();
     return fetchCreateEncounter(data.patientId, data.body, req.headers.get("cookie") ?? "");
@@ -147,16 +142,10 @@ export const listEncountersFn = createServerFn({ method: "GET" })
   });
 
 export const getEncounterFn = createServerFn({ method: "GET" })
-  .inputValidator(
-    (data: unknown) => data as { patientId: string; encounterId: string },
-  )
+  .inputValidator((data: unknown) => data as { patientId: string; encounterId: string })
   .handler(async ({ data }) => {
     const req = getRequest();
-    return fetchGetEncounter(
-      data.patientId,
-      data.encounterId,
-      req.headers.get("cookie") ?? "",
-    );
+    return fetchGetEncounter(data.patientId, data.encounterId, req.headers.get("cookie") ?? "");
   });
 
 export const patchEncounterFn = createServerFn({ method: "POST" })
@@ -175,22 +164,15 @@ export const patchEncounterFn = createServerFn({ method: "POST" })
   });
 
 export const getPatientContextFn = createServerFn({ method: "GET" })
-  .inputValidator(
-    (data: unknown) => data as { patientId: string; encounterId: string },
-  )
+  .inputValidator((data: unknown) => data as { patientId: string; encounterId: string })
   .handler(async ({ data }) => {
     const req = getRequest();
-    return fetchPatientContext(
-      data.patientId,
-      data.encounterId,
-      req.headers.get("cookie") ?? "",
-    );
+    return fetchPatientContext(data.patientId, data.encounterId, req.headers.get("cookie") ?? "");
   });
 
 export const previewNarrativeFn = createServerFn({ method: "POST" })
   .inputValidator(
-    (data: unknown) =>
-      data as { patientId: string; encounterId: string; input: VantageChartInput },
+    (data: unknown) => data as { patientId: string; encounterId: string; input: VantageChartInput },
   )
   .handler(async ({ data }) => {
     const req = getRequest();
@@ -225,7 +207,7 @@ export const finalizeNoteFn = createServerFn({ method: "POST" })
         vantageChartDraft: data.draft,
         vantageChartMethod: data.method,
         vantageChartAcceptedAt: new Date().toISOString(),
-        vantageChartTraceability: data.traceability as import("@hospici/shared-types").TraceabilityEntry[],
+        vantageChartTraceability: data.traceability as TraceabilityEntry[],
         data: data.inputData,
         status: "COMPLETED",
       },
@@ -235,8 +217,7 @@ export const finalizeNoteFn = createServerFn({ method: "POST" })
 
 export const enhanceWithLLMFn = createServerFn({ method: "POST" })
   .inputValidator(
-    (data: unknown) =>
-      data as { patientId: string; encounterId: string; draft: string },
+    (data: unknown) => data as { patientId: string; encounterId: string; draft: string },
   )
   .handler(async ({ data }) => {
     const req = getRequest();

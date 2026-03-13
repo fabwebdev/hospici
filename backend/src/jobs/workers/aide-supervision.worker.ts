@@ -100,18 +100,22 @@ export async function aideSupervisionHandler(_job: Job): Promise<AideSupervision
       const aideName = supervision.aideName ?? "Unknown Aide";
 
       if (alertService && supervision.locationId && supervision.patientId) {
-        await alertService.upsertAlert({
-          type: "AIDE_SUPERVISION_UPCOMING",
-          severity: "warning",
-          patientId: supervision.patientId,
-          patientName: aideName,
-          locationId: supervision.locationId,
-          dueDate,
-          daysRemaining: Math.max(0, daysRemaining),
-          description: `Aide supervision due in ${Math.max(0, daysRemaining)} day(s). 42 CFR §418.76`,
-          rootCause: "Aide supervision approaching 14-day deadline",
-          nextAction: `Schedule in-person or virtual supervision before ${dueDate}`,
-        }).catch((err) => log.error({ err, aideId: supervision.aideId }, "alertService.upsertAlert failed"));
+        await alertService
+          .upsertAlert({
+            type: "AIDE_SUPERVISION_UPCOMING",
+            severity: "warning",
+            patientId: supervision.patientId,
+            patientName: aideName,
+            locationId: supervision.locationId,
+            dueDate,
+            daysRemaining: Math.max(0, daysRemaining),
+            description: `Aide supervision due in ${Math.max(0, daysRemaining)} day(s). 42 CFR §418.76`,
+            rootCause: "Aide supervision approaching 14-day deadline",
+            nextAction: `Schedule in-person or virtual supervision before ${dueDate}`,
+          })
+          .catch((err) =>
+            log.error({ err, aideId: supervision.aideId }, "alertService.upsertAlert failed"),
+          );
 
         complianceEvents.emit("compliance:alert", {
           alertId: supervision.id,
@@ -159,18 +163,22 @@ export async function aideSupervisionHandler(_job: Job): Promise<AideSupervision
       });
 
       if (alertService && supervision.locationId && supervision.patientId) {
-        await alertService.upsertAlert({
-          type: "AIDE_SUPERVISION_OVERDUE",
-          severity: "critical",
-          patientId: supervision.patientId,
-          patientName: aideName,
-          locationId: supervision.locationId,
-          dueDate,
-          daysRemaining: -daysOverdue,
-          description: `Aide supervision OVERDUE by ${Math.max(0, daysOverdue)} day(s). 42 CFR §418.76`,
-          rootCause: "14-day supervision window elapsed without documented supervision",
-          nextAction: "Document supervision immediately or suspend aide visit documentation",
-        }).catch((err) => log.error({ err, aideId: supervision.aideId }, "alertService.upsertAlert failed"));
+        await alertService
+          .upsertAlert({
+            type: "AIDE_SUPERVISION_OVERDUE",
+            severity: "critical",
+            patientId: supervision.patientId,
+            patientName: aideName,
+            locationId: supervision.locationId,
+            dueDate,
+            daysRemaining: -daysOverdue,
+            description: `Aide supervision OVERDUE by ${Math.max(0, daysOverdue)} day(s). 42 CFR §418.76`,
+            rootCause: "14-day supervision window elapsed without documented supervision",
+            nextAction: "Document supervision immediately or suspend aide visit documentation",
+          })
+          .catch((err) =>
+            log.error({ err, aideId: supervision.aideId }, "alertService.upsertAlert failed"),
+          );
 
         complianceEvents.emit("compliance:alert", {
           alertId: supervision.id,
@@ -194,7 +202,9 @@ export async function aideSupervisionHandler(_job: Job): Promise<AideSupervision
 
 // ── Worker instance ───────────────────────────────────────────────────────────
 
-export function createAideSupervisionWorker(valkey?: Valkey): Worker<object, AideSupervisionJobResult> {
+export function createAideSupervisionWorker(
+  valkey?: Valkey,
+): Worker<object, AideSupervisionJobResult> {
   if (valkey && !alertService) {
     alertService = new AlertService(valkey);
   }

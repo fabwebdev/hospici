@@ -15,12 +15,12 @@
  * Cache: Valkey key `review:queue:{locationId}` TTL 30s — invalidated on every write.
  */
 
+import type { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import { logAudit } from "@/contexts/identity/services/audit.service.js";
 import { db } from "@/db/client.js";
 import { encounters } from "@/db/schema/encounters.table.js";
 import { patients } from "@/db/schema/patients.table.js";
 import { decryptPhi } from "@/shared-kernel/services/phi-encryption.service.js";
-import { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import type Valkey from "iovalkey";
 import type {
@@ -75,13 +75,13 @@ type UserCtx = {
 // ── Valid state machine transitions ───────────────────────────────────────────
 
 const NOTE_REVIEW_TRANSITIONS: Record<string, string[]> = {
-  PENDING:            ["IN_REVIEW"],
-  IN_REVIEW:          ["REVISION_REQUESTED", "APPROVED", "ESCALATED"],
+  PENDING: ["IN_REVIEW"],
+  IN_REVIEW: ["REVISION_REQUESTED", "APPROVED", "ESCALATED"],
   REVISION_REQUESTED: ["RESUBMITTED", "ESCALATED"],
-  RESUBMITTED:        ["IN_REVIEW"],
-  APPROVED:           ["LOCKED"],
-  LOCKED:             [],
-  ESCALATED:          ["IN_REVIEW"],
+  RESUBMITTED: ["IN_REVIEW"],
+  APPROVED: ["LOCKED"],
+  LOCKED: [],
+  ESCALATED: ["IN_REVIEW"],
 };
 
 // ── RLS helper ────────────────────────────────────────────────────────────────
@@ -91,9 +91,7 @@ async function applyRlsContext(
   user: UserCtx,
 ): Promise<void> {
   await tx.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`);
-  await tx.execute(
-    sql`SELECT set_config('app.current_location_id', ${user.locationId}, true)`,
-  );
+  await tx.execute(sql`SELECT set_config('app.current_location_id', ${user.locationId}, true)`);
   await tx.execute(sql`SELECT set_config('app.current_role', ${user.role}, true)`);
 }
 
@@ -207,18 +205,12 @@ export class NoteReviewService {
     const rows = await db.transaction(async (tx) => {
       await applyRlsContext(tx, user);
 
-      let query = tx
-        .select()
-        .from(encounters)
-        .$dynamic();
+      let query = tx.select().from(encounters).$dynamic();
 
       // Default: exclude APPROVED + LOCKED
       if (!filters.status) {
         query = query.where(
-          and(
-            ne(encounters.reviewStatus, "APPROVED"),
-            ne(encounters.reviewStatus, "LOCKED"),
-          ),
+          and(ne(encounters.reviewStatus, "APPROVED"), ne(encounters.reviewStatus, "LOCKED")),
         ) as typeof query;
       } else {
         query = query.where(eq(encounters.reviewStatus, filters.status)) as typeof query;
@@ -230,14 +222,10 @@ export class NoteReviewService {
         ) as typeof query;
       }
       if (filters.priority !== undefined) {
-        query = query.where(
-          eq(encounters.reviewPriority, filters.priority),
-        ) as typeof query;
+        query = query.where(eq(encounters.reviewPriority, filters.priority)) as typeof query;
       }
       if (filters.billingImpact !== undefined) {
-        query = query.where(
-          eq(encounters.billingImpact, filters.billingImpact),
-        ) as typeof query;
+        query = query.where(eq(encounters.billingImpact, filters.billingImpact)) as typeof query;
       }
       if (filters.complianceImpact !== undefined) {
         query = query.where(
@@ -474,36 +462,30 @@ export class NoteReviewService {
   /**
    * Get revision history for an encounter.
    */
-  async getHistory(
-    encounterId: string,
-    actor: UserCtx,
-  ): Promise<ReviewHistoryResponseType> {
+  async getHistory(encounterId: string, actor: UserCtx): Promise<ReviewHistoryResponseType> {
     const [enc] = await db.transaction(async (tx) => {
       await applyRlsContext(tx, actor);
-      return tx
-        .select()
-        .from(encounters)
-        .where(eq(encounters.id, encounterId))
-        .limit(1);
+      return tx.select().from(encounters).where(eq(encounters.id, encounterId)).limit(1);
     });
 
     if (!enc) throw new NoteReviewNotFoundError(encounterId);
 
     const revisionRequests = (enc.revisionRequests as RevisionRequestType[]) ?? [];
 
-    const history = revisionRequests.length > 0
-      ? [
-          {
-            timestamp: enc.reviewedAt?.toISOString() ?? enc.updatedAt.toISOString(),
-            fromStatus: null,
-            toStatus: enc.reviewStatus,
-            actorId: enc.reviewerId ?? actor.id,
-            revisionRequests,
-            escalationReason: enc.escalationReason ?? null,
-            draftSnapshot: enc.vantageChartDraft ?? null,
-          },
-        ]
-      : [];
+    const history =
+      revisionRequests.length > 0
+        ? [
+            {
+              timestamp: enc.reviewedAt?.toISOString() ?? enc.updatedAt.toISOString(),
+              fromStatus: null,
+              toStatus: enc.reviewStatus,
+              actorId: enc.reviewerId ?? actor.id,
+              revisionRequests,
+              escalationReason: enc.escalationReason ?? null,
+              draftSnapshot: enc.vantageChartDraft ?? null,
+            },
+          ]
+        : [];
 
     return {
       encounterId: enc.id,
@@ -516,10 +498,7 @@ export class NoteReviewService {
   /**
    * Bulk-acknowledge PENDING encounters → IN_REVIEW.
    */
-  async bulkAcknowledge(
-    encounterIds: string[],
-    actor: UserCtx,
-  ): Promise<{ acknowledged: number }> {
+  async bulkAcknowledge(encounterIds: string[], actor: UserCtx): Promise<{ acknowledged: number }> {
     await db.transaction(async (tx) => {
       await applyRlsContext(tx, actor);
 
@@ -531,12 +510,7 @@ export class NoteReviewService {
           reviewedAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(
-          and(
-            inArray(encounters.id, encounterIds),
-            eq(encounters.reviewStatus, "PENDING"),
-          ),
-        );
+        .where(and(inArray(encounters.id, encounterIds), eq(encounters.reviewStatus, "PENDING")));
     });
 
     await invalidateCache(this.valkey, actor.locationId);
@@ -601,7 +575,13 @@ export class NoteReviewService {
     user: UserCtx,
   ): ReviewQueueResponseType {
     const hasPhiAccess = [
-      "clinician", "rn", "md", "super_admin", "admin", "don", "supervisor",
+      "clinician",
+      "rn",
+      "md",
+      "super_admin",
+      "admin",
+      "don",
+      "supervisor",
     ].includes(user.role);
     if (hasPhiAccess) return response;
     return {

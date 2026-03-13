@@ -39,9 +39,7 @@ export function setVisitScheduleService(svc: VisitScheduleService): void {
 /**
  * Pure handler — separated for testability.
  */
-export async function missedVisitCheckHandler(
-  _job: Job,
-): Promise<MissedVisitCheckJobResult> {
+export async function missedVisitCheckHandler(_job: Job): Promise<MissedVisitCheckJobResult> {
   if (!visitScheduleService) {
     log.warn("VisitScheduleService not set — skipping missed-visit check");
     return { checkedAt: new Date().toISOString(), missedCount: 0, varianceCount: 0 };
@@ -74,14 +72,10 @@ export function createMissedVisitCheckWorker(valkey: Valkey): Worker {
   const svc = new VisitScheduleService(valkey, alertService);
   setVisitScheduleService(svc);
 
-  const worker = new Worker(
-    QUEUE_NAMES.MISSED_VISIT_CHECK,
-    missedVisitCheckHandler,
-    {
-      connection: createBullMQConnection(),
-      concurrency: 1,
-    },
-  );
+  const worker = new Worker(QUEUE_NAMES.MISSED_VISIT_CHECK, missedVisitCheckHandler, {
+    connection: createBullMQConnection(),
+    concurrency: 1,
+  });
 
   worker.on("completed", (job, result: MissedVisitCheckJobResult) => {
     log.info(

@@ -61,10 +61,9 @@ export const CreateHOPEAssessmentBodySchema = Type.Object(
     patientId: Type.String({ format: "uuid" }),
     locationId: Type.String({ format: "uuid" }),
     /** '01' = HOPE-A, '02' = HOPE-UV, '03' = HOPE-D */
-    assessmentType: Type.Union(
-      [Type.Literal("01"), Type.Literal("02"), Type.Literal("03")],
-      { description: "A0310A: Type of HOPE Assessment" },
-    ),
+    assessmentType: Type.Union([Type.Literal("01"), Type.Literal("02"), Type.Literal("03")], {
+      description: "A0310A: Type of HOPE Assessment",
+    }),
     assessmentDate: Type.String({ format: "date" }),
     /**
      * For HOPE-A: hospice election date.
@@ -131,11 +130,7 @@ export const HOPEAssessmentResponseSchema = Type.Object(
     id: Type.String({ format: "uuid" }),
     patientId: Type.String({ format: "uuid" }),
     locationId: Type.String({ format: "uuid" }),
-    assessmentType: Type.Union([
-      Type.Literal("01"),
-      Type.Literal("02"),
-      Type.Literal("03"),
-    ]),
+    assessmentType: Type.Union([Type.Literal("01"), Type.Literal("02"), Type.Literal("03")]),
     assessmentDate: Type.String({ format: "date" }),
     electionDate: Type.String({ format: "date" }),
     windowStart: Type.String({ format: "date" }),

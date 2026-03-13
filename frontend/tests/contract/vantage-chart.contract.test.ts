@@ -5,7 +5,7 @@
  * Uses msw or direct fetch mocking via vi.mock.
  */
 
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock env.server before importing functions
 vi.mock("@/lib/env.server.js", () => ({
@@ -24,12 +24,12 @@ vi.mock("@tanstack/react-start/server", () => ({
 
 import {
   fetchCreateEncounter,
-  fetchListEncounters,
+  fetchEnhanceNarrative,
+  fetchGenerateNarrative,
   fetchGetEncounter,
+  fetchListEncounters,
   fetchPatchEncounter,
   fetchPatientContext,
-  fetchGenerateNarrative,
-  fetchEnhanceNarrative,
 } from "../../src/functions/vantage-chart.functions.js";
 
 // Mock the global fetch
@@ -77,13 +77,13 @@ function errorJson(status: number, body: unknown) {
 describe("fetchCreateEncounter", () => {
   it("POSTs to /patients/:id/encounters and returns encounter", async () => {
     mockFetch.mockReturnValueOnce(
-      Promise.resolve({ ok: true, status: 201, json: () => Promise.resolve(mockEncounterResponse) } as Response),
+      Promise.resolve({
+        ok: true,
+        status: 201,
+        json: () => Promise.resolve(mockEncounterResponse),
+      } as Response),
     );
-    const result = await fetchCreateEncounter(
-      PATIENT_ID,
-      { visitType: "routine_rn" },
-      COOKIE,
-    );
+    const result = await fetchCreateEncounter(PATIENT_ID, { visitType: "routine_rn" }, COOKIE);
     expect(result.id).toBe(ENCOUNTER_ID);
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining(`/patients/${PATIENT_ID}/encounters`),
@@ -92,9 +92,7 @@ describe("fetchCreateEncounter", () => {
   });
 
   it("throws on error response", async () => {
-    mockFetch.mockReturnValueOnce(
-      errorJson(400, { error: { message: "Validation error" } }),
-    );
+    mockFetch.mockReturnValueOnce(errorJson(400, { error: { message: "Validation error" } }));
     await expect(
       fetchCreateEncounter(PATIENT_ID, { visitType: "routine_rn" }, COOKIE),
     ).rejects.toThrow("Validation error");
@@ -103,9 +101,7 @@ describe("fetchCreateEncounter", () => {
 
 describe("fetchListEncounters", () => {
   it("GETs encounter list", async () => {
-    mockFetch.mockReturnValueOnce(
-      okJson({ encounters: [mockEncounterResponse], total: 1 }),
-    );
+    mockFetch.mockReturnValueOnce(okJson({ encounters: [mockEncounterResponse], total: 1 }));
     const result = await fetchListEncounters(PATIENT_ID, COOKIE);
     expect(result.encounters).toHaveLength(1);
     expect(result.total).toBe(1);
@@ -123,9 +119,7 @@ describe("fetchGetEncounter", () => {
     mockFetch.mockReturnValueOnce(
       Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) } as Response),
     );
-    await expect(
-      fetchGetEncounter(PATIENT_ID, ENCOUNTER_ID, COOKIE),
-    ).rejects.toThrow("not found");
+    await expect(fetchGetEncounter(PATIENT_ID, ENCOUNTER_ID, COOKIE)).rejects.toThrow("not found");
   });
 });
 
@@ -213,17 +207,17 @@ describe("fetchEnhanceNarrative", () => {
     mockFetch.mockReturnValueOnce(
       Promise.resolve({ ok: false, status: 429, json: () => Promise.resolve({}) } as Response),
     );
-    await expect(
-      fetchEnhanceNarrative(PATIENT_ID, ENCOUNTER_ID, "draft", COOKIE),
-    ).rejects.toThrow("RATE_LIMIT_EXCEEDED");
+    await expect(fetchEnhanceNarrative(PATIENT_ID, ENCOUNTER_ID, "draft", COOKIE)).rejects.toThrow(
+      "RATE_LIMIT_EXCEEDED",
+    );
   });
 
   it("throws FEATURE_DISABLED on 503", async () => {
     mockFetch.mockReturnValueOnce(
       Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve({}) } as Response),
     );
-    await expect(
-      fetchEnhanceNarrative(PATIENT_ID, ENCOUNTER_ID, "draft", COOKIE),
-    ).rejects.toThrow("FEATURE_DISABLED");
+    await expect(fetchEnhanceNarrative(PATIENT_ID, ENCOUNTER_ID, "draft", COOKIE)).rejects.toThrow(
+      "FEATURE_DISABLED",
+    );
   });
 });

@@ -160,3 +160,15 @@ export type {
   CreateF2FInput,
   PatchF2FInput,
 } from "./f2f.js";
+export type {
+  CapThresholdAlert,
+  CapSummaryResponse,
+  CapPatientContributionItem,
+  CapPatientListResponse,
+  CapTrendMonth,
+  CapBranchComparison,
+  CapTrendResponse,
+  CapSnapshotResponse,
+  RecalculateCapResponse,
+  CapPatientListQuery,
+} from "./cap.js";

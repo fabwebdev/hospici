@@ -8,15 +8,15 @@ import {
   revertHOPEToReviewFn,
 } from "@/functions/hope.functions.js";
 import {
-  HOPE_ASSESSMENT_TYPE_LABELS,
-  HOPE_STATUS_LABELS,
-  IQIES_ERROR_GUIDANCE,
   type HOPEAssessmentListResponse,
   type HOPEAssessmentResponse,
   type HOPEAssessmentStatus,
+  HOPE_ASSESSMENT_TYPE_LABELS,
+  HOPE_STATUS_LABELS,
+  IQIES_ERROR_GUIDANCE,
 } from "@hospici/shared-types";
-import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/hope/submissions")({
@@ -53,7 +53,9 @@ const STATUS_COLORS: Record<HOPEAssessmentStatus, string> = {
 
 function StatusBadge({ status }: { status: HOPEAssessmentStatus }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}
+    >
       {HOPE_STATUS_LABELS[status]}
     </span>
   );
@@ -155,7 +157,8 @@ function WorkbenchRow({
                 <span className="font-medium">Completeness:</span> {assessment.completenessScore}%
                 {assessment.fatalErrorCount > 0 && (
                   <span className="ml-2 text-red-600">
-                    ({assessment.fatalErrorCount} blocking error{assessment.fatalErrorCount > 1 ? "s" : ""})
+                    ({assessment.fatalErrorCount} blocking error
+                    {assessment.fatalErrorCount > 1 ? "s" : ""})
                   </span>
                 )}
               </div>
@@ -209,24 +212,22 @@ function HOPESubmissionsPage() {
   });
 
   const reprocessMutation = useMutation({
-    mutationFn: (submissionId: string) =>
-      reprocessHOPESubmissionFn({ data: { submissionId } }),
+    mutationFn: (submissionId: string) => reprocessHOPESubmissionFn({ data: { submissionId } }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["hope", "assessments"] });
     },
   });
 
   const revertMutation = useMutation({
-    mutationFn: (submissionId: string) =>
-      revertHOPEToReviewFn({ data: { submissionId } }),
+    mutationFn: (submissionId: string) => revertHOPEToReviewFn({ data: { submissionId } }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["hope", "assessments"] });
     },
   });
 
   const currentTab = TABS.find((t) => t.id === activeTab);
-  const filteredAssessments = (data?.data ?? []).filter(
-    (a) => currentTab?.statuses.includes(a.status),
+  const filteredAssessments = (data?.data ?? []).filter((a) =>
+    currentTab?.statuses.includes(a.status),
   );
 
   return (
@@ -250,16 +251,16 @@ function HOPESubmissionsPage() {
       {/* Error states */}
       {reprocessMutation.isError && (
         <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-          Reprocess failed: {reprocessMutation.error instanceof Error
+          Reprocess failed:{" "}
+          {reprocessMutation.error instanceof Error
             ? reprocessMutation.error.message
             : "Unknown error"}
         </div>
       )}
       {revertMutation.isError && (
         <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-          Revert failed: {revertMutation.error instanceof Error
-            ? revertMutation.error.message
-            : "Unknown error"}
+          Revert failed:{" "}
+          {revertMutation.error instanceof Error ? revertMutation.error.message : "Unknown error"}
         </div>
       )}
 
@@ -267,9 +268,7 @@ function HOPESubmissionsPage() {
       <div className="border-b border-gray-200">
         <nav className="flex -mb-px gap-6">
           {TABS.map((tab) => {
-            const count = (data?.data ?? []).filter((a) =>
-              tab.statuses.includes(a.status),
-            ).length;
+            const count = (data?.data ?? []).filter((a) => tab.statuses.includes(a.status)).length;
             return (
               <button
                 key={tab.id}
@@ -311,11 +310,21 @@ function HOPESubmissionsPage() {
           <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assessment</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Window Deadline</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Assessment
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Type
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Window Deadline
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">

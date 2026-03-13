@@ -13,8 +13,8 @@
  * T3-2a: Updated to use notices_of_election (new schema).
  */
 
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "pg";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 // Prevent module-level Queue/Worker instantiations in queue.ts from
 // connecting to Valkey during integration tests. The handler itself only
@@ -24,15 +24,9 @@ vi.mock("bullmq", () => ({
   Worker: vi.fn().mockImplementation((name: string) => ({ name, close: vi.fn(), on: vi.fn() })),
 }));
 
-import {
-  TEST_IDS,
-  cleanupFixtures,
-  createAppRole,
-  getTestPool,
-  seedFixtures,
-} from "./setup.js";
-import { addBusinessDays } from "@/utils/business-days.js";
 import { noeDeadlineHandler } from "@/jobs/workers/noe-deadline.worker.js";
+import { addBusinessDays } from "@/utils/business-days.js";
+import { TEST_IDS, cleanupFixtures, createAppRole, getTestPool, seedFixtures } from "./setup.js";
 
 const pool = getTestPool();
 
@@ -57,10 +51,13 @@ afterAll(async () => {
   // Clean up NOE-specific fixtures not handled by cleanupFixtures
   const client: PoolClient = await pool.connect();
   try {
-    await client.query(
-      `DELETE FROM notices_of_election WHERE id IN ($1, $2, $3, $4, $5)`,
-      [NOE_FRIDAY_ID, NOE_MONDAY_ID, NOE_UPCOMING_ID, NOE_OVERDUE_ID, NOE_FAR_ID],
-    );
+    await client.query("DELETE FROM notices_of_election WHERE id IN ($1, $2, $3, $4, $5)", [
+      NOE_FRIDAY_ID,
+      NOE_MONDAY_ID,
+      NOE_UPCOMING_ID,
+      NOE_OVERDUE_ID,
+      NOE_FAR_ID,
+    ]);
     await cleanupFixtures(client);
   } finally {
     client.release();
@@ -108,12 +105,7 @@ describe("NOE rows stored and retrieved from DB with correct deadline_date", () 
         `INSERT INTO notices_of_election
            (id, patient_id, location_id, status, election_date, deadline_date)
          VALUES ($1, $2, $3, 'draft', '2026-03-06', $4)`,
-        [
-          NOE_FRIDAY_ID,
-          TEST_IDS.patientA,
-          TEST_IDS.locationA,
-          deadlineStr,
-        ],
+        [NOE_FRIDAY_ID, TEST_IDS.patientA, TEST_IDS.locationA, deadlineStr],
       );
 
       const { rows } = await client.query(
@@ -140,12 +132,7 @@ describe("NOE rows stored and retrieved from DB with correct deadline_date", () 
         `INSERT INTO notices_of_election
            (id, patient_id, location_id, status, election_date, deadline_date)
          VALUES ($1, $2, $3, 'draft', '2026-03-02', $4)`,
-        [
-          NOE_MONDAY_ID,
-          TEST_IDS.patientA,
-          TEST_IDS.locationA,
-          deadlineStr,
-        ],
+        [NOE_MONDAY_ID, TEST_IDS.patientA, TEST_IDS.locationA, deadlineStr],
       );
 
       const { rows } = await client.query(
@@ -194,9 +181,21 @@ describe("noeDeadlineHandler worker query logic", () => {
            ($6,  $7,  $8,  'draft', $9, $10),
            ($11, $12, $13, 'draft', $14, $15)`,
         [
-          NOE_UPCOMING_ID, TEST_IDS.patientA, TEST_IDS.locationA, todayStr,     tomorrowStr,
-          NOE_OVERDUE_ID,  TEST_IDS.patientA, TEST_IDS.locationA, yesterdayStr, yesterdayStr,
-          NOE_FAR_ID,      TEST_IDS.patientA, TEST_IDS.locationA, todayStr,     farFutureStr,
+          NOE_UPCOMING_ID,
+          TEST_IDS.patientA,
+          TEST_IDS.locationA,
+          todayStr,
+          tomorrowStr,
+          NOE_OVERDUE_ID,
+          TEST_IDS.patientA,
+          TEST_IDS.locationA,
+          yesterdayStr,
+          yesterdayStr,
+          NOE_FAR_ID,
+          TEST_IDS.patientA,
+          TEST_IDS.locationA,
+          todayStr,
+          farFutureStr,
         ],
       );
     } finally {
@@ -205,7 +204,9 @@ describe("noeDeadlineHandler worker query logic", () => {
   });
 
   it("detects an upcoming NOE within the 2-day window", async () => {
-    const fakeJob = { id: "test-job-1", data: {}, opts: {} } as Parameters<typeof noeDeadlineHandler>[0];
+    const fakeJob = { id: "test-job-1", data: {}, opts: {} } as Parameters<
+      typeof noeDeadlineHandler
+    >[0];
 
     const result = await noeDeadlineHandler(fakeJob);
 
@@ -214,7 +215,9 @@ describe("noeDeadlineHandler worker query logic", () => {
   });
 
   it("detects an overdue NOE", async () => {
-    const fakeJob = { id: "test-job-2", data: {}, opts: {} } as Parameters<typeof noeDeadlineHandler>[0];
+    const fakeJob = { id: "test-job-2", data: {}, opts: {} } as Parameters<
+      typeof noeDeadlineHandler
+    >[0];
 
     const result = await noeDeadlineHandler(fakeJob);
 
@@ -223,7 +226,9 @@ describe("noeDeadlineHandler worker query logic", () => {
 
   it("does not count a NOE whose deadline is 30 days away as upcoming", async () => {
     // The far-future NOE (NOE_FAR_ID) should not appear in upcomingCount.
-    const fakeJob = { id: "test-job-3", data: {}, opts: {} } as Parameters<typeof noeDeadlineHandler>[0];
+    const fakeJob = { id: "test-job-3", data: {}, opts: {} } as Parameters<
+      typeof noeDeadlineHandler
+    >[0];
 
     const result = await noeDeadlineHandler(fakeJob);
 
@@ -247,19 +252,15 @@ describe("noeDeadlineHandler worker query logic", () => {
         `INSERT INTO notices_of_election
            (id, patient_id, location_id, status, election_date, deadline_date)
          VALUES ($1, $2, $3, 'submitted', $4, $5)`,
-        [
-          submittedId,
-          TEST_IDS.patientA,
-          TEST_IDS.locationA,
-          yesterdayStr,
-          yesterdayStr,
-        ],
+        [submittedId, TEST_IDS.patientA, TEST_IDS.locationA, yesterdayStr, yesterdayStr],
       );
     } finally {
       client.release();
     }
 
-    const fakeJob = { id: "test-job-4", data: {}, opts: {} } as Parameters<typeof noeDeadlineHandler>[0];
+    const fakeJob = { id: "test-job-4", data: {}, opts: {} } as Parameters<
+      typeof noeDeadlineHandler
+    >[0];
     const beforeResult = await noeDeadlineHandler(fakeJob);
 
     // Now delete the submitted NOE and compare — counts should be the same
@@ -270,7 +271,9 @@ describe("noeDeadlineHandler worker query logic", () => {
       cleanup.release();
     }
 
-    const fakeJob2 = { id: "test-job-5", data: {}, opts: {} } as Parameters<typeof noeDeadlineHandler>[0];
+    const fakeJob2 = { id: "test-job-5", data: {}, opts: {} } as Parameters<
+      typeof noeDeadlineHandler
+    >[0];
     const afterResult = await noeDeadlineHandler(fakeJob2);
 
     // Counts should be identical — submitted NOE was filtered out both times

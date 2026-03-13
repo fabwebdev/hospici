@@ -166,9 +166,7 @@ describe("patchCarePlanDiscipline", () => {
         },
       },
     };
-    vi.mocked(fetch).mockResolvedValueOnce(
-      new Response(JSON.stringify(updated), { status: 200 }),
-    );
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify(updated), { status: 200 }));
     const result = await patchCarePlanDiscipline(
       PATIENT_ID,
       "RN",

@@ -8,8 +8,8 @@
  *   - class method bodies
  *   - route handlers
  */
-import { readFileSync, readdirSync, statSync } from "fs";
-import { join } from "path";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
 const SRC_DIR = new URL("../src", import.meta.url).pathname;
 const VIOLATION_PATTERN = /TypeCompiler\.Compile\s*\(/;
@@ -38,7 +38,7 @@ function walkDir(dir) {
       const indent = line.match(/^(\s*)/)?.[1]?.length ?? 0;
       if (indent > 0) {
         process.stderr.write(
-          `VIOLATION: ${full}:${idx + 1}\n  → TypeCompiler.Compile() must be at module level (0 indent), found at indent ${indent}\n  → ${line.trim()}\n\n`
+          `VIOLATION: ${full}:${idx + 1}\n  → TypeCompiler.Compile() must be at module level (0 indent), found at indent ${indent}\n  → ${line.trim()}\n\n`,
         );
         violations++;
       }
@@ -50,7 +50,7 @@ walkDir(SRC_DIR);
 
 if (violations > 0) {
   process.stderr.write(
-    `\n❌ ${violations} AOT compilation violation(s) found. Move TypeCompiler.Compile() calls to src/config/typebox-compiler.ts\n`
+    `\n❌ ${violations} AOT compilation violation(s) found. Move TypeCompiler.Compile() calls to src/config/typebox-compiler.ts\n`,
   );
   process.exit(1);
 } else {

@@ -11,8 +11,8 @@
 
 import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
-import { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import { NoteReviewService } from "@/contexts/clinical/services/noteReview.service.js";
+import { AlertService } from "@/contexts/compliance/services/alert.service.js";
 import { complianceEvents } from "@/events/compliance-events.js";
 import type { Job } from "bullmq";
 import { Worker } from "bullmq";
@@ -36,9 +36,7 @@ export function setNoteReviewService(svc: NoteReviewService): void {
 /**
  * Pure handler — separated for testability.
  */
-export async function noteReviewDeadlineHandler(
-  _job: Job,
-): Promise<NoteReviewDeadlineJobResult> {
+export async function noteReviewDeadlineHandler(_job: Job): Promise<NoteReviewDeadlineJobResult> {
   if (!noteReviewService) {
     log.warn("NoteReviewService not set — skipping note-review-deadline check");
     return { checkedAt: new Date().toISOString(), overdueCount: 0 };
@@ -67,14 +65,10 @@ export function createNoteReviewDeadlineWorker(valkey: Valkey): Worker {
   const svc = new NoteReviewService(valkey, alertService);
   setNoteReviewService(svc);
 
-  const worker = new Worker(
-    QUEUE_NAMES.NOTE_REVIEW_DEADLINE_CHECK,
-    noteReviewDeadlineHandler,
-    {
-      connection: createBullMQConnection(),
-      concurrency: 1,
-    },
-  );
+  const worker = new Worker(QUEUE_NAMES.NOTE_REVIEW_DEADLINE_CHECK, noteReviewDeadlineHandler, {
+    connection: createBullMQConnection(),
+    concurrency: 1,
+  });
 
   worker.on("completed", (job, result: NoteReviewDeadlineJobResult) => {
     log.info(

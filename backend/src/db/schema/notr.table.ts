@@ -10,9 +10,9 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { locations } from "./locations.table.js";
+import { noticeFilingStatusEnum, noticesOfElection } from "./noe.table.js";
 import { patients } from "./patients.table.js";
 import { users } from "./users.table.js";
-import { noticeFilingStatusEnum, noticesOfElection } from "./noe.table.js";
 
 export const noticesOfTerminationRevocation = pgTable("notices_of_termination_revocation", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -49,7 +49,6 @@ export const noticesOfTerminationRevocation = pgTable("notices_of_termination_re
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export type NoticesOfTerminationRevocationRow =
-  typeof noticesOfTerminationRevocation.$inferSelect;
+export type NoticesOfTerminationRevocationRow = typeof noticesOfTerminationRevocation.$inferSelect;
 export type NoticesOfTerminationRevocationInsert =
   typeof noticesOfTerminationRevocation.$inferInsert;

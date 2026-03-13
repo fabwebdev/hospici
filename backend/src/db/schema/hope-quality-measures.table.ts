@@ -93,11 +93,11 @@ export type HopeQualityMeasureSelect = typeof hopeQualityMeasures.$inferSelect;
  * Updated by hqrp-period-close BullMQ job each quarter.
  */
 export const HQRP_NATIONAL_AVERAGES: Record<string, number> = {
-  NQF3235: 87.4,  // Comprehensive Assessment at Admission
-  NQF3633: 92.1,  // Treatment Preferences
+  NQF3235: 87.4, // Comprehensive Assessment at Admission
+  NQF3633: 92.1, // Treatment Preferences
   NQF3634A: 71.3, // HVLDL Part A
   NQF3634B: 68.5, // HVLDL Part B
-  HCI: 7.2,       // HCI composite (0–10 scale)
+  HCI: 7.2, // HCI composite (0–10 scale)
 };
 
 /** Target rates — ≥70% for NQF measures, ≥7.0 for HCI */

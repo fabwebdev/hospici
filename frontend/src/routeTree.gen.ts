@@ -5,22 +5,23 @@
 
 import { Route as rootRoute } from "./routes/__root";
 import { Route as authedRoute } from "./routes/_authed";
-import { Route as authedDashboardRoute } from "./routes/_authed/dashboard";
 import { Route as authedAlertsIndexRoute } from "./routes/_authed/alerts/index";
-import { Route as authedReviewQueueIndexRoute } from "./routes/_authed/review-queue/index";
-import { Route as authedPatientsPatientIdRoute } from "./routes/_authed/patients/$patientId";
-import { Route as authedPatientsPatientIdIdgScheduleRoute } from "./routes/_authed/patients/$patientId/idg/schedule";
-import { Route as authedPatientsPatientIdEncountersEncounterIdVantageChartRoute } from "./routes/_authed/patients/$patientId/encounters/$encounterId/vantage-chart";
-import { Route as authedPatientsPatientIdVisitsIndexRoute } from "./routes/_authed/patients/$patientId/visits/index";
-import { Route as authedPatientsPatientIdF2FNewRoute } from "./routes/_authed/patients/$patientId/f2f/new";
-import { Route as authedPatientsIndexRoute } from "./routes/_authed/patients/index";
+import { Route as authedCapIndexRoute } from "./routes/_authed/cap/index";
+import { Route as authedDashboardRoute } from "./routes/_authed/dashboard";
+import { Route as authedFilingsF2FQueueRoute } from "./routes/_authed/filings/f2f-queue";
+import { Route as authedFilingsIndexRoute } from "./routes/_authed/filings/index";
+import { Route as authedHopeAssessmentsIdRoute } from "./routes/_authed/hope/assessments/$id";
 import { Route as authedHopeAssessmentsIndexRoute } from "./routes/_authed/hope/assessments/index";
 import { Route as authedHopeAssessmentsNewRoute } from "./routes/_authed/hope/assessments/new";
-import { Route as authedHopeAssessmentsIdRoute } from "./routes/_authed/hope/assessments/$id";
 import { Route as authedHopeDashboardRoute } from "./routes/_authed/hope/dashboard";
 import { Route as authedHopeSubmissionsRoute } from "./routes/_authed/hope/submissions";
-import { Route as authedFilingsIndexRoute } from "./routes/_authed/filings/index";
-import { Route as authedFilingsF2FQueueRoute } from "./routes/_authed/filings/f2f-queue";
+import { Route as authedPatientsPatientIdRoute } from "./routes/_authed/patients/$patientId";
+import { Route as authedPatientsPatientIdEncountersEncounterIdVantageChartRoute } from "./routes/_authed/patients/$patientId/encounters/$encounterId/vantage-chart";
+import { Route as authedPatientsPatientIdF2FNewRoute } from "./routes/_authed/patients/$patientId/f2f/new";
+import { Route as authedPatientsPatientIdIdgScheduleRoute } from "./routes/_authed/patients/$patientId/idg/schedule";
+import { Route as authedPatientsPatientIdVisitsIndexRoute } from "./routes/_authed/patients/$patientId/visits/index";
+import { Route as authedPatientsIndexRoute } from "./routes/_authed/patients/index";
+import { Route as authedReviewQueueIndexRoute } from "./routes/_authed/review-queue/index";
 import { Route as IndexRoute } from "./routes/index";
 import { Route as LoginRoute } from "./routes/login";
 
@@ -45,6 +46,7 @@ const authedRouteWithChildren = authedRoute.addChildren({
   authedHopeSubmissionsRoute,
   authedFilingsIndexRoute,
   authedFilingsF2FQueueRoute,
+  authedCapIndexRoute,
 });
 
 export const routeTree = rootRoute.addChildren({
@@ -187,6 +189,13 @@ declare module "@tanstack/react-router" {
       path: "/filings/f2f-queue";
       fullPath: "/filings/f2f-queue";
       preLoaderRoute: typeof authedFilingsF2FQueueRoute;
+      parentRoute: typeof authedRoute;
+    };
+    "/_authed/cap/": {
+      id: "/_authed/cap/";
+      path: "/cap";
+      fullPath: "/cap";
+      preLoaderRoute: typeof authedCapIndexRoute;
       parentRoute: typeof authedRoute;
     };
   }

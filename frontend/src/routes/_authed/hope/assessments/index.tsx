@@ -3,14 +3,14 @@
 
 import { getHOPEAssessmentsFn } from "@/functions/hope.functions.js";
 import {
-  HOPE_ASSESSMENT_TYPE_LABELS,
-  HOPE_STATUS_LABELS,
   type HOPEAssessmentListQuery,
   type HOPEAssessmentResponse,
   type HOPEAssessmentStatus,
+  HOPE_ASSESSMENT_TYPE_LABELS,
+  HOPE_STATUS_LABELS,
 } from "@hospici/shared-types";
-import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/hope/assessments/")({
   loader: async () => {
@@ -29,9 +29,11 @@ function CompletenessRing({
   const r = size / 2 - 4;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
-  const color = fatalErrors > 0 ? "#ef4444" : score >= 80 ? "#22c55e" : score >= 50 ? "#f59e0b" : "#94a3b8";
+  const color =
+    fatalErrors > 0 ? "#ef4444" : score >= 80 ? "#22c55e" : score >= 50 ? "#f59e0b" : "#94a3b8";
   return (
     <svg width={size} height={size} className="shrink-0" aria-label={`Completeness: ${score}%`}>
+      <title>Completeness: {score}%</title>
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth="4" />
       <circle
         cx={size / 2}
@@ -73,7 +75,9 @@ const STATUS_COLORS: Record<HOPEAssessmentStatus, string> = {
 
 function StatusBadge({ status }: { status: HOPEAssessmentStatus }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}
+    >
       {HOPE_STATUS_LABELS[status]}
     </span>
   );
@@ -81,7 +85,10 @@ function StatusBadge({ status }: { status: HOPEAssessmentStatus }) {
 
 // ── Window deadline indicator ──────────────────────────────────────────────────
 
-function WindowDeadlinePill({ deadline, status }: { deadline: string; status: HOPEAssessmentStatus }) {
+function WindowDeadlinePill({
+  deadline,
+  status,
+}: { deadline: string; status: HOPEAssessmentStatus }) {
   const today = new Date();
   const dl = new Date(deadline);
   const daysLeft = Math.ceil((dl.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -198,7 +205,10 @@ function HOPEAssessmentListPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <CompletenessRing score={a.completenessScore} fatalErrors={a.fatalErrorCount} />
+                      <CompletenessRing
+                        score={a.completenessScore}
+                        fatalErrors={a.fatalErrorCount}
+                      />
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -217,9 +227,7 @@ function HOPEAssessmentListPage() {
       )}
 
       {/* Total count */}
-      {data && (
-        <p className="text-xs text-gray-400">{data.total} total assessments</p>
-      )}
+      {data && <p className="text-xs text-gray-400">{data.total} total assessments</p>}
     </div>
   );
 }

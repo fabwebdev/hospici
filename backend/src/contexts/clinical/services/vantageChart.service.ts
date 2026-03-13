@@ -14,9 +14,9 @@
 import { logAudit } from "@/contexts/identity/services/audit.service.js";
 import { db } from "@/db/client.js";
 import { encounters } from "@/db/schema/encounters.table.js";
-import type Iovalkey from "iovalkey";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { FastifyRequest } from "fastify";
+import type Iovalkey from "iovalkey";
 import type {
   CreateEncounterBody,
   EncounterListResponse,
@@ -35,9 +35,7 @@ async function applyRlsContext(
   user: UserCtx,
 ): Promise<void> {
   await tx.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`);
-  await tx.execute(
-    sql`SELECT set_config('app.current_location_id', ${user.locationId}, true)`,
-  );
+  await tx.execute(sql`SELECT set_config('app.current_location_id', ${user.locationId}, true)`);
   await tx.execute(sql`SELECT set_config('app.current_role', ${user.role}, true)`);
 }
 
@@ -122,22 +120,14 @@ export class VantageChartService {
     });
   }
 
-  async listEncounters(
-    patientId: string,
-    user: UserCtx,
-  ): Promise<EncounterListResponse> {
+  async listEncounters(patientId: string, user: UserCtx): Promise<EncounterListResponse> {
     return db.transaction(async (tx) => {
       await applyRlsContext(tx, user);
 
       const rows = await tx
         .select()
         .from(encounters)
-        .where(
-          and(
-            eq(encounters.patientId, patientId),
-            eq(encounters.locationId, user.locationId),
-          ),
-        )
+        .where(and(eq(encounters.patientId, patientId), eq(encounters.locationId, user.locationId)))
         .orderBy(desc(encounters.visitedAt))
         .limit(50);
 
@@ -163,9 +153,7 @@ export class VantageChartService {
       const [row] = await tx
         .select()
         .from(encounters)
-        .where(
-          and(eq(encounters.id, encounterId), eq(encounters.patientId, patientId)),
-        );
+        .where(and(eq(encounters.id, encounterId), eq(encounters.patientId, patientId)));
 
       if (!row) return null;
 
@@ -195,8 +183,7 @@ export class VantageChartService {
 
       if (body.status !== undefined) updates.status = body.status;
       if (body.data !== undefined) updates.data = body.data;
-      if (body.vantageChartDraft !== undefined)
-        updates.vantageChartDraft = body.vantageChartDraft;
+      if (body.vantageChartDraft !== undefined) updates.vantageChartDraft = body.vantageChartDraft;
       if (body.vantageChartMethod !== undefined)
         updates.vantageChartMethod = body.vantageChartMethod;
       if (body.vantageChartAcceptedAt !== undefined)
@@ -207,9 +194,7 @@ export class VantageChartService {
       const [row] = await tx
         .update(encounters)
         .set(updates)
-        .where(
-          and(eq(encounters.id, encounterId), eq(encounters.patientId, patientId)),
-        )
+        .where(and(eq(encounters.id, encounterId), eq(encounters.patientId, patientId)))
         .returning();
 
       if (!row) return null;

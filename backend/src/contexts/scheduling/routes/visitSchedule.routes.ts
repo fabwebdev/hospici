@@ -10,22 +10,17 @@
  */
 
 import { AlertService } from "@/contexts/compliance/services/alert.service.js";
-import { VisitScheduleService } from "@/contexts/scheduling/services/visitSchedule.service.js";
 import {
   CreateScheduledVisitBodySchema,
   PatchScheduledVisitStatusBodySchema,
   ScheduledVisitListResponseSchema,
   ScheduledVisitResponseSchema,
 } from "@/contexts/scheduling/schemas/visitSchedule.schema.js";
+import { VisitScheduleService } from "@/contexts/scheduling/services/visitSchedule.service.js";
 import type { FastifyInstance } from "fastify";
 
-export default async function visitSchedulePatientRoutes(
-  fastify: FastifyInstance,
-): Promise<void> {
-  const service = new VisitScheduleService(
-    fastify.valkey,
-    new AlertService(fastify.valkey),
-  );
+export default async function visitSchedulePatientRoutes(fastify: FastifyInstance): Promise<void> {
+  const service = new VisitScheduleService(fastify.valkey, new AlertService(fastify.valkey));
 
   /**
    * GET /api/v1/patients/:patientId/scheduled-visits
@@ -47,7 +42,8 @@ export default async function visitSchedulePatientRoutes(
     },
     async (request, reply) => {
       const { patientId } = request.params as { patientId: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
       const result = await service.listVisits(patientId, user);
       reply.send(result);
     },
@@ -74,20 +70,20 @@ export default async function visitSchedulePatientRoutes(
     },
     async (request, reply) => {
       const { patientId } = request.params as { patientId: string };
-      const user = request.user!;
-      const result = await service.createVisit(patientId, request.body as Parameters<typeof service.createVisit>[1], user);
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
+      const result = await service.createVisit(
+        patientId,
+        request.body as Parameters<typeof service.createVisit>[1],
+        user,
+      );
       reply.code(201).send(result);
     },
   );
 }
 
-export async function visitScheduleStandaloneRoutes(
-  fastify: FastifyInstance,
-): Promise<void> {
-  const service = new VisitScheduleService(
-    fastify.valkey,
-    new AlertService(fastify.valkey),
-  );
+export async function visitScheduleStandaloneRoutes(fastify: FastifyInstance): Promise<void> {
+  const service = new VisitScheduleService(fastify.valkey, new AlertService(fastify.valkey));
 
   /**
    * PATCH /api/v1/scheduled-visits/:visitId/status
@@ -114,7 +110,8 @@ export async function visitScheduleStandaloneRoutes(
     },
     async (request, reply) => {
       const { visitId } = request.params as { visitId: string };
-      const user = request.user!;
+      if (!request.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
+      const user = request.user;
 
       try {
         const result = await service.patchStatus(

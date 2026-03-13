@@ -10,8 +10,8 @@
  * Phase 1 exit gate (T1-9)
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PoolClient } from "pg";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   TEST_IDS,
   cleanupFixtures,
@@ -54,10 +54,9 @@ describe("billing_specialist role", () => {
         role: "billing_specialist",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM patients WHERE id = $1",
-          [TEST_IDS.patientA],
-        );
+        const { rows } = await client.query("SELECT id FROM patients WHERE id = $1", [
+          TEST_IDS.patientA,
+        ]);
         expect(rows).toHaveLength(1);
       },
     );
@@ -72,10 +71,9 @@ describe("billing_specialist role", () => {
         role: "billing_specialist",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM pain_assessments WHERE id = $1",
-          [TEST_IDS.painAssessmentA],
-        );
+        const { rows } = await client.query("SELECT id FROM pain_assessments WHERE id = $1", [
+          TEST_IDS.painAssessmentA,
+        ]);
         // pain_assessments_billing_deny policy blocks billing from reading clinical notes
         expect(rows).toHaveLength(0);
       },
@@ -115,10 +113,9 @@ describe("volunteer role", () => {
         role: "volunteer",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM patients WHERE id = $1",
-          [TEST_IDS.patientA],
-        );
+        const { rows } = await client.query("SELECT id FROM patients WHERE id = $1", [
+          TEST_IDS.patientA,
+        ]);
         expect(rows).toHaveLength(0);
       },
     );
@@ -156,10 +153,9 @@ describe("intake_coordinator role", () => {
         role: "intake_coordinator",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM patients WHERE id = $1",
-          [TEST_IDS.patientA],
-        );
+        const { rows } = await client.query("SELECT id FROM patients WHERE id = $1", [
+          TEST_IDS.patientA,
+        ]);
         expect(rows).toHaveLength(1);
       },
     );
@@ -220,10 +216,9 @@ describe("registered_nurse role", () => {
         role: "registered_nurse",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM pain_assessments WHERE id = $1",
-          [TEST_IDS.painAssessmentA],
-        );
+        const { rows } = await client.query("SELECT id FROM pain_assessments WHERE id = $1", [
+          TEST_IDS.painAssessmentA,
+        ]);
         expect(rows).toHaveLength(1);
       },
     );

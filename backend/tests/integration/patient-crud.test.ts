@@ -16,18 +16,12 @@
  *  ✓ audit_logs row exists
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { PoolClient } from "pg";
-import {
-  TEST_IDS,
-  cleanupFixtures,
-  createAppRole,
-  getTestPool,
-  seedFixtures,
-} from "./setup.js";
-import { PatientService } from "@/contexts/clinical/services/patient.service.js";
 import type { CreatePatientBody } from "@/contexts/clinical/schemas/patient.schema.js";
+import { PatientService } from "@/contexts/clinical/services/patient.service.js";
 import type { FastifyRequest } from "fastify";
+import type { PoolClient } from "pg";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { TEST_IDS, cleanupFixtures, createAppRole, getTestPool, seedFixtures } from "./setup.js";
 
 const pool = getTestPool();
 
@@ -68,10 +62,7 @@ afterAll(async () => {
   if (createdPatientIds.length > 0) {
     const client: PoolClient = await pool.connect();
     try {
-      await client.query(
-        `DELETE FROM patients WHERE id = ANY($1::uuid[])`,
-        [createdPatientIds],
-      );
+      await client.query("DELETE FROM patients WHERE id = ANY($1::uuid[])", [createdPatientIds]);
     } finally {
       client.release();
     }
@@ -104,7 +95,7 @@ describe("PatientService.create()", () => {
     createdPatientIds.push(patient.id);
 
     const { rows } = await pool.query<{ data: string }>(
-      `SELECT data::text AS data FROM patients WHERE id = $1`,
+      "SELECT data::text AS data FROM patients WHERE id = $1",
       [patient.id],
     );
     expect(rows).toHaveLength(1);
@@ -139,7 +130,7 @@ describe("PatientService.create()", () => {
     createdPatientIds.push(patient.id);
 
     const { rows } = await pool.query<{ location_id: string }>(
-      `SELECT location_id FROM patients WHERE id = $1`,
+      "SELECT location_id FROM patients WHERE id = $1",
       [patient.id],
     );
     expect(rows[0]?.location_id).toBe(TEST_IDS.locationA);
@@ -165,10 +156,7 @@ describe("PatientService.getById()", () => {
   });
 
   it("returns null for non-existent ID", async () => {
-    const result = await PatientService.getById(
-      "00000000-0000-0000-0000-000000000000",
-      userA,
-    );
+    const result = await PatientService.getById("00000000-0000-0000-0000-000000000000", userA);
     expect(result).toBeNull();
   });
 

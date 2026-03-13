@@ -94,7 +94,10 @@ export async function enhanceWithLLM(draft: string): Promise<LLMEnhanceResult> {
  * Key: vantage:rate:{userId}, TTL 3600s, max 10 per hour.
  */
 export async function checkLLMRateLimit(
-  valkey: { incr: (key: string) => Promise<number>; expire: (key: string, ttl: number) => Promise<number> },
+  valkey: {
+    incr: (key: string) => Promise<number>;
+    expire: (key: string, ttl: number) => Promise<number>;
+  },
   userId: string,
 ): Promise<{ allowed: boolean; remaining: number }> {
   const key = `vantage:rate:${userId}`;

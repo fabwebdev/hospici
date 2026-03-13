@@ -3,8 +3,8 @@
 
 import { createHOPEAssessmentFn } from "@/functions/hope.functions.js";
 import type { CreateHOPEAssessmentInput, HOPEAssessmentType } from "@hospici/shared-types";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/hope/assessments/new")({
@@ -18,8 +18,7 @@ function NewHOPEAssessmentPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (input: CreateHOPEAssessmentInput) =>
-      createHOPEAssessmentFn({ data: input }),
+    mutationFn: (input: CreateHOPEAssessmentInput) => createHOPEAssessmentFn({ data: input }),
     onSuccess: (assessment) => {
       void navigate({ to: "/hope/assessments/$id", params: { id: assessment.id } });
     },
@@ -47,12 +46,20 @@ function NewHOPEAssessmentPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+      >
         <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">Assessment Type</label>
+          <label htmlFor="assessment-type" className="text-sm font-medium text-gray-700">
+            Assessment Type
+          </label>
           <select
+            id="assessment-type"
             value={form.assessmentType ?? "01"}
-            onChange={(e) => setForm((f) => ({ ...f, assessmentType: e.target.value as HOPEAssessmentType }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, assessmentType: e.target.value as HOPEAssessmentType }))
+            }
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           >
             <option value="01">HOPE-A — Admission (7-day window)</option>
@@ -62,8 +69,11 @@ function NewHOPEAssessmentPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">Patient ID</label>
+          <label htmlFor="assessment-patient-id" className="text-sm font-medium text-gray-700">
+            Patient ID
+          </label>
           <input
+            id="assessment-patient-id"
             type="text"
             placeholder="Patient UUID"
             value={form.patientId ?? ""}
@@ -73,8 +83,11 @@ function NewHOPEAssessmentPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">Location ID</label>
+          <label htmlFor="assessment-location-id" className="text-sm font-medium text-gray-700">
+            Location ID
+          </label>
           <input
+            id="assessment-location-id"
             type="text"
             placeholder="Location UUID"
             value={form.locationId ?? ""}
@@ -85,8 +98,11 @@ function NewHOPEAssessmentPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Assessment Date</label>
+            <label htmlFor="assessment-date" className="text-sm font-medium text-gray-700">
+              Assessment Date
+            </label>
             <input
+              id="assessment-date"
               type="date"
               value={form.assessmentDate ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, assessmentDate: e.target.value }))}
@@ -94,8 +110,11 @@ function NewHOPEAssessmentPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Election Date</label>
+            <label htmlFor="election-date" className="text-sm font-medium text-gray-700">
+              Election Date
+            </label>
             <input
+              id="election-date"
               type="date"
               value={form.electionDate ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, electionDate: e.target.value }))}

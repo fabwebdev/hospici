@@ -18,10 +18,9 @@ export async function fetchScheduledVisits(
   patientId: string,
   cookieHeader: string,
 ): Promise<ScheduledVisitListResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/patients/${patientId}/scheduled-visits`,
-    { headers: { cookie: cookieHeader } },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/patients/${patientId}/scheduled-visits`, {
+    headers: { cookie: cookieHeader },
+  });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       error?: { message?: string };
@@ -36,14 +35,11 @@ export async function createScheduledVisit(
   body: CreateScheduledVisitInput,
   cookieHeader: string,
 ): Promise<ScheduledVisitResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/patients/${patientId}/scheduled-visits`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/patients/${patientId}/scheduled-visits`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
@@ -62,21 +58,18 @@ export async function patchVisitStatus(
   body: PatchScheduledVisitStatusInput,
   cookieHeader: string,
 ): Promise<ScheduledVisitResponse> {
-  const response = await fetch(
-    `${env.apiUrl}/api/v1/scheduled-visits/${visitId}/status`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", cookie: cookieHeader },
-      body: JSON.stringify(body),
-    },
-  );
+  const response = await fetch(`${env.apiUrl}/api/v1/scheduled-visits/${visitId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string; code?: string };
     };
-    const err = new Error(
-      parsed.error?.message ?? "Failed to update visit status",
-    ) as Error & { code?: string };
+    const err = new Error(parsed.error?.message ?? "Failed to update visit status") as Error & {
+      code?: string;
+    };
     err.code = parsed.error?.code;
     throw err;
   }
@@ -94,10 +87,7 @@ export const getScheduledVisitsFn = createServerFn({ method: "GET" })
   });
 
 export const createScheduledVisitFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (data: unknown) =>
-      data as { patientId: string; body: CreateScheduledVisitInput },
-  )
+  .inputValidator((data: unknown) => data as { patientId: string; body: CreateScheduledVisitInput })
   .handler(async ({ data }) => {
     const request = getRequest();
     const cookieHeader = request.headers.get("cookie") ?? "";
@@ -106,8 +96,7 @@ export const createScheduledVisitFn = createServerFn({ method: "POST" })
 
 export const patchVisitStatusFn = createServerFn({ method: "POST" })
   .inputValidator(
-    (data: unknown) =>
-      data as { visitId: string; body: PatchScheduledVisitStatusInput },
+    (data: unknown) => data as { visitId: string; body: PatchScheduledVisitStatusInput },
   )
   .handler(async ({ data }) => {
     const request = getRequest();

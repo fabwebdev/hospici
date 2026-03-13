@@ -1,8 +1,8 @@
 // tests/contract/patient.functions.test.ts
 // Contract tests: verify fetchPatients/fetchPatient handler logic against API shape
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { PatientListResponse, PatientResponse } from "@hospici/shared-types";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock env.server before importing functions
 vi.mock("@/lib/env.server.js", () => ({
@@ -20,9 +20,7 @@ vi.mock("@tanstack/react-start/server", () => ({
 }));
 
 // Import handlers after mocks are in place
-const { fetchPatients, fetchPatient } = await import(
-  "@/functions/patient.functions.js"
-);
+const { fetchPatients, fetchPatient } = await import("@/functions/patient.functions.js");
 
 const COOKIE = "session=test";
 
@@ -94,9 +92,7 @@ describe("fetchPatients", () => {
   });
 
   it("throws with fallback message when error body is malformed", async () => {
-    vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response("not json", { status: 500 }),
-    );
+    vi.mocked(global.fetch).mockResolvedValueOnce(new Response("not json", { status: 500 }));
 
     await expect(fetchPatients(COOKIE)).rejects.toThrow("Failed to fetch patients");
   });
@@ -113,9 +109,7 @@ describe("fetchPatient", () => {
 
   it("calls GET /api/v1/patients/:id with cookie header", async () => {
     const mockFetch = vi.mocked(global.fetch);
-    mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify(samplePatient), { status: 200 }),
-    );
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(samplePatient), { status: 200 }));
 
     const result = await fetchPatient(samplePatient.id, COOKIE);
 
@@ -140,9 +134,7 @@ describe("fetchPatient", () => {
   });
 
   it("throws 'Patient not found' on 404", async () => {
-    vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response("", { status: 404 }),
-    );
+    vi.mocked(global.fetch).mockResolvedValueOnce(new Response("", { status: 404 }));
 
     await expect(fetchPatient("bad-id", COOKIE)).rejects.toThrow("Patient not found");
   });

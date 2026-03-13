@@ -214,15 +214,11 @@ function VantageChartPage() {
             VantageChart™ — {encounter?.visitType?.replace("_", " ").toUpperCase() ?? "Visit"}
           </h1>
         </div>
-        <div className="text-xs text-gray-400">
-          Encounter {encounterId.slice(0, 8)}
-        </div>
+        <div className="text-xs text-gray-400">Encounter {encounterId.slice(0, 8)}</div>
       </header>
 
       {/* Context alerts */}
-      {context && context.alerts.length > 0 && (
-        <ContextAlertsBar alerts={context.alerts} />
-      )}
+      {context && context.alerts.length > 0 && <ContextAlertsBar alerts={context.alerts} />}
 
       {/* Step progress */}
       <StepProgressBar steps={VANTAGE_CHART_STEPS} current={currentStep} />
@@ -314,8 +310,8 @@ function ContextAlertsBar({ alerts }: { alerts: ContextAlert[] }) {
 
   return (
     <div className={`border-b px-6 py-2 text-xs ${bgClass}`}>
-      {alerts.map((a, i) => (
-        <span key={i} className="mr-4">
+      {alerts.map((a) => (
+        <span key={`${a.type}-${a.message}`} className="mr-4">
           {a.type === "warning" ? "⚠" : a.type === "critical" ? "🔴" : "ℹ"} {a.message}
         </span>
       ))}
@@ -356,9 +352,7 @@ function StepProgressBar({
                 </span>
               )}
               {i < steps.length - 1 && (
-                <div
-                  className={`h-px flex-1 min-w-4 ${done ? "bg-emerald-300" : "bg-gray-200"}`}
-                />
+                <div className={`h-px flex-1 min-w-4 ${done ? "bg-emerald-300" : "bg-gray-200"}`} />
               )}
             </div>
           );
@@ -391,8 +385,7 @@ function NarrativePreviewPanel({
   onToggleView: () => void;
   similarityWarning: boolean;
 }) {
-  const displayText =
-    showEnhanced && enhanced ? enhanced.enhanced : (preview?.draft ?? "");
+  const displayText = showEnhanced && enhanced ? enhanced.enhanced : (preview?.draft ?? "");
 
   return (
     <div className="sticky top-0">
@@ -402,9 +395,7 @@ function NarrativePreviewPanel({
           {preview && (
             <div className="flex items-center gap-3 mt-1">
               <CompletenessRing percent={preview.metadata.completenessPercent} />
-              <span className="text-xs text-gray-400">
-                {preview.metadata.wordCount} words
-              </span>
+              <span className="text-xs text-gray-400">{preview.metadata.wordCount} words</span>
               {showEnhanced && (
                 <span className="text-xs text-purple-600 font-medium">AI Enhanced</span>
               )}
@@ -446,7 +437,8 @@ function NarrativePreviewPanel({
 
       {similarityWarning && (
         <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-          ⚠ Documentation is similar to the prior visit (&gt;90% match). Please review for clinical accuracy.
+          ⚠ Documentation is similar to the prior visit (&gt;90% match). Please review for clinical
+          accuracy.
         </div>
       )}
 
@@ -478,6 +470,7 @@ function CompletenessRing({ percent }: { percent: number }) {
   const color = percent >= 80 ? "#10b981" : percent >= 50 ? "#f59e0b" : "#e5e7eb";
   return (
     <svg width="28" height="28" viewBox="0 0 28 28">
+      <title>Note completeness: {percent}%</title>
       <circle cx="14" cy="14" r={r} fill="none" stroke="#e5e7eb" strokeWidth="3" />
       <circle
         cx="14"
@@ -515,9 +508,7 @@ function StepContent({
     case "patient-status":
       return <PatientStatusStep input={input} onChange={onChange} />;
     case "pain-assessment":
-      return (
-        <PainAssessmentStep input={input} onChange={onChange} context={context} />
-      );
+      return <PainAssessmentStep input={input} onChange={onChange} context={context} />;
     case "symptom-review":
       return <SymptomReviewStep input={input} onChange={onChange} />;
     case "interventions":
@@ -547,21 +538,40 @@ function PatientStatusStep({
   const ps = input.patientStatus;
 
   const setCondition = (v: VantageChartInput["patientStatus"]["overallCondition"]) =>
-    onChange({ ...input, patientStatus: { ...ps, overallCondition: v, isAlertAndOriented: ps?.isAlertAndOriented ?? true } });
+    onChange({
+      ...input,
+      patientStatus: {
+        ...ps,
+        overallCondition: v,
+        isAlertAndOriented: ps?.isAlertAndOriented ?? true,
+      },
+    });
 
   const conditions: VantageChartInput["patientStatus"]["overallCondition"][] = [
-    "stable", "declining", "improving", "critical", "deceased",
+    "stable",
+    "declining",
+    "improving",
+    "critical",
+    "deceased",
   ];
 
-  const orientationLevels: Array<VantageChartInput["patientStatus"]["orientationLevel"]> =
-    ["x4", "x3", "x2", "x1", "x0"];
+  const orientationLevels: Array<VantageChartInput["patientStatus"]["orientationLevel"]> = [
+    "x4",
+    "x3",
+    "x2",
+    "x1",
+    "x0",
+  ];
 
   return (
     <div className="space-y-6">
-      <StepHeader title="Patient Status" subtitle="Document the patient's overall condition at time of visit" />
+      <StepHeader
+        title="Patient Status"
+        subtitle="Document the patient's overall condition at time of visit"
+      />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Overall Condition</label>
+        <p className="block text-sm font-medium text-gray-700 mb-2">Overall Condition</p>
         <div className="flex flex-wrap gap-2">
           {conditions.map((c) => (
             <QuickActionButton
@@ -576,9 +586,7 @@ function PatientStatusStep({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Alert & Oriented
-        </label>
+        <p className="block text-sm font-medium text-gray-700 mb-2">Alert & Oriented</p>
         <div className="flex gap-2">
           <QuickActionButton
             label="Yes — A&O"
@@ -613,9 +621,7 @@ function PatientStatusStep({
 
       {ps?.isAlertAndOriented && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Orientation Level
-          </label>
+          <p className="block text-sm font-medium text-gray-700 mb-2">Orientation Level</p>
           <div className="flex gap-2">
             {orientationLevels.map((lvl) => (
               <QuickActionButton
@@ -666,7 +672,7 @@ function PainAssessmentStep({
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Pain Present?</label>
+        <p className="block text-sm font-medium text-gray-700 mb-2">Pain Present?</p>
         <div className="flex gap-2">
           <QuickActionButton
             label="No Pain"
@@ -685,22 +691,19 @@ function PainAssessmentStep({
       {pa.hasPain && (
         <>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Pain Scale (0–10)
-            </label>
+            <p className="block text-sm font-medium text-gray-700 mb-2">Pain Scale (0–10)</p>
             <VisualAnalogScale
               value={pa.painScale ?? 0}
-              onChange={(v) =>
-                onChange({ ...input, painAssessment: { ...pa, painScale: v } })
-              }
+              onChange={(v) => onChange({ ...input, painAssessment: { ...pa, painScale: v } })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="pain-location" className="block text-sm font-medium text-gray-700 mb-2">
               Pain Location
             </label>
             <input
+              id="pain-location"
               type="text"
               value={pa.painLocation ?? ""}
               onChange={(e) =>
@@ -715,9 +718,7 @@ function PainAssessmentStep({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Pain Quality
-            </label>
+            <p className="block text-sm font-medium text-gray-700 mb-2">Pain Quality</p>
             <CheckboxGrid
               options={["sharp", "dull", "aching", "burning", "throbbing"]}
               selected={pa.painQuality ?? []}
@@ -764,8 +765,15 @@ function PainAssessmentStep({
 // ── Step 3: Symptom Review ────────────────────────────────────────────────────
 
 const SYMPTOM_OPTIONS: VantageChartInput["symptoms"][0]["symptom"][] = [
-  "pain", "dyspnea", "fatigue", "nausea", "depression",
-  "anxiety", "drowsiness", "appetite", "wellbeing",
+  "pain",
+  "dyspnea",
+  "fatigue",
+  "nausea",
+  "depression",
+  "anxiety",
+  "drowsiness",
+  "appetite",
+  "wellbeing",
 ];
 
 function SymptomReviewStep({
@@ -778,7 +786,7 @@ function SymptomReviewStep({
   type SymptomEntry = VantageChartInput["symptoms"][number];
   const symptoms: SymptomEntry[] = input.symptoms ?? [];
 
-  const toggleSymptom = (symptom: typeof SYMPTOM_OPTIONS[0]) => {
+  const toggleSymptom = (symptom: (typeof SYMPTOM_OPTIONS)[0]) => {
     const existing = symptoms.find((s: SymptomEntry) => s.symptom === symptom);
     if (existing) {
       onChange({ ...input, symptoms: symptoms.filter((s: SymptomEntry) => s.symptom !== symptom) });
@@ -799,11 +807,7 @@ function SymptomReviewStep({
     }
   };
 
-  const updateSymptom = (
-    idx: number,
-    field: keyof (typeof symptoms)[0],
-    value: unknown,
-  ) => {
+  const updateSymptom = (idx: number, field: keyof (typeof symptoms)[0], value: unknown) => {
     const updated = symptoms.map((s: SymptomEntry, i: number) =>
       i === idx ? { ...s, [field]: value as SymptomEntry[keyof SymptomEntry] } : s,
     );
@@ -812,15 +816,10 @@ function SymptomReviewStep({
 
   return (
     <div className="space-y-6">
-      <StepHeader
-        title="Symptom Review"
-        subtitle="Select and rate presenting symptoms"
-      />
+      <StepHeader title="Symptom Review" subtitle="Select and rate presenting symptoms" />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Active Symptoms
-        </label>
+        <p className="block text-sm font-medium text-gray-700 mb-2">Active Symptoms</p>
         <CheckboxGrid
           options={SYMPTOM_OPTIONS}
           selected={symptoms.map((s: SymptomEntry) => s.symptom)}
@@ -829,7 +828,7 @@ function SymptomReviewStep({
               const existing = symptoms.find((s: SymptomEntry) => s.symptom === sym);
               return (
                 existing ?? {
-                  symptom: sym as typeof SYMPTOM_OPTIONS[0],
+                  symptom: sym as (typeof SYMPTOM_OPTIONS)[0],
                   severity: 5,
                   isNew: false,
                   isWorsening: false,
@@ -845,9 +844,7 @@ function SymptomReviewStep({
       {symptoms.map((s: SymptomEntry, i: number) => (
         <div key={s.symptom} className="border border-gray-200 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-sm text-gray-800 capitalize">
-              {s.symptom}
-            </span>
+            <span className="font-medium text-sm text-gray-800 capitalize">{s.symptom}</span>
             <button
               type="button"
               onClick={() => toggleSymptom(s.symptom)}
@@ -858,7 +855,7 @@ function SymptomReviewStep({
           </div>
 
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Severity (0–10)</label>
+            <p className="text-xs text-gray-500 mb-1">Severity (0–10)</p>
             <VisualAnalogScale
               value={s.severity}
               onChange={(v) => updateSymptom(i, "severity", v)}
@@ -913,15 +910,10 @@ function InterventionsStep({
 }) {
   const interventions: VantageChartInput["interventions"] = input.interventions ?? [];
 
-  const addIntervention = (
-    category: VantageChartInput["interventions"][0]["category"],
-  ) => {
+  const addIntervention = (category: VantageChartInput["interventions"][0]["category"]) => {
     onChange({
       ...input,
-      interventions: [
-        ...interventions,
-        { category, description: "", patientResponse: "positive" },
-      ],
+      interventions: [...interventions, { category, description: "", patientResponse: "positive" }],
     });
   };
 
@@ -934,7 +926,10 @@ function InterventionsStep({
   };
 
   const removeIntervention = (idx: number) => {
-    onChange({ ...input, interventions: interventions.filter((_: InterventionEntry, i: number) => i !== idx) });
+    onChange({
+      ...input,
+      interventions: interventions.filter((_: InterventionEntry, i: number) => i !== idx),
+    });
   };
 
   return (
@@ -945,9 +940,7 @@ function InterventionsStep({
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Add Intervention
-        </label>
+        <p className="block text-sm font-medium text-gray-700 mb-2">Add Intervention</p>
         <div className="flex flex-wrap gap-2">
           {INTERVENTION_CATEGORIES.map((c) => (
             <button
@@ -964,10 +957,12 @@ function InterventionsStep({
 
       {interventions.map((iv: InterventionEntry, i: number) => {
         const catLabel =
-          INTERVENTION_CATEGORIES.find((c) => c.value === iv.category)?.label ??
-          iv.category;
+          INTERVENTION_CATEGORIES.find((c) => c.value === iv.category)?.label ?? iv.category;
         return (
-          <div key={i} className="border border-gray-200 rounded-lg p-4 space-y-3">
+          <div
+            key={`${iv.category}-${iv.description}-${iv.patientResponse}`}
+            className="border border-gray-200 rounded-lg p-4 space-y-3"
+          >
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-gray-800">{catLabel}</span>
               <button
@@ -979,8 +974,14 @@ function InterventionsStep({
               </button>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Description</label>
+              <label
+                htmlFor={`intervention-desc-${i}`}
+                className="text-xs text-gray-500 mb-1 block"
+              >
+                Description
+              </label>
               <input
+                id={`intervention-desc-${i}`}
                 type="text"
                 value={iv.description}
                 onChange={(e) => updateIntervention(i, "description", e.target.value)}
@@ -989,7 +990,7 @@ function InterventionsStep({
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Patient Response</label>
+              <p className="text-xs text-gray-500 mb-1">Patient Response</p>
               <div className="flex gap-2">
                 {(["positive", "neutral", "negative"] as const).map((r) => (
                   <QuickActionButton
@@ -1031,9 +1032,7 @@ function PsychosocialStep({
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Caregiver Coping
-        </label>
+        <p className="block text-sm font-medium text-gray-700 mb-2">Caregiver Coping</p>
         <div className="flex gap-2 flex-wrap">
           {(["well", "adequate", "struggling", "crisis"] as const).map((c) => (
             <QuickActionButton
@@ -1048,9 +1047,7 @@ function PsychosocialStep({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Patient Mood
-        </label>
+        <p className="block text-sm font-medium text-gray-700 mb-2">Patient Mood</p>
         <div className="flex gap-2 flex-wrap">
           {(["calm", "anxious", "depressed", "agitated", "peaceful"] as const).map((m) => (
             <QuickActionButton
@@ -1095,9 +1092,9 @@ function CarePlanStep({
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <p className="block text-sm font-medium text-gray-700 mb-2">
           Care plan frequencies being followed?
-        </label>
+        </p>
         <div className="flex gap-2">
           <QuickActionButton
             label="Yes"
@@ -1114,18 +1111,14 @@ function CarePlanStep({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Medication Compliance
-        </label>
+        <p className="block text-sm font-medium text-gray-700 mb-2">Medication Compliance</p>
         <div className="flex gap-2">
           {(["compliant", "partial", "noncompliant"] as const).map((c) => (
             <QuickActionButton
               key={c}
               label={c.charAt(0).toUpperCase() + c.slice(1)}
               active={cp.medicationCompliance === c}
-              onClick={() =>
-                onChange({ ...input, carePlan: { ...cp, medicationCompliance: c } })
-              }
+              onClick={() => onChange({ ...input, carePlan: { ...cp, medicationCompliance: c } })}
               danger={c === "noncompliant"}
             />
           ))}
@@ -1154,7 +1147,7 @@ function SafetyStep({
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Fall Risk</label>
+        <p className="block text-sm font-medium text-gray-700 mb-2">Fall Risk</p>
         <div className="flex gap-2">
           {(["low", "moderate", "high"] as const).map((r) => (
             <QuickActionButton
@@ -1186,10 +1179,7 @@ function PlanChangesStep({
   const addChange = () =>
     onChange({
       ...input,
-      planChanges: [
-        ...changes,
-        { type: "new_order", description: "", requiresPhysician: false },
-      ],
+      planChanges: [...changes, { type: "new_order", description: "", requiresPhysician: false }],
     });
 
   const updateChange = (idx: number, field: string, value: unknown) => {
@@ -1200,14 +1190,14 @@ function PlanChangesStep({
   };
 
   const removeChange = (idx: number) =>
-    onChange({ ...input, planChanges: changes.filter((_: PlanChangeEntry, i: number) => i !== idx) });
+    onChange({
+      ...input,
+      planChanges: changes.filter((_: PlanChangeEntry, i: number) => i !== idx),
+    });
 
   return (
     <div className="space-y-6">
-      <StepHeader
-        title="Plan Changes"
-        subtitle="Document any care plan modifications needed"
-      />
+      <StepHeader title="Plan Changes" subtitle="Document any care plan modifications needed" />
 
       <button
         type="button"
@@ -1224,7 +1214,10 @@ function PlanChangesStep({
       )}
 
       {changes.map((c: PlanChangeEntry, i: number) => (
-        <div key={i} className="border border-gray-200 rounded-lg p-4 space-y-3">
+        <div
+          key={`${c.type}-${c.description}-${String(c.requiresPhysician)}`}
+          className="border border-gray-200 rounded-lg p-4 space-y-3"
+        >
           <div className="flex justify-between">
             <select
               value={c.type}
@@ -1275,10 +1268,11 @@ function ReviewStep({
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="additional-notes" className="block text-sm font-medium text-gray-700 mb-2">
           Additional Notes (optional, max 1000 characters)
         </label>
         <textarea
+          id="additional-notes"
           value={input.additionalNotes ?? ""}
           onChange={(e) =>
             onChange({
@@ -1297,9 +1291,9 @@ function ReviewStep({
       </div>
 
       <div className="p-4 bg-blue-50 rounded-lg text-sm text-blue-700">
-        Review the live preview on the right. When satisfied, click "Finalize Note" to
-        accept and complete this encounter. Optionally use "Enhance with AI" for
-        prose polish — the original is always preserved.
+        Review the live preview on the right. When satisfied, click "Finalize Note" to accept and
+        complete this encounter. Optionally use "Enhance with AI" for prose polish — the original is
+        always preserved.
       </div>
     </div>
   );
@@ -1398,10 +1392,7 @@ function CheckboxGrid({
   return (
     <div className="grid grid-cols-3 gap-2">
       {options.map((opt) => (
-        <label
-          key={opt}
-          className="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
-        >
+        <label key={opt} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
           <input
             type="checkbox"
             checked={selected.includes(opt)}
@@ -1426,8 +1417,13 @@ function ToggleField({
 }) {
   return (
     <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={value ?? false}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only"
+      />
       <div
-        onClick={() => onChange(!value)}
         className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${
           value ? "bg-blue-600" : "bg-gray-300"
         }`}

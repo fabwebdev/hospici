@@ -4,30 +4,33 @@
 import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
 import hopeRoutes, { analyticsRoutes } from "@/contexts/analytics/routes/hope.routes.js";
-import alertRoutes from "@/contexts/compliance/routes/alert.routes.js";
-import noteReviewRoutes from "@/contexts/clinical/routes/noteReview.routes.js";
 import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
+import capRoutes from "@/contexts/billing/routes/cap.routes.js";
 import noePatientRoutes, { noeStandaloneRoutes } from "@/contexts/billing/routes/noe.routes.js";
 import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
 import medicationRoutes from "@/contexts/clinical/routes/medication.routes.js";
-import vantageChartRoutes from "@/contexts/clinical/routes/vantageChart.routes.js";
+import noteReviewRoutes from "@/contexts/clinical/routes/noteReview.routes.js";
 import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
+import vantageChartRoutes from "@/contexts/clinical/routes/vantageChart.routes.js";
+import alertRoutes from "@/contexts/compliance/routes/alert.routes.js";
+import { f2fPatientRoutes, f2fStandaloneRoutes } from "@/contexts/f2f/routes/f2f.routes.js";
 import authRoutes from "@/contexts/identity/routes/auth.routes.js";
 import { idgMeetingsRoutes, patientIdgRoutes } from "@/contexts/scheduling/routes/idg.routes.js";
 import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
+import visitSchedulePatientRoutes, {
+  visitScheduleStandaloneRoutes,
+} from "@/contexts/scheduling/routes/visitSchedule.routes.js";
 import { closeQueues, scheduleDailyJobs } from "@/jobs/queue.js";
 import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.worker.js";
 import { createCapRecalculationWorker } from "@/jobs/workers/cap-recalculation.worker.js";
-import { createNoteReviewDeadlineWorker } from "@/jobs/workers/note-review-deadline.worker.js";
-import { createMissedVisitCheckWorker } from "@/jobs/workers/missed-visit-check.worker.js";
-import { f2fPatientRoutes, f2fStandaloneRoutes } from "@/contexts/f2f/routes/f2f.routes.js";
 import { createF2FDeadlineWorker } from "@/jobs/workers/f2f-deadline-check.worker.js";
-import visitSchedulePatientRoutes, { visitScheduleStandaloneRoutes } from "@/contexts/scheduling/routes/visitSchedule.routes.js";
 import { createHopeDeadlineCheckWorker } from "@/jobs/workers/hope-deadline-check.worker.js";
 import { createHopeSubmissionWorker } from "@/jobs/workers/hope-submission.worker.js";
 import { createHqrpPeriodCloseWorker } from "@/jobs/workers/hqrp-period-close.worker.js";
+import { createMissedVisitCheckWorker } from "@/jobs/workers/missed-visit-check.worker.js";
 import { createNoeDeadlineWorker } from "@/jobs/workers/noe-deadline.worker.js";
+import { createNoteReviewDeadlineWorker } from "@/jobs/workers/note-review-deadline.worker.js";
 import { registerRLSMiddleware } from "@/middleware/rls.middleware.js";
 import socketPlugin from "@/plugins/socket.plugin.js";
 import valkeyPlugin from "@/plugins/valkey.plugin.js";
@@ -166,6 +169,7 @@ export async function buildApp() {
   await fastify.register(visitScheduleStandaloneRoutes, { prefix: "/api/v1/scheduled-visits" });
   await fastify.register(f2fPatientRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(f2fStandaloneRoutes, { prefix: "/api/v1" });
+  await fastify.register(capRoutes, { prefix: "/api/v1/cap" });
 
   // ── BullMQ Workers ────────────────────────────────────────────────────────────
   // Workers are created after Fastify is fully configured so the logger is ready.
@@ -174,7 +178,7 @@ export async function buildApp() {
   const hopeSubmissionWorker = createHopeSubmissionWorker();
   const hopeDeadlineWorker = createHopeDeadlineCheckWorker();
   const hqrpPeriodCloseWorker = createHqrpPeriodCloseWorker();
-  const capRecalculationWorker = createCapRecalculationWorker();
+  const capRecalculationWorker = createCapRecalculationWorker(fastify.valkey);
   const noteReviewDeadlineWorker = createNoteReviewDeadlineWorker(fastify.valkey);
   const missedVisitCheckWorker = createMissedVisitCheckWorker(fastify.valkey);
   const f2fDeadlineWorker = createF2FDeadlineWorker(fastify.valkey);

@@ -8,8 +8,8 @@
  * Phase 1 exit gate (T1-9)
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PoolClient } from "pg";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   TEST_IDS,
   cleanupFixtures,
@@ -52,10 +52,9 @@ describe("patient row-level isolation", () => {
         role: "registered_nurse",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM patients WHERE id = $1",
-          [TEST_IDS.patientA],
-        );
+        const { rows } = await client.query("SELECT id FROM patients WHERE id = $1", [
+          TEST_IDS.patientA,
+        ]);
         expect(rows).toHaveLength(1);
         expect(rows[0].id).toBe(TEST_IDS.patientA);
       },
@@ -71,10 +70,9 @@ describe("patient row-level isolation", () => {
         role: "registered_nurse",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM patients WHERE id = $1",
-          [TEST_IDS.patientB],
-        );
+        const { rows } = await client.query("SELECT id FROM patients WHERE id = $1", [
+          TEST_IDS.patientB,
+        ]);
         expect(rows).toHaveLength(0);
       },
     );
@@ -89,10 +87,9 @@ describe("patient row-level isolation", () => {
         role: "registered_nurse",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM patients WHERE id = $1",
-          [TEST_IDS.patientB],
-        );
+        const { rows } = await client.query("SELECT id FROM patients WHERE id = $1", [
+          TEST_IDS.patientB,
+        ]);
         expect(rows).toHaveLength(1);
       },
     );
@@ -107,10 +104,9 @@ describe("patient row-level isolation", () => {
         role: "registered_nurse",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM patients WHERE id = $1",
-          [TEST_IDS.patientA],
-        );
+        const { rows } = await client.query("SELECT id FROM patients WHERE id = $1", [
+          TEST_IDS.patientA,
+        ]);
         expect(rows).toHaveLength(0);
       },
     );
@@ -125,10 +121,10 @@ describe("patient row-level isolation", () => {
         role: "registered_nurse",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM patients WHERE id IN ($1, $2)",
-          [TEST_IDS.patientA, TEST_IDS.patientB],
-        );
+        const { rows } = await client.query("SELECT id FROM patients WHERE id IN ($1, $2)", [
+          TEST_IDS.patientA,
+          TEST_IDS.patientB,
+        ]);
         // Only patientA (locationA) should be visible
         expect(rows).toHaveLength(1);
         expect(rows[0].id).toBe(TEST_IDS.patientA);
@@ -149,10 +145,9 @@ describe("pain assessment row-level isolation", () => {
         role: "registered_nurse",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM pain_assessments WHERE id = $1",
-          [TEST_IDS.painAssessmentA],
-        );
+        const { rows } = await client.query("SELECT id FROM pain_assessments WHERE id = $1", [
+          TEST_IDS.painAssessmentA,
+        ]);
         expect(rows).toHaveLength(1);
       },
     );
@@ -167,10 +162,9 @@ describe("pain assessment row-level isolation", () => {
         role: "registered_nurse",
       },
       async (client) => {
-        const { rows } = await client.query(
-          "SELECT id FROM pain_assessments WHERE id = $1",
-          [TEST_IDS.painAssessmentA],
-        );
+        const { rows } = await client.query("SELECT id FROM pain_assessments WHERE id = $1", [
+          TEST_IDS.painAssessmentA,
+        ]);
         expect(rows).toHaveLength(0);
       },
     );
@@ -218,10 +212,10 @@ describe("RLS is driven by app.* config, not by HTTP headers", () => {
       );
       await client.query("SELECT set_config('app.current_role', $1, true)", ["registered_nurse"]);
 
-      const { rows } = await client.query(
-        "SELECT id FROM patients WHERE id IN ($1, $2)",
-        [TEST_IDS.patientA, TEST_IDS.patientB],
-      );
+      const { rows } = await client.query("SELECT id FROM patients WHERE id IN ($1, $2)", [
+        TEST_IDS.patientA,
+        TEST_IDS.patientB,
+      ]);
       // Neither patient belongs to the zero-UUID location
       expect(rows).toHaveLength(0);
 

@@ -11,16 +11,7 @@
  */
 
 import { relations } from "drizzle-orm";
-import {
-  date,
-  index,
-  jsonb,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { date, index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { visitTypeEnum } from "./encounters.table.js";
 import { locations } from "./locations.table.js";
 import { patients } from "./patients.table.js";
@@ -43,8 +34,7 @@ export const scheduledVisits = pgTable(
     locationId: uuid("location_id")
       .notNull()
       .references(() => locations.id),
-    clinicianId: uuid("clinician_id")
-      .references(() => users.id, { onDelete: "set null" }),
+    clinicianId: uuid("clinician_id").references(() => users.id, { onDelete: "set null" }),
 
     visitType: visitTypeEnum("visit_type").notNull(),
 

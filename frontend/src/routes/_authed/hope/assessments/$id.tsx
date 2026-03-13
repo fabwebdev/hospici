@@ -13,15 +13,15 @@ import {
   validateHOPEAssessmentFn,
 } from "@/functions/hope.functions.js";
 import {
-  HOPE_ASSESSMENT_TYPE_LABELS,
-  HOPE_STATUS_LABELS,
-  IQIES_ERROR_GUIDANCE,
   type HOPEAssessmentResponse,
   type HOPEAssessmentStatus,
   type HOPEValidationResult,
+  HOPE_ASSESSMENT_TYPE_LABELS,
+  HOPE_STATUS_LABELS,
+  IQIES_ERROR_GUIDANCE,
 } from "@hospici/shared-types";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/_authed/hope/assessments/$id")({
@@ -33,15 +33,21 @@ export const Route = createFileRoute("/_authed/hope/assessments/$id")({
 
 // ── Completeness ring (pure SVG) ───────────────────────────────────────────────
 
-function CompletenessRing({
-  score,
-  fatalErrors,
-}: { score: number; fatalErrors: number }) {
+function CompletenessRing({ score, fatalErrors }: { score: number; fatalErrors: number }) {
   const size = 80;
   const r = size / 2 - 6;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
-  const color = fatalErrors > 0 ? "#ef4444" : score === 100 ? "#22c55e" : score >= 70 ? "#3b82f6" : score >= 40 ? "#f59e0b" : "#94a3b8";
+  const color =
+    fatalErrors > 0
+      ? "#ef4444"
+      : score === 100
+        ? "#22c55e"
+        : score >= 70
+          ? "#3b82f6"
+          : score >= 40
+            ? "#f59e0b"
+            : "#94a3b8";
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -51,6 +57,7 @@ function CompletenessRing({
         className="drop-shadow-sm"
         aria-label={`Completeness ${score}%`}
       >
+        <title>Completeness {score}%</title>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth="6" />
         <circle
           cx={size / 2}
@@ -100,10 +107,10 @@ function IssueCard({
         <span className={`font-bold text-sm shrink-0 mt-0.5 ${iconColor}`}>{icon}</span>
         <div className="flex-1 space-y-1">
           <p className="text-sm font-medium text-gray-800">{issue.message}</p>
-          <p className="text-xs font-mono text-gray-400">{issue.field} · {issue.code}</p>
-          {guidance && (
-            <p className="text-xs text-gray-500 italic">{guidance}</p>
-          )}
+          <p className="text-xs font-mono text-gray-400">
+            {issue.field} · {issue.code}
+          </p>
+          {guidance && <p className="text-xs text-gray-500 italic">{guidance}</p>}
         </div>
       </div>
     </div>
@@ -132,14 +139,6 @@ function HOPEAssessmentDetailPage() {
   const [validateError, setValidateError] = useState<string | null>(null);
   const [firstMissingFieldIndex, setFirstMissingFieldIndex] = useState(0);
 
-  // Auto-validate on first load if assessment has data
-  useEffect(() => {
-    if (assessment && Object.keys(assessment.data ?? {}).length > 0) {
-      void handleValidate();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleValidate = useCallback(async () => {
     setIsValidating(true);
     setValidateError(null);
@@ -154,6 +153,13 @@ function HOPEAssessmentDetailPage() {
       setIsValidating(false);
     }
   }, [id, queryClient]);
+
+  // Auto-validate on first load if assessment has data
+  useEffect(() => {
+    if (assessment && Object.keys(assessment.data ?? {}).length > 0) {
+      void handleValidate();
+    }
+  }, [assessment, handleValidate]);
 
   const approveMutation = useMutation({
     mutationFn: () => approveHOPEAssessmentFn({ data: { id } }),
@@ -175,8 +181,7 @@ function HOPEAssessmentDetailPage() {
   const blockingCount = validation?.blockingErrors.length ?? assessment.fatalErrorCount;
   const warningCount = validation?.warnings.length ?? assessment.warningCount;
 
-  const nextMissingField =
-    validation?.missingRequiredFields[firstMissingFieldIndex] ?? null;
+  const nextMissingField = validation?.missingRequiredFields[firstMissingFieldIndex] ?? null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
@@ -196,7 +201,10 @@ function HOPEAssessmentDetailPage() {
             Assessment date: <strong>{assessment.assessmentDate}</strong>
             {" · "}
             Window deadline:{" "}
-            <WindowDeadlineInline deadline={assessment.windowDeadline} status={assessment.status as HOPEAssessmentStatus} />
+            <WindowDeadlineInline
+              deadline={assessment.windowDeadline}
+              status={assessment.status as HOPEAssessmentStatus}
+            />
           </p>
         </div>
 
@@ -254,11 +262,7 @@ function HOPEAssessmentDetailPage() {
                 <div className="ml-auto flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() =>
-                      setFirstMissingFieldIndex((i) =>
-                        Math.max(0, i - 1),
-                      )
-                    }
+                    onClick={() => setFirstMissingFieldIndex((i) => Math.max(0, i - 1))}
                     disabled={firstMissingFieldIndex === 0}
                     className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-40"
                   >
@@ -301,8 +305,11 @@ function HOPEAssessmentDetailPage() {
                 <h3 className="text-xs font-bold uppercase tracking-wide text-amber-500">
                   Clinical Inconsistencies
                 </h3>
-                {validation.inconsistencies.map((msg, i) => (
-                  <p key={i} className="text-sm text-amber-700 bg-amber-50 rounded px-3 py-1.5 border border-amber-200">
+                {validation.inconsistencies.map((msg) => (
+                  <p
+                    key={msg}
+                    className="text-sm text-amber-700 bg-amber-50 rounded px-3 py-1.5 border border-amber-200"
+                  >
                     ⚠ {msg}
                   </p>
                 ))}
@@ -327,8 +334,8 @@ function HOPEAssessmentDetailPage() {
                 <h3 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">
                   Suggested Next Actions
                 </h3>
-                {validation.suggestedNextActions.map((action, i) => (
-                  <p key={i} className="text-sm text-gray-600">
+                {validation.suggestedNextActions.map((action) => (
+                  <p key={action} className="text-sm text-gray-600">
                     → {action}
                   </p>
                 ))}
@@ -353,18 +360,16 @@ function HOPEAssessmentDetailPage() {
           disabled={!canApprove}
           onClick={() => void approveMutation.mutateAsync()}
           className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors ${
-            canApprove
-              ? "bg-green-600 hover:bg-green-700"
-              : "bg-gray-300 cursor-not-allowed"
+            canApprove ? "bg-green-600 hover:bg-green-700" : "bg-gray-300 cursor-not-allowed"
           }`}
           title={
             !isSupervisor
               ? "Only supervisors and admins can approve assessments for iQIES submission"
               : blockingCount > 0
-              ? `Resolve ${blockingCount} blocking error(s) first`
-              : assessment.status !== "ready_for_review"
-              ? `Status must be 'ready_for_review' (currently: ${assessment.status})`
-              : "Approve for iQIES submission"
+                ? `Resolve ${blockingCount} blocking error(s) first`
+                : assessment.status !== "ready_for_review"
+                  ? `Status must be 'ready_for_review' (currently: ${assessment.status})`
+                  : "Approve for iQIES submission"
           }
         >
           {approveMutation.isPending ? "Approving…" : "Approve for Submission"}
@@ -412,7 +417,11 @@ function WindowDeadlineInline({
     return <strong className="text-red-600">TODAY — {deadline}</strong>;
   }
   if (daysLeft <= 2) {
-    return <strong className="text-amber-600">{deadline} ({daysLeft}d left)</strong>;
+    return (
+      <strong className="text-amber-600">
+        {deadline} ({daysLeft}d left)
+      </strong>
+    );
   }
   return <strong>{deadline}</strong>;
 }
