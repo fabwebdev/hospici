@@ -1,6 +1,10 @@
 import { eq, and, desc, sql, count, lt } from "drizzle-orm";
 import { createHash, randomUUID } from "crypto";
 import type { Db } from "@/db/client.js";
+import type * as schema from "@/db/schema/index.js";
+import type { ExtractTablesWithRelations } from "drizzle-orm";
+import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 import type {
   CreateSignatureRequestBody,
   SignDocumentBody,
@@ -23,6 +27,11 @@ import { logAudit } from "../../identity/services/audit.service.js";
 import { patients } from "../../../db/schema/patients.table.js";
 
 type SignatureRequestStatus = (typeof signatureRequests.$inferSelect)["status"];
+
+/** Duck type satisfied by both `db` and any Drizzle transaction `tx` */
+type DbOrTx =
+  | Db
+  | PgTransaction<NodePgQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>;
 
 // Custom error classes
 export class SignatureError extends Error {
@@ -390,7 +399,7 @@ export class SignatureService {
           attestationText: input.attestationText,
           documentedSignedAt: input.documentedSignedAt ? new Date(input.documentedSignedAt) : null,
           signedAt,
-          ipAddress: ipAddress ? sql`inet ${ipAddress}` : null,
+          ipAddress: ipAddress ?? null,
           userAgent: userAgent ?? null,
           signatureData: input.signatureData ?? null,
           typedName: input.typedName ?? null,
@@ -401,6 +410,8 @@ export class SignatureService {
           countersignsSignatureId: input.countersignsSignatureId ?? null,
         })
         .returning();
+
+      if (!signature) throw new Error("Failed to create electronic signature");
 
       // Determine new status
       const signatureCount = existingSignatures.length + 1;
@@ -438,19 +449,16 @@ export class SignatureService {
       });
 
       // Audit log
-      await this.auditService.log(
-        "DOCUMENT_SIGNED",
+      await logAudit(
+        "sign",
         userId ?? "anonymous",
         request.patientId,
         {
-          signatureRequestId: requestId,
-          signatureId: signature.id,
-          documentType: request.documentType,
-          documentId: request.documentId,
-          signerType: input.signerType,
-          signerName: input.signerName,
-          contentHash: request.contentHash,
-          signatureHash,
+          userRole: "clinician",
+          locationId,
+          resourceType: "signature_request",
+          resourceId: requestId,
+          details: { signatureId: signature.id, signerType: input.signerType },
         },
         tx,
       );
@@ -519,11 +527,17 @@ export class SignatureService {
         actorUserId: userId,
       });
 
-      await this.auditService.log(
-        "SIGNATURE_REQUEST_REJECTED",
+      await logAudit(
+        "update",
         userId,
         request.patientId,
-        { signatureRequestId: requestId, reason: input.reason },
+        {
+          userRole: "clinician",
+          locationId,
+          resourceType: "signature_request",
+          resourceId: requestId,
+          details: { reason: input.reason },
+        },
         tx,
       );
 
@@ -565,11 +579,17 @@ export class SignatureService {
         actorUserId: userId,
       });
 
-      await this.auditService.log(
-        "SIGNATURE_REQUEST_VOIDED",
+      await logAudit(
+        "delete",
         userId,
         request.patientId,
-        { signatureRequestId: requestId, reason: input.reason },
+        {
+          userRole: "clinician",
+          locationId,
+          resourceType: "signature_request",
+          resourceId: requestId,
+          details: { reason: input.reason },
+        },
         tx,
       );
 
@@ -612,14 +632,16 @@ export class SignatureService {
         actorUserId: userId,
       });
 
-      await this.auditService.log(
-        "SIGNATURE_EXCEPTION_MARKED",
+      await logAudit(
+        "update",
         userId,
         request.patientId,
         {
-          signatureRequestId: requestId,
-          exceptionType: input.exceptionType,
-          reason: input.reason,
+          userRole: "clinician",
+          locationId,
+          resourceType: "signature_request",
+          resourceId: requestId,
+          details: { exceptionType: input.exceptionType, reason: input.reason },
         },
         tx,
       );
@@ -719,10 +741,11 @@ export class SignatureService {
     const whereClause = and(...conditions);
 
     // Get total count
-    const [{ count: total }] = await this.db
+    const countResult = await this.db
       .select({ count: count() })
       .from(signatureRequests)
       .where(whereClause);
+    const total = countResult[0]?.count ?? 0;
 
     // Get paginated results
     const requests = await this.db.query.signatureRequests.findMany({
@@ -781,7 +804,7 @@ export class SignatureService {
       const item = {
         id: request.id,
         patientId: request.patientId,
-        patientName: request.patient ? this.decryptPatientName(request.patient) : "Unknown",
+        patientName: request.patient ? this.decryptPatientName(request.patient as typeof patients.$inferSelect) : "Unknown",
         documentType: request.documentType,
         documentId: request.documentId,
         status: request.status,
@@ -809,7 +832,7 @@ export class SignatureService {
   // ── Helper Methods ──────────────────────────────────────────────────────────
 
   private async getRequestForUpdate(
-    tx: Parameters<Parameters<Db["transaction"]>[0]>[0],
+    tx: DbOrTx,
     requestId: string,
     locationId: string,
   ) {
@@ -860,7 +883,7 @@ export class SignatureService {
       exceptionReason: request.exceptionReason ?? null,
       rejectionReason: request.rejectionReason ?? null,
       voidReason: request.voidReason ?? null,
-    };
+    } as unknown as Omit<SignatureRequestWithSignatures, "signatures" | "events">;
   }
 
   private mapSignatureToResponse(
@@ -892,8 +915,7 @@ export class SignatureService {
   ): SignatureRequestWithSignatures["events"][number] {
     return {
       ...event,
-      id: event.id,
-      signatureRequestId: event.signatureRequestId,
+      eventData: (event.eventData ?? {}) as Record<string, unknown>,
       actorUserId: event.actorUserId,
       actorName: event.actorName,
       createdAt: event.createdAt.toISOString(),

@@ -6,14 +6,13 @@ import {
   InvalidSignatureTransitionError,
   SignatureNotFoundError,
 } from "./signature.service.js";
-import type { AuditService } from "../../identity/services/audit.service.js";
 
 // Mock the database
 const mockDb = {
   transaction: vi.fn((fn) => fn(mockTx)),
   query: {
     signatureRequests: { findFirst: vi.fn() },
-    electronicSignatures: { findMany: vi.fn() },
+    electronicSignatures: { findMany: vi.fn(), findFirst: vi.fn() },
   },
   select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn(() => [{ count: 0 }]) })) })),
   insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn(() => [{}]) })) })),
@@ -29,18 +28,13 @@ const mockTx = {
   update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(() => [{}]) })) })) })),
 };
 
-const mockAuditService = {
-  log: vi.fn(),
-} as unknown as AuditService;
-
 describe("SignatureService", () => {
   let service: SignatureService;
 
   beforeEach(() => {
     vi.clearAllMocks();
     service = new SignatureService({
-      db: mockDb as unknown as Parameters<typeof SignatureService>[0]["db"],
-      auditService: mockAuditService,
+      db: mockDb as unknown as ConstructorParameters<typeof SignatureService>[0]["db"],
     });
   });
 

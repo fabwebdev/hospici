@@ -83,6 +83,14 @@ import {
   PatientSchema,
 } from "@/contexts/clinical/schemas";
 import {
+  FhirBundleSchema,
+  FhirObservationSchema,
+  FhirPatientSchema,
+  ObservationSearchQuerySchema,
+  OperationOutcomeSchema,
+  PatientSearchQuerySchema,
+} from "@/contexts/fhir/schemas/fhir.schema.js";
+import {
   AssessmentListResponseSchema,
   AssessmentResponseSchema,
   CreateAssessmentBodySchema,
@@ -319,6 +327,14 @@ export const Validators = {
   MarkExceptionBody: TypeCompiler.Compile(MarkExceptionBodySchema),
   SignatureListQuery: TypeCompiler.Compile(SignatureListQuerySchema),
   SignatureListResponse: TypeCompiler.Compile(SignatureListResponseSchema),
+
+  // FHIR R4 (T3-6)
+  FhirPatient: TypeCompiler.Compile(FhirPatientSchema),
+  FhirObservation: TypeCompiler.Compile(FhirObservationSchema),
+  FhirBundle: TypeCompiler.Compile(FhirBundleSchema),
+  PatientSearchQuery: TypeCompiler.Compile(PatientSearchQuerySchema),
+  ObservationSearchQuery: TypeCompiler.Compile(ObservationSearchQuerySchema),
+  OperationOutcome: TypeCompiler.Compile(OperationOutcomeSchema),
 };
 
 /**

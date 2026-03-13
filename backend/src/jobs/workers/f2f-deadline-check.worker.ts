@@ -19,7 +19,7 @@ import { benefitPeriods } from "@/db/schema/benefit-periods.table.js";
 import { faceToFaceEncounters } from "@/db/schema/face-to-face-encounters.table.js";
 import { complianceEvents } from "@/events/compliance-events.js";
 import { Worker } from "bullmq";
-import { and, notInArray, sql } from "drizzle-orm";
+import { and, eq, notInArray, sql } from "drizzle-orm";
 import type Valkey from "iovalkey";
 import pino from "pino";
 import { QUEUE_NAMES, createBullMQConnection } from "../queue.js";

@@ -1,4 +1,5 @@
 import { relations } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   boolean,
   inet,
@@ -184,9 +185,9 @@ export const electronicSignatures = pgTable("electronic_signatures", {
   representativeRelationship: text("representative_relationship"),
   patientUnableReason: text("patient_unable_reason"),
 
-  // Countersign chain
+  // Countersign chain (self-referential — use AnyPgColumn to break circular type inference)
   countersignsSignatureId: uuid("countersigns_signature_id").references(
-    () => electronicSignatures.id,
+    (): AnyPgColumn => electronicSignatures.id,
   ),
 
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
