@@ -313,6 +313,38 @@ export interface ServerToClientEvents {
 		documentId: string;
 		daysOverdue: number;
 	}) => void;
+
+	// Claim Audit Rules Engine + Bill-Hold Dashboard (T3-12)
+	"billing:audit:failed": (data: {
+		claimId: string;
+		patientId: string;
+		locationId: string;
+		blockCount: number;
+		warnCount: number;
+	}) => void;
+
+	"billing:hold:placed": (data: {
+		claimId: string;
+		patientId: string;
+		locationId: string;
+		holdReason: string;
+		placedBy: string;
+	}) => void;
+
+	"billing:hold:released": (data: {
+		claimId: string;
+		patientId: string;
+		locationId: string;
+		releasedBy: string;
+	}) => void;
+
+	"billing:override:approved": (data: {
+		claimId: string;
+		patientId: string;
+		locationId: string;
+		ruleCode: string;
+		overriddenBy: string;
+	}) => void;
 }
 
 /**

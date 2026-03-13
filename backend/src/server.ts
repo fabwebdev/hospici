@@ -8,6 +8,9 @@ import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
 import capRoutes from "@/contexts/billing/routes/cap.routes.js";
 import { claimRoutes } from "@/contexts/billing/routes/claim.routes.js";
 import { claimAuditRoutes } from "@/contexts/billing/routes/claimAudit.routes.js";
+import { setClaimEventEmitter } from "@/contexts/billing/services/claim.service.js";
+import { setClaimAuditEventEmitter } from "@/contexts/billing/services/claimAudit.service.js";
+import { complianceEvents } from "@/events/compliance-events.js";
 import noePatientRoutes, { noeStandaloneRoutes } from "@/contexts/billing/routes/noe.routes.js";
 import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
@@ -118,6 +121,12 @@ export async function buildApp() {
   await fastify.register(valkeyPlugin);
   await fastify.register(socketPlugin);
 
+  // ── Socket.IO event emitter wiring ──────────────────────────────────────────
+  // Wire service-level emitters to the shared compliance event bus so that
+  // Socket.IO clients receive real-time billing events (T3-7a, T3-12).
+  setClaimEventEmitter(complianceEvents);
+  setClaimAuditEventEmitter(complianceEvents);
+
   // ── RLS Middleware (Parameterized - Safe) ───────────────────────────────────
   registerRLSMiddleware(fastify);
 
@@ -184,6 +193,7 @@ export async function buildApp() {
   });
   await fastify.register(fhirRoutes, { prefix: "/fhir/r4" });
   await fastify.register(claimRoutes, { prefix: "/api/v1" });
+  await fastify.register(claimAuditRoutes, { prefix: "/api/v1" });
 
   // ── BullMQ Workers ────────────────────────────────────────────────────────────
   // Workers are created after Fastify is fully configured so the logger is ready.

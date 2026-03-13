@@ -58,18 +58,19 @@ function block(
   ownerRole: AuditFailure["ownerRole"],
   opts: { sourceObjectId?: string; sourceField?: string; claimBlocking?: boolean } = {},
 ): AuditFailure {
-  return {
+  const failure: AuditFailure = {
     ruleGroup,
     ruleCode,
     severity: "BLOCK",
     message,
     sourceObject,
-    sourceObjectId: opts.sourceObjectId,
-    sourceField: opts.sourceField,
     remediationCTA,
     ownerRole,
     claimBlocking: opts.claimBlocking ?? false,
   };
+  if (opts.sourceObjectId !== undefined) failure.sourceObjectId = opts.sourceObjectId;
+  if (opts.sourceField !== undefined) failure.sourceField = opts.sourceField;
+  return failure;
 }
 
 function warn(
@@ -81,18 +82,19 @@ function warn(
   ownerRole: AuditFailure["ownerRole"],
   opts: { sourceObjectId?: string; sourceField?: string } = {},
 ): AuditFailure {
-  return {
+  const failure: AuditFailure = {
     ruleGroup,
     ruleCode,
     severity: "WARN",
     message,
     sourceObject,
-    sourceObjectId: opts.sourceObjectId,
-    sourceField: opts.sourceField,
     remediationCTA,
     ownerRole,
     claimBlocking: false,
   };
+  if (opts.sourceObjectId !== undefined) failure.sourceObjectId = opts.sourceObjectId;
+  if (opts.sourceField !== undefined) failure.sourceField = opts.sourceField;
+  return failure;
 }
 
 // ── Rule Group 1: Election and NOE ───────────────────────────────────────────
@@ -787,7 +789,7 @@ export class ClaimAuditService {
       await tx.insert(claimAuditSnapshots).values(insertData);
 
       await logAudit(
-        "PHI_ACCESS",
+        "view",
         auditedBy,
         claim.patientId,
         {
@@ -961,7 +963,7 @@ export class ClaimAuditService {
       if (!row) throw new Error("Failed to update snapshot override trail");
 
       await logAudit(
-        "PHI_ACCESS",
+        "update",
         overriddenBy,
         null,
         {

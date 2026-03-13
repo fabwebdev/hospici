@@ -236,6 +236,23 @@ async function socketPlugin(fastify: FastifyInstance) {
     io.emit("hope:submission:rejected", data);
   });
 
+  // ── Billing audit events (T3-12) ────────────────────────────────────────────
+  complianceEvents.on("billing:audit:failed", (data) => {
+    io.to(`location:${data.locationId}`).emit("billing:audit:failed", data);
+  });
+
+  complianceEvents.on("billing:hold:placed", (data) => {
+    io.to(`location:${data.locationId}`).emit("billing:hold:placed", data);
+  });
+
+  complianceEvents.on("billing:hold:released", (data) => {
+    io.to(`location:${data.locationId}`).emit("billing:hold:released", data);
+  });
+
+  complianceEvents.on("billing:override:approved", (data) => {
+    io.to(`location:${data.locationId}`).emit("billing:override:approved", data);
+  });
+
   // ── Graceful shutdown ───────────────────────────────────────────────────────
   fastify.addHook("onClose", async () => {
     await new Promise<void>((resolve) => io.close(() => resolve()));

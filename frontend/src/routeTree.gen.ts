@@ -27,6 +27,7 @@ import { Route as AuthedHopeSubmissionsImport } from './routes/_authed/hope/subm
 import { Route as AuthedHopeDashboardImport } from './routes/_authed/hope/dashboard'
 import { Route as AuthedFilingsF2fQueueImport } from './routes/_authed/filings/f2f-queue'
 import { Route as AuthedComplianceRecertQueueImport } from './routes/_authed/compliance/recert-queue'
+import { Route as AuthedBillingAuditImport } from './routes/_authed/billing/audit'
 import { Route as AuthedHopeAssessmentsIndexImport } from './routes/_authed/hope/assessments/index'
 import { Route as AuthedHopeAssessmentsNewImport } from './routes/_authed/hope/assessments/new'
 import { Route as AuthedHopeAssessmentsIdImport } from './routes/_authed/hope/assessments/$id'
@@ -133,6 +134,12 @@ const AuthedComplianceRecertQueueRoute =
     getParentRoute: () => AuthedRoute,
   } as any)
 
+const AuthedBillingAuditRoute = AuthedBillingAuditImport.update({
+  id: '/billing/audit',
+  path: '/billing/audit',
+  getParentRoute: () => AuthedRoute,
+} as any)
+
 const AuthedHopeAssessmentsIndexRoute = AuthedHopeAssessmentsIndexImport.update(
   {
     id: '/hope/assessments/',
@@ -211,6 +218,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthedDashboardImport
+      parentRoute: typeof AuthedImport
+    }
+    '/_authed/billing/audit': {
+      id: '/_authed/billing/audit'
+      path: '/billing/audit'
+      fullPath: '/billing/audit'
+      preLoaderRoute: typeof AuthedBillingAuditImport
       parentRoute: typeof AuthedImport
     }
     '/_authed/compliance/recert-queue': {
@@ -376,6 +390,7 @@ const AuthedPatientsPatientIdRouteWithChildren =
 
 interface AuthedRouteChildren {
   AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedBillingAuditRoute: typeof AuthedBillingAuditRoute
   AuthedComplianceRecertQueueRoute: typeof AuthedComplianceRecertQueueRoute
   AuthedFilingsF2fQueueRoute: typeof AuthedFilingsF2fQueueRoute
   AuthedHopeDashboardRoute: typeof AuthedHopeDashboardRoute
@@ -395,6 +410,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedBillingAuditRoute: AuthedBillingAuditRoute,
   AuthedComplianceRecertQueueRoute: AuthedComplianceRecertQueueRoute,
   AuthedFilingsF2fQueueRoute: AuthedFilingsF2fQueueRoute,
   AuthedHopeDashboardRoute: AuthedHopeDashboardRoute,
@@ -420,6 +436,7 @@ export interface FileRoutesByFullPath {
   '': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/billing/audit': typeof AuthedBillingAuditRoute
   '/compliance/recert-queue': typeof AuthedComplianceRecertQueueRoute
   '/filings/f2f-queue': typeof AuthedFilingsF2fQueueRoute
   '/hope/dashboard': typeof AuthedHopeDashboardRoute
@@ -446,6 +463,7 @@ export interface FileRoutesByTo {
   '': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/billing/audit': typeof AuthedBillingAuditRoute
   '/compliance/recert-queue': typeof AuthedComplianceRecertQueueRoute
   '/filings/f2f-queue': typeof AuthedFilingsF2fQueueRoute
   '/hope/dashboard': typeof AuthedHopeDashboardRoute
@@ -473,6 +491,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/_authed/billing/audit': typeof AuthedBillingAuditRoute
   '/_authed/compliance/recert-queue': typeof AuthedComplianceRecertQueueRoute
   '/_authed/filings/f2f-queue': typeof AuthedFilingsF2fQueueRoute
   '/_authed/hope/dashboard': typeof AuthedHopeDashboardRoute
@@ -501,6 +520,7 @@ export interface FileRouteTypes {
     | ''
     | '/login'
     | '/dashboard'
+    | '/billing/audit'
     | '/compliance/recert-queue'
     | '/filings/f2f-queue'
     | '/hope/dashboard'
@@ -526,6 +546,7 @@ export interface FileRouteTypes {
     | ''
     | '/login'
     | '/dashboard'
+    | '/billing/audit'
     | '/compliance/recert-queue'
     | '/filings/f2f-queue'
     | '/hope/dashboard'
@@ -551,6 +572,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/login'
     | '/_authed/dashboard'
+    | '/_authed/billing/audit'
     | '/_authed/compliance/recert-queue'
     | '/_authed/filings/f2f-queue'
     | '/_authed/hope/dashboard'
@@ -607,6 +629,7 @@ export const routeTree = rootRoute
       "filePath": "_authed.tsx",
       "children": [
         "/_authed/dashboard",
+        "/_authed/billing/audit",
         "/_authed/compliance/recert-queue",
         "/_authed/filings/f2f-queue",
         "/_authed/hope/dashboard",
@@ -629,6 +652,10 @@ export const routeTree = rootRoute
     },
     "/_authed/dashboard": {
       "filePath": "_authed/dashboard.tsx",
+      "parent": "/_authed"
+    },
+    "/_authed/billing/audit": {
+      "filePath": "_authed/billing/audit.tsx",
       "parent": "/_authed"
     },
     "/_authed/compliance/recert-queue": {

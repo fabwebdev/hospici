@@ -40,6 +40,12 @@ export const alertTypeEnum = pgEnum("alert_type_enum", [
   "BENEFIT_PERIOD_BILLING_RISK",
   // T3-7b ERA 835 Remittance Reconciliation
   "UNMATCHED_ERA",
+  // T3-12 Claim Audit Rules Engine + Bill-Hold Dashboard
+  "CLAIM_VALIDATION_ERROR",
+  "CLAIM_REJECTION_STATUS",
+  "BILL_HOLD_COMPLIANCE_BLOCK",
+  "BILL_HOLD_MISSING_DOC",
+  "BILL_HOLD_MANUAL_REVIEW",
 ]);
 
 export const alertSeverityEnum = pgEnum("alert_severity_enum", ["critical", "warning", "info"]);

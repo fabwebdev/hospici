@@ -39,6 +39,12 @@ export const AlertType = {
 	BENEFIT_PERIOD_BILLING_RISK: "BENEFIT_PERIOD_BILLING_RISK",
 	// T3-7b — ERA 835 Remittance Reconciliation
 	UNMATCHED_ERA: "UNMATCHED_ERA", // 835 CLP loop could not be matched to a claim
+	// T3-12 — Claim Audit Rules Engine + Bill-Hold Dashboard
+	CLAIM_VALIDATION_ERROR: "CLAIM_VALIDATION_ERROR",
+	CLAIM_REJECTION_STATUS: "CLAIM_REJECTION_STATUS",
+	BILL_HOLD_COMPLIANCE_BLOCK: "BILL_HOLD_COMPLIANCE_BLOCK",
+	BILL_HOLD_MISSING_DOC: "BILL_HOLD_MISSING_DOC",
+	BILL_HOLD_MANUAL_REVIEW: "BILL_HOLD_MANUAL_REVIEW",
 } as const;
 
 export type AlertType = (typeof AlertType)[keyof typeof AlertType];

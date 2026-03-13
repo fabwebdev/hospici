@@ -257,6 +257,23 @@ export type {
   ClaimRemittanceResponse,
 } from "./billing/era835.js";
 export type {
+  AuditFailure,
+  OverrideTrailEntry,
+  AuditResult,
+  AuditSnapshotResponse,
+  WarnOverrideBody,
+  BulkHoldBody,
+  BulkReleaseBody,
+  AgingBucket,
+  ClaimStatusSummary,
+  AgingByRuleGroupItem,
+  AgingByHoldReasonItem,
+  AgingByBranchItem,
+  OwnerLaneQueueItem,
+  WarnOverrideDayBucket,
+  AuditDashboardResponse,
+} from "./billing/claimAudit.js";
+export type {
   FhirId,
   FhirUri,
   FhirDate,

@@ -104,10 +104,9 @@ function AuthedLayout() {
                 <Link to="/cap" className="px-3 py-2 text-gray-700 hover:text-blue-600">
                   Cap
                 </Link>
-                {/* TODO T3-7: replace with <Link> once route is implemented */}
-                <a href="/billing" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  Billing
-                </a>
+                <Link to="/billing/audit" className="px-3 py-2 text-gray-700 hover:text-blue-600">
+                  Billing Audit
+                </Link>
               </div>
             </div>
             <div className="flex items-center gap-4">
