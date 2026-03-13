@@ -240,6 +240,23 @@ export type {
   BulkSubmitResult,
 } from "./billing/claim.js";
 export type {
+  RemittanceStatus,
+  PostingState,
+  AdjustmentReasonCode,
+  SvcLoop,
+  Remittance835,
+  RemittancePosting,
+  UnmatchedRemittance,
+  Remittance835Detail,
+  RemittanceListQuery,
+  RemittanceListResponse,
+  UnmatchedRemittanceListResponse,
+  IngestERAInput,
+  ManualMatchInput,
+  IngestERAResult,
+  ClaimRemittanceResponse,
+} from "./billing/era835.js";
+export type {
   FhirId,
   FhirUri,
   FhirDate,

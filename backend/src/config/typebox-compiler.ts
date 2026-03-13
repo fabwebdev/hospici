@@ -62,6 +62,20 @@ import {
   RecalculateCapResponseSchema,
 } from "@/contexts/billing/schemas/capIntelligence.schema.js";
 import {
+  ClaimRemittanceResponseSchema,
+  IngestERABodySchema,
+  IngestERAResultSchema,
+  ManualMatchBodySchema,
+  ManualPostBodySchema,
+  Remittance835DetailSchema,
+  Remittance835Schema,
+  RemittanceListQuerySchema,
+  RemittanceListResponseSchema,
+  RemittancePostingSchema,
+  UnmatchedRemittanceListResponseSchema,
+  UnmatchedRemittanceSchema,
+} from "@/contexts/billing/schemas/era835.schema.js";
+import {
   BillHoldSchema,
   BulkSubmitBodySchema,
   BulkSubmitResponseSchema,
@@ -359,6 +373,20 @@ export const Validators = {
   ClaimListResponse: TypeCompiler.Compile(ClaimListResponseSchema),
   BulkSubmitResponse: TypeCompiler.Compile(BulkSubmitResponseSchema),
   ClaimReadinessResult: TypeCompiler.Compile(ClaimReadinessResultSchema),
+
+  // ERA 835 + Remittance Reconciliation (T3-7b)
+  Remittance835: TypeCompiler.Compile(Remittance835Schema),
+  RemittancePosting: TypeCompiler.Compile(RemittancePostingSchema),
+  UnmatchedRemittance: TypeCompiler.Compile(UnmatchedRemittanceSchema),
+  Remittance835Detail: TypeCompiler.Compile(Remittance835DetailSchema),
+  IngestERABody: TypeCompiler.Compile(IngestERABodySchema),
+  IngestERAResult: TypeCompiler.Compile(IngestERAResultSchema),
+  ManualMatchBody: TypeCompiler.Compile(ManualMatchBodySchema),
+  ManualPostBody: TypeCompiler.Compile(ManualPostBodySchema),
+  RemittanceListQuery: TypeCompiler.Compile(RemittanceListQuerySchema),
+  RemittanceListResponse: TypeCompiler.Compile(RemittanceListResponseSchema),
+  UnmatchedRemittanceListResponse: TypeCompiler.Compile(UnmatchedRemittanceListResponseSchema),
+  ClaimRemittanceResponse: TypeCompiler.Compile(ClaimRemittanceResponseSchema),
 
   // FHIR R4 (T3-6)
   FhirPatient: TypeCompiler.Compile(FhirPatientSchema),

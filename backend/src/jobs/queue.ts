@@ -28,6 +28,8 @@ export const QUEUE_NAMES = {
   BENEFIT_PERIOD_CHECK: "benefit-period-check",
   CLAIM_SUBMISSION: "claim-submission",
   CLAIM_SUBMISSION_DLQ: "claim-submission-dlq",
+  ERA_INGESTION: "era-ingestion",
+  ERA_RECONCILIATION: "era-reconciliation",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -125,6 +127,30 @@ export const f2fDeadlineCheckQueue = new Queue(QUEUE_NAMES.F2F_DEADLINE_CHECK, {
 });
 
 export const benefitPeriodCheckQueue = new Queue(QUEUE_NAMES.BENEFIT_PERIOD_CHECK, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
+// ── ERA ingestion queue (T3-7b) ───────────────────────────────────────────────
+
+/**
+ * Event-driven — triggered by clearinghouse webhook or manual file drop.
+ * 3 retries, exponential backoff. Keep failed for review.
+ */
+export const eraIngestionQueue = new Queue(QUEUE_NAMES.ERA_INGESTION, {
+  connection: createBullMQConnection(),
+  defaultJobOptions: {
+    removeOnComplete: { count: 100 },
+    removeOnFail: false,
+    attempts: 3,
+    backoff: { type: "exponential" as const, delay: 2000 },
+  },
+});
+
+/**
+ * Daily reconciliation scan — 0 7 * * * (flags stale unposted remittances).
+ */
+export const eraReconciliationQueue = new Queue(QUEUE_NAMES.ERA_RECONCILIATION, {
   connection: createBullMQConnection(),
   defaultJobOptions,
 });
@@ -242,6 +268,16 @@ export async function scheduleDailyJobs(): Promise<void> {
       jobId: "benefit-period-daily-check",
     },
   );
+
+  // ERA 835 reconciliation scan — daily at 07:00 UTC (T3-7b)
+  await eraReconciliationQueue.add(
+    "daily-reconciliation",
+    {},
+    {
+      repeat: { pattern: "0 7 * * *" },
+      jobId: "era-daily-reconciliation",
+    },
+  );
 }
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
@@ -259,4 +295,6 @@ export async function closeQueues(): Promise<void> {
   await f2fDeadlineCheckQueue.close();
   await benefitPeriodCheckQueue.close();
   await claimSubmissionQueue.close();
+  await eraIngestionQueue.close();
+  await eraReconciliationQueue.close();
 }

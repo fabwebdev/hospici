@@ -38,6 +38,8 @@ export const alertTypeEnum = pgEnum("alert_type_enum", [
   "RECERT_PAST_DUE",
   "F2F_DUE_SOON",
   "BENEFIT_PERIOD_BILLING_RISK",
+  // T3-7b ERA 835 Remittance Reconciliation
+  "UNMATCHED_ERA",
 ]);
 
 export const alertSeverityEnum = pgEnum("alert_severity_enum", ["critical", "warning", "info"]);

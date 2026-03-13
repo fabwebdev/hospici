@@ -37,6 +37,8 @@ export const AlertType = {
 	RECERT_PAST_DUE: "RECERT_PAST_DUE",
 	F2F_DUE_SOON: "F2F_DUE_SOON",
 	BENEFIT_PERIOD_BILLING_RISK: "BENEFIT_PERIOD_BILLING_RISK",
+	// T3-7b — ERA 835 Remittance Reconciliation
+	UNMATCHED_ERA: "UNMATCHED_ERA", // 835 CLP loop could not be matched to a claim
 } as const;
 
 export type AlertType = (typeof AlertType)[keyof typeof AlertType];
