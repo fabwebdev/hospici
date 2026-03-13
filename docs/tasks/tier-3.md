@@ -807,7 +807,7 @@ CREATE TYPE benefit_period_admission_type AS ENUM (
   billingRiskReason: text nullable;
 
   // NOE linkage (period 2+ links to its recertification NOE)
-  noeId: uuid nullable FK → notice_of_election.id;
+  noeId: uuid nullable FK → notices_of_election.id;
 
   // Concurrent care sub-state
   concurrentCareStart: date nullable;
@@ -1452,24 +1452,27 @@ Each item below must be verified in code and tested — not just documented:
 
 `needs:` T3-5 (e-signatures), T1-6 (BullMQ), T1-8 (Socket.IO)
 
-**New bounded context:** `backend/src/contexts/orders/`
+> **Table bootstrap note:** The `orders` table and its pg enums (`order_status_enum`, `order_type_enum`, `provider_role_enum`, `encounter_setting_enum`) were created in **T3-2b migration 0018** as a minimal bootstrap. Do NOT re-create the table or enums — only add the inbox routes and BullMQ job on top of the existing schema.
 
-**TypeBox `OrderSchema`:**
+**Bounded context:** `backend/src/contexts/orders/` (partially exists from T3-2b — add `order.service.ts` + `order.routes.ts`)
+
+**`orders` table (already migrated — reference only):**
 ```typescript
 {
-  type: 'VERBAL' | 'DME' | 'FREQUENCY_CHANGE' | 'MEDICATION';
-  patientId: string;
-  issuingClinicianId: string;
-  physicianId: string;
+  type: 'VERBAL' | 'DME' | 'FREQUENCY_CHANGE' | 'MEDICATION' | 'F2F_DOCUMENTATION';
+  patientId: uuid FK;
+  locationId: uuid FK;   // RLS
+  issuingClinicianId: uuid FK → users.id;
+  physicianId: uuid FK → users.id;
   content: string;
-  status: pgEnum('order_status', ['PENDING_SIGNATURE', 'SIGNED', 'REJECTED', 'EXPIRED']);
-  dueAt: date; // 72h from creation for verbals (CMS requirement)
-  signedAt?: date;
+  status: order_status_enum;  // PENDING_SIGNATURE | SIGNED | REJECTED | EXPIRED
+  dueAt: date;                // 72h from creation for verbals (CMS requirement)
+  signedAt?: timestamptz;
   rejectionReason?: string;
+  createdAt: timestamptz;
+  updatedAt: timestamptz;
 }
 ```
-
-Drizzle table `orders` + RLS.
 
 **Routes:**
 - `POST /api/v1/orders` (clinician creates)
@@ -1637,90 +1640,222 @@ All actions logged in `audit_logs`:
 
 ---
 
-## T3-11 · QAPI management + clinician quality scorecards `MEDIUM`
+## T3-11 · QAPI Management + Clinician Quality Scorecards + Deficiency Trends `HIGH`
 
-> Quality Assessment and Performance Improvement — CMS-required quality program. Also includes clinician-level documentation quality scorecards and branch/discipline deficiency trend reporting (powered by `revision_count`, `first_pass_approved`, `revision_requests` data captured in T2-9).
+> Quality Assessment and Performance Improvement — CMS-required quality program. Upgraded MEDIUM → HIGH (2026-03-12) based on competitor research (Axxess/WellSky/FireNote): no competitor publicly exposes clinician-level scorecards at this granularity; Hospici can differentiate. Analytics layer is downstream of `T2-9` review data — does not duplicate it.
 
-`needs:` T2-9 (note review — provides `revision_count`, `first_pass_approved`, `RevisionRequest[]` data)
+`needs:` T2-9 (note review — provides `revision_count`, `first_pass_approved`, `RevisionRequest[]`, `DeficiencyType`, `billingImpact`, `complianceImpact`, `dueBy`, `assignedReviewerId`)
 
-**TypeBox `QAPIEventSchema`:**
-```typescript
-{
-  eventType: 'ADVERSE_EVENT' | 'NEAR_MISS' | 'COMPLAINT' | 'GRIEVANCE';
-  patientId?: string;
-  reportedBy: string;
-  occurredAt: date;
-  description: string;
-  rootCauseAnalysis?: string;
-  actionItems: QAPIActionItem[];
-  status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
-  closedAt?: date;
-}
-// QAPIActionItem: { action; assignedTo; dueDate; completedAt? }
-```
-
-Drizzle table `qapi_events` + RLS.
-
-**QAPI routes:**
-- `POST /api/v1/qapi`
-- `GET /api/v1/qapi` (filterable by status/type)
-- `PATCH /api/v1/qapi/:id` (add action items, close)
-
-**BullMQ `qapi-overdue-check`:** Daily, flag open events with overdue action items → alert dashboard.
+**Boundary with adjacent tasks:**
+- `T2-9` owns: note review states, revision requests, deficiency taxonomy, reviewer workflow data
+- `T3-11` owns: derived metrics, scorecards, trend reporting, QAPI events and action plans
+- `T3-13` owns: checklist templates, chart-level completeness, missing-document indicators
 
 ---
 
-### Clinician quality scorecards
+### DB migrations
 
-**Route:** `GET /api/v1/analytics/clinician-quality?clinicianId=&from=&to=`
-- `supervisor` + `admin` roles only
-- Aggregates from `encounters` table (`revision_count`, `first_pass_approved`, `revision_requests` JSONB)
-
-**Scorecard shape:**
+**`qapi_events`** — one row per quality event:
 ```typescript
+{
+  id: uuid PK;
+  locationId: uuid FK;    // RLS
+  eventType: 'ADVERSE_EVENT' | 'NEAR_MISS' | 'COMPLAINT' | 'GRIEVANCE' | 'QUALITY_TREND';
+  patientId?: uuid FK → patients.id;
+  reportedById: uuid FK → users.id;
+  occurredAt: timestamptz;
+  description: text;
+  rootCauseAnalysis?: text;
+  linkedTrendContext?: jsonb;   // { metric: string; value: number; threshold: number } — populated when created from a trend spike
+  status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
+  closedAt?: timestamptz;
+  closedById?: uuid FK → users.id;
+  closureEvidence?: text;
+  createdAt: timestamptz;
+  updatedAt: timestamptz;
+}
+```
+
+**`qapi_action_items`** — child rows (not JSONB array — queryable independently):
+```typescript
+{
+  id: uuid PK;
+  eventId: uuid FK → qapi_events.id;
+  locationId: uuid FK;    // RLS (denormalized for policy)
+  action: text;
+  assignedToId: uuid FK → users.id;
+  dueDate: date;
+  completedAt?: timestamptz;
+  completedById?: uuid FK → users.id;
+  createdAt: timestamptz;
+}
+```
+
+RLS on both tables: `location_read`, `location_insert`, `location_update`. Closed QAPI events: `location_update` policy blocks updates where `status = 'CLOSED'` (immutability enforced at DB level).
+
+---
+
+### TypeBox schemas
+
+New file: `backend/src/contexts/qapi/schemas/qapi.schema.ts`
+
+```typescript
+QAPIEventTypeSchema       // eventType enum
+QAPIEventStatusSchema     // status enum
+QAPIActionItemSchema      // action item shape
+QAPICreateBodySchema      // POST body
+QAPIPatchBodySchema       // PATCH body (cannot patch CLOSED events — 409)
+QAPICloseBodySchema       // POST /:id/close body: { closureEvidence: string }
+QAPIEventResponseSchema   // response with action items embedded
+
+ClinicianQualityScorecardSchema:
 {
   clinicianId: string;
+  clinicianName: string;
+  discipline: 'RN' | 'SW' | 'CHAPLAIN' | 'THERAPY' | 'AIDE';
   period: { from: string; to: string };
   totalNotes: number;
-  firstPassApprovalRate: number;          // % approved with revision_count = 0
+  firstPassApprovalRate: number;        // % where revision_count = 0
   averageRevisionCount: number;
-  averageTurnaroundHours: number;         // submitted_at → approved_at delta
-  deficiencyBreakdown: {                  // grouped by DeficiencyType
-    [type: string]: number;               // count of occurrences
-  };
-  revisionTrend: { week: string; count: number }[]; // rolling 12 weeks
+  medianTurnaroundHours: number;        // submitted_at → approved_at
+  overdueReviewRate: number;            // % where finalizedAt > dueBy
+  billingImpactRate: number;            // % revisions with billingImpact = true
+  complianceImpactRate: number;         // % revisions with complianceImpact = true
+  deficiencyBreakdown: Record<DeficiencyType, number>;
+  commonDeficiencyTypes: { type: DeficiencyType; count: number }[];  // top 3
+  revisionTrend: { week: string; count: number }[];  // rolling 12 weeks
+}
+
+DeficiencyTrendPointSchema:
+{
+  week: string;       // ISO week label e.g. "2026-W10"
+  byType: Record<DeficiencyType, number>;
+  totalDeficiencies: number;
+  firstPassRate: number;
+}
+
+DeficiencyTrendReportSchema:
+{
+  locationId?: string;
+  discipline?: string;
+  period: { from: string; to: string };
+  topDeficiencyTypes: { type: DeficiencyType; count: number }[];
+  trend: DeficiencyTrendPoint[];
+  branchComparison: { locationId: string; locationName: string; firstPassRate: number; totalDeficiencies: number }[];
+  disciplineComparison: { discipline: string; firstPassRate: number; topDeficiency: DeficiencyType }[];
+  branchDisciplineMatrix: { locationId: string; discipline: string; firstPassRate: number; deficiencyCount: number }[][];
+  reviewerWorkload: { reviewerId: string; reviewerName: string; assigned: number; resolved: number; overdueCount: number }[];
+}
+
+QualityOutlierSchema:   // for surface-to-dashboard outlier cards
+{
+  subjectType: 'CLINICIAN' | 'BRANCH' | 'DISCIPLINE';
+  subjectId: string;
+  subjectName: string;
+  metric: string;
+  value: number;
+  threshold: number;
+  detectedAt: timestamptz;
 }
 ```
+
+Compile all in `typebox-compiler.ts`.
 
 ---
 
-### Branch + discipline deficiency trend reporting
+### Routes
 
-**Route:** `GET /api/v1/analytics/deficiency-trends?locationId=&discipline=&from=&to=`
-- `supervisor` + `admin` roles only
+New files: `backend/src/contexts/qapi/routes/qapi.routes.ts` + `backend/src/contexts/analytics/routes/qualityAnalytics.routes.ts`
 
-**Returns:**
-```typescript
-{
-  topDeficiencyTypes: { type: DeficiencyType; count: number }[];  // sorted desc
-  weeklyTrend: { week: string; byType: Record<DeficiencyType, number> }[];
-  reviewerWorkload: { reviewerId: string; reviewerName: string; assigned: number; resolved: number }[];
-}
-```
+**QAPI event lifecycle:**
+- `POST /api/v1/qapi/events` — create; `linkedTrendContext` optional (populated when raised from a trend spike in the UI)
+- `GET /api/v1/qapi/events` — list; filters: `status`, `eventType`, `locationId`, `from`, `to`
+- `PATCH /api/v1/qapi/events/:id` — update description/rootCauseAnalysis/actionItems; 409 if status=CLOSED
+- `POST /api/v1/qapi/events/:id/action-items` — add action item
+- `PATCH /api/v1/qapi/events/:id/action-items/:itemId` — mark complete
+- `POST /api/v1/qapi/events/:id/close` — transition to CLOSED; requires `{ closureEvidence }` body; persists `closedAt`, `closedById`; event becomes immutable at DB level
 
-**Done when:** QAPI event created, action items assigned, overdue items surface in alert dashboard; closed events immutable; clinician scorecard returns correct first-pass rate and deficiency breakdown from T2-9 data; trend report aggregates by DeficiencyType across location/discipline/period
+**Clinician scorecards:**
+- `GET /api/v1/analytics/clinician-scorecards` — list all clinicians (summary rows); filters: `locationId`, `discipline`, `from`, `to`; `supervisor` + `admin` roles only
+- `GET /api/v1/analytics/clinician-scorecards/:userId` — full scorecard for one clinician
+
+**Deficiency trend reporting:**
+- `GET /api/v1/analytics/deficiency-trends` — full trend report; filters: `locationId`, `discipline`, `from`, `to`, `deficiencyType`; returns branch comparison + discipline comparison + matrix + reviewer workload
+
+**Quality outlier detection:**
+- `GET /api/v1/analytics/quality-outliers` — returns `QualityOutlier[]` for current period; used by alert dashboard and "Create QAPI event from trend" CTA
+
+---
+
+### BullMQ
+
+**`qapi-overdue-check`** (daily 08:00 UTC):
+- Queries `qapi_action_items` where `dueDate < now` and `completedAt IS NULL` and event `status != CLOSED`
+- Emits `compliance:alert` Socket.IO + upserts `QAPI_ACTION_OVERDUE` alert type
+- Runs `qualityOutlier` detection: first-pass rate drop >10pp week-over-week → `QualityOutlier`; billing-impact deficiency rate rising for 3+ consecutive weeks → `QualityOutlier`; posts to `compliance:alert` channel
+
+Add `QAPI_ACTION_OVERDUE` + `FIRST_PASS_DECLINE` + `BILLING_DEFICIENCY_RISING` + `COMPLIANCE_DEFICIENCY_RISING` to `alert_type_enum` migration.
+
+---
+
+### Socket.IO events
+
+Add to `shared-types/socket.ts`:
+- `qapi:event:created` — { eventId, locationId, eventType }
+- `qapi:event:closed` — { eventId, locationId }
+- `qapi:action:overdue` — { eventId, actionItemId, assignedToId, locationId }
+- `quality:outlier:detected` — { outlier: QualityOutlier }
+
+---
+
+### Frontend
+
+**`/qapi` — QAPI workspace:**
+- Event list (filterable by status/type/period), status badges (OPEN/IN_PROGRESS/CLOSED)
+- "Raise QAPI event" form — optionally pre-populated from a trend context (e.g. "First-pass rate dropped from 87% to 71% in RN/Branch East, week of 2026-03-09")
+- Event detail drawer: action item list with assignee + due date + completion; "Close Event" button (requires closure evidence text ≥ 50 chars); closed events: read-only badge
+
+**`/analytics/scorecards` — Clinician scorecard dashboard:**
+- Summary table: all clinicians, sortable by first-pass rate / avg revisions / overdue rate; discipline filter; period picker
+- Clinician detail view: all 8 metrics, deficiency breakdown bar chart, rolling 12-week revision trend sparkline
+- "Create QAPI event for this clinician" CTA on outlier rows
+
+**`/analytics/deficiency-trends` — Trend reporting:**
+- Top deficiency types (horizontal bar chart, current period)
+- Weekly trend stacked area chart (by DeficiencyType)
+- Branch comparison table (locationName / firstPassRate / totalDeficiencies / trend pill)
+- Discipline comparison table
+- Branch × discipline heatmap (color-coded by first-pass rate)
+- Reviewer workload table (assigned / resolved / overdue)
+- "Raise QAPI event from trend" button per anomalous row — pre-fills `linkedTrendContext`
+
+---
+
+**Done when:**
+- QAPI events create/update/close; closed events return 409 on further PATCH; `closureEvidence` stored; action items independently queryable
+- `qapi-overdue-check` job flags overdue action items and surfaces them in the alert dashboard
+- Clinician scorecard returns all 8 metrics (firstPassApprovalRate, averageRevisionCount, medianTurnaroundHours, overdueReviewRate, billingImpactRate, complianceImpactRate, deficiencyBreakdown, revisionTrend) computed correctly from T2-9 `encounters` data
+- Deficiency trend report returns branch comparison, discipline comparison, and branch × discipline matrix filterable by locationId/discipline/period/deficiencyType
+- Quality outlier detection identifies first-pass decline ≥10pp week-over-week and rising billing-impact deficiency trends; posts `quality:outlier:detected` Socket.IO
+- "Create QAPI event from trend" pre-fills `linkedTrendContext` and links outlier card to new event
+- RLS: location A cannot read location B QAPI events or scorecards
+- Route `GET /api/v1/analytics/quality-benchmarks` stays in T3-1a (HOPE/HQRP NQF measures); T3-11 does NOT duplicate it — internal branch comparisons use `deficiency-trends` route only
 
 ---
 
 ## T3-12 · Claim Audit Rules Engine + Bill-Hold Dashboard `HIGH`
 
-> Configurable audit rule catalog and bill-hold policy engine. Called by T3-7a before submission. Upgraded from MEDIUM based on competitor research (2026-03-12).
+> Configurable audit rule catalog and bill-hold policy engine. Called by T3-7a before submission. Upgraded MEDIUM → HIGH based on competitor research (2026-03-12 — Axxess/WellSky/FireNote). Architecture validated as more explicit than any competitor public material: explicit BLOCK/WARN, per-revision audit snapshots, explainable root-cause drilldowns, alert-driven owner lanes.
 
 `needs:` T3-7a (claims), T3-2a (NOE/NOTR), T3-4 (benefit periods), T3-5 (signatures)
+
+`read:` `BE-SPEC`, `docs/qa/CLAIM_AUDIT_RULES_ENGINE_COMPETITIVE_ANALYSIS.md`
 
 **New service:** `backend/src/contexts/billing/services/claimAudit.service.ts`
 
 Called by T3-7a `POST /api/v1/claims/:id/audit` — runs after readiness check passes, before state transitions to `READY_TO_SUBMIT`.
+
+---
 
 ### DB migration
 
@@ -1730,83 +1865,190 @@ Called by T3-7a `POST /api/v1/claims/:id/audit` — runs after readiness check p
   id: uuid PK;
   claimId: uuid FK;
   claimRevisionId: uuid FK;
+  locationId: uuid FK;         // RLS
   auditedAt: timestamptz;
   passed: boolean;
-  failures: jsonb;   // AuditFailure[] — see type below
+  blockCount: integer;         // cached for dashboard queries
+  warnCount: integer;          // cached for dashboard queries
+  failures: jsonb;             // AuditFailure[] — see type below
+  overrideTrail: jsonb;        // WarnOverride[] — populated by /override route
   auditedBy: uuid FK | null;   // null = system
+  createdAt: timestamptz;
 }
+// WarnOverride: { ruleCode: string; overriddenBy: uuid; reason: string; overriddenAt: string }
 ```
+
+RLS: `location_read` + `location_insert` + `location_update` policies (same pattern as `claim_audit_snapshots`).
+
+---
 
 ### Rule catalog (12 groups)
 
-Rules are version-locked in code (not DB-configurable at runtime — avoids silent rule drift). Each rule group maps to a well-known clinical or billing prerequisite:
+Rules are version-locked in code (not DB-configurable at runtime — avoids silent rule drift). Group identifiers are the canonical string keys used in `AuditFailure.ruleGroup`.
 
-1. **Patient eligibility** — Medicare ID present, benefit period assigned, election date valid, payer config on file
-2. **NOE/NOTR validity** — NOE accepted, NOTR not claim-blocking, filing within CMS window (T3-2a `isClaimBlocking`)
-3. **Visit frequency compliance** — required visits per frequency plan completed for the billing period (T2-10)
-4. **IDG meeting** — IDG held within 15-day window for period
-5. **HOPE assessment** — HOPE-A filed if admission claim; HOPE-D filed if discharge claim (T3-1a)
-6. **F2F timing** — documented before recert date and within 30-day window, required period 3+ (T3-2b)
-7. **Aide supervision** — completed within 14 days (42 CFR §418.76)
-8. **Signature completeness** — all required documents signed (T3-5)
-9. **Order completeness** — no unsigned verbal orders pending (T3-9)
-10. **Duplicate/sequencing protection** — no duplicate claim for same period; correct bill-type sequence (8X1 before 8X7/8X8)
-11. **Revenue code / HCPCS / modifier consistency** — routine home care vs continuous care codes match level-of-care data
-12. **Payer-specific constraints** — room-and-board payer logic, concurrent care sub-state, payer-specific bill-type rules
+| # | Group key | What it checks | Severity range |
+|---|---|---|---|
+| 1 | `ELECTION_AND_NOE` | Medicare ID present, election date valid, NOE accepted and not claim-blocking (T3-2a `isClaimBlocking`), payer config on file | BLOCK |
+| 2 | `BENEFIT_PERIOD_AND_RECERT` | Active benefit period assigned, recert completed before period end, period number correct, HOPE-A filed if admission claim, HOPE-D filed if discharge claim (T3-1a) | BLOCK/WARN |
+| 3 | `F2F_AND_CERTIFICATION` | F2F documented before recert date, within 30-calendar-day window, required period ≥3, valid provider role (T3-2b) | BLOCK/WARN |
+| 4 | `SIGNED_ORDERS_AND_PLAN_OF_CARE` | No unsigned verbal orders pending (T3-9), all required documents signed (T3-5), care plan present and discipline-complete | WARN (orders) / BLOCK (signatures if billing-required doc) |
+| 5 | `VISIT_COMPLETENESS` | Required visits per frequency plan completed for billing period (T2-10), IDG held within 15-day window, aide supervision completed within 14 days (42 CFR §418.76) | WARN |
+| 6 | `DISCHARGE_AND_NOTR` | NOTR not claim-blocking, filed within 5 business days of revocation/death, correct terminal status (T3-2a) | BLOCK |
+| 7 | `CLAIM_LINE_AND_REVENUE_CODE` | Revenue codes present, HCPCS/modifier valid for claim type, occurrence codes populated (CMS automation requirement) | BLOCK |
+| 8 | `LEVEL_OF_CARE_AND_CONTINUOUS_CARE` | Routine home care vs continuous care codes match level-of-care data, continuous-care hour threshold met if billed, sub-state consistent with benefit period | BLOCK |
+| 9 | `PAYER_AND_TIMELY_FILING` | Payer-specific bill-type rules satisfied, room-and-board payer logic valid, timely-filing window not expired, concurrent care sub-state consistent | BLOCK/WARN |
+| 10 | `DUPLICATE_AND_SEQUENTIAL_BILLING` | No duplicate claim for same patient/period combination, correct bill-type sequence (8X1 before 8X7/8X8), no overlapping date spans | BLOCK |
+| 11 | `CAP_AND_COMPLIANCE_RISK` | T3-3 `isCapAtRisk` flag (WARN only — does not block submission, but surfaced to billing director), T3-4 `billingRisk` flag triggers auto-hold | WARN |
+| 12 | `REMITTANCE_OR_DENIAL_FOLLOW_UP` | Prior claim for same period was denied/rejected and has no approved replacement plan (requires T3-7b data; rule is a no-op until T3-7b completes) | WARN |
 
-### Audit result type
+---
+
+### Audit result types
 
 ```typescript
 type AuditFailure = {
-  ruleGroup: string;           // e.g. 'F2F_TIMING'
-  rule: string;                // e.g. 'F2F_DOC_BEFORE_RECERT_DATE'
+  ruleGroup: string;           // e.g. 'F2F_AND_CERTIFICATION'
+  ruleCode: string;            // e.g. 'F2F_DOC_BEFORE_RECERT_DATE'
   severity: 'BLOCK' | 'WARN';
-  detail: string;              // human-readable explanation
-  sourceObject: string;        // e.g. 'benefit_periods', 'notice_of_election'
+  message: string;             // human-readable explanation
+  sourceObject: string;        // e.g. 'benefit_periods', 'notices_of_election'
+  sourceObjectId?: string;     // FK value if navigable
   sourceField?: string;        // e.g. 'f2fDocumentedAt'
-  remediationOwner: 'clinician' | 'supervisor' | 'billing';
   remediationCTA: string;      // e.g. 'Record F2F documentation in Benefit Periods'
+  ownerRole: 'billing' | 'supervisor' | 'clinician' | 'physician' | 'admin';
+  claimBlocking: boolean;      // true if this failure triggers auto-hold on the claim
 };
 
 type AuditResult = {
   passed: boolean;
   claimAuditSnapshotId: string;
+  blockCount: number;
+  warnCount: number;
   failures: AuditFailure[];
 };
 ```
 
 - `BLOCK` failures → claim stays at `AUDIT_FAILED`; submission blocked
-- `WARN` failures → supervisor override required with reason → logged to `audit_log`; then claim advances to `READY_TO_SUBMIT`
+- `WARN` failures → supervisor override required with reason → logged to `audit_log` + appended to `overrideTrail` JSONB; then claim advances to `READY_TO_SUBMIT`
+- `claimBlocking: true` on any failure → auto-hold placed regardless of severity
+
+---
 
 ### Bill-hold policy engine
 
-Auto-hold rules (applied on audit completion, independent of BLOCK/WARN):
-- NOE `isClaimBlocking = true` → auto-place hold with `COMPLIANCE_BLOCK` reason
-- T3-4 `billingRisk = true` → auto-place hold with `COMPLIANCE_BLOCK`
-- Manual holds via `POST /api/v1/claims/:id/hold` (billing staff)
+Auto-hold rules (applied on audit completion, independent of BLOCK/WARN). The engine calls T3-7a's existing `bill_holds` table and hold infrastructure — T3-12 does **not** add its own hold table:
+- Any `AuditFailure` with `claimBlocking: true` → call T3-7a hold service with `COMPLIANCE_BLOCK`
+- NOE `isClaimBlocking = true` (T3-2a) → call T3-7a hold service with `COMPLIANCE_BLOCK`
+- T3-4 `billingRisk = true` → call T3-7a hold service with `COMPLIANCE_BLOCK`
+- Single-claim manual hold/unhold: owned by T3-7a (`POST /api/v1/claims/:id/hold` + `POST /api/v1/claims/:id/unhold`)
+- Bulk operations added by T3-12: `POST /api/v1/claims/bulk-hold` / `POST /api/v1/claims/bulk-release-hold` (billing manager role; atomic, all-or-none)
 
 **Hold reason taxonomy (enum):** `MISSING_DOC` | `PAYER_ISSUE` | `MANUAL_REVIEW` | `COMPLIANCE_BLOCK` | `LATE_SUBMISSION` | `DUPLICATE_RISK`
 
+---
+
+### Billing alert types
+
+Extends `alert_type_enum` (established in T2-8 migration):
+- `CLAIM_VALIDATION_ERROR` — BLOCK-level audit failure; surfaces in billing tab
+- `CLAIM_REJECTION_STATUS` — clearinghouse rejection after submission (populated by T3-7a)
+- `BILL_HOLD_COMPLIANCE_BLOCK` — auto-hold from compliance flag
+- `BILL_HOLD_MISSING_DOC` — missing document hold
+- `BILL_HOLD_MANUAL_REVIEW` — manual hold by billing staff
+
+---
+
 ### Billing alert dashboard
 
-Extends the alert types already established in T2-8:
-- `CLAIM_VALIDATION_ERROR` — BLOCK-level audit failure surfaced as alert
-- `CLAIM_REJECTION_STATUS` — claim rejected by clearinghouse
-- `BILL_HOLD_COMPLIANCE_BLOCK` / `BILL_HOLD_MISSING_DOC` / `BILL_HOLD_MANUAL_REVIEW`
+**Route:** `GET /api/v1/billing/audit-dashboard`
 
-Dashboard route: `GET /api/v1/billing/audit-dashboard`
-- Aggregate failures by rule group with claim counts
-- Aging: days since audit failure, binned (0–2d / 3–7d / 8–14d / 14d+)
-- Remediation owner lanes: clinician / supervisor / billing staff
+Seven dashboard sections (Axxess/WellSky benchmark):
+
+**1. Claim Status Summary**
+```typescript
+{
+  readyToBill: number;
+  auditFailed: number;        // AUDIT_FAILED state — at least one BLOCK
+  readyForOverride: number;   // WARN failures only — supervisor has not yet overridden
+  onHold: number;             // any active bill hold
+}
+```
+
+**2. Aging by Rule Group**
+```typescript
+// per rule group: claim count + age distribution
+{ ruleGroup: string; claimCount: number; aging: { d0_2: number; d3_7: number; d8_14: number; d14plus: number } }[]
+```
+
+**3. Aging by Hold Reason**
+```typescript
+{ holdReason: HoldReason; claimCount: number; aging: { d0_2: number; d3_7: number; d8_14: number; d14plus: number } }[]
+```
+
+**4. Aging by Branch**
+```typescript
+{ locationId: string; locationName: string; claimCount: number; aging: { d0_2: number; d3_7: number; d8_14: number; d14plus: number } }[]
+```
+
+**5. Owner Lane Queue**
+```typescript
+{ ownerRole: 'billing' | 'supervisor' | 'clinician' | 'physician' | 'admin'; pendingCount: number; oldestAgedays: number }[]
+```
+
+**6. Top Rejection / Denial Drivers** _(no-op until T3-7b completes; returns empty array with `availableAfter: 'T3-7b'` flag)_
+```typescript
+{ ruleCode: string; denialCount: number; totalDollarImpact: number | null }[]
+```
+
+**7. Warn Override Volume**
+```typescript
+{ date: string; overrideCount: number; topReasons: string[] }[]  // last 30 days, daily buckets
+```
+
+---
+
+### Socket.IO events
+
+Add to `shared-types/socket.ts` and emit from `claimAudit.service.ts`:
+
+```typescript
+'billing:audit:failed'     // { claimId, patientId, locationId, blockCount, warnCount }
+'billing:hold:placed'      // { claimId, patientId, locationId, holdReason, placedBy: uuid | 'system' }
+'billing:hold:released'    // { claimId, patientId, locationId, releasedBy: uuid }
+'billing:override:approved' // { claimId, patientId, locationId, ruleCode, overriddenBy: uuid }
+```
+
+---
 
 ### Routes
 
+**Audit snapshot routes (new in T3-12):**
 - `GET /api/v1/claims/:id/audit` — latest audit snapshot for claim
 - `GET /api/v1/claims/:id/audit/history` — all snapshots across revisions
-- `POST /api/v1/claims/:id/audit/override` — supervisor WARN override (requires reason; logs to `audit_log`)
-- `GET /api/v1/billing/audit-dashboard` — aggregate by rule group + aging + owner lane
+- `POST /api/v1/claims/:id/audit/override` — supervisor WARN override (requires `ruleCode` + `reason`; appends to `overrideTrail`; logs to `audit_log`)
 
-**Done when:** Claim with missing F2F returns BLOCK failure and stays at AUDIT_FAILED; claim with WARN failure requires supervisor override before advancing; all 12 rule groups produce correctly typed failures on seeded test data; audit snapshot stored per revision; auto-hold placed on claim-blocking NOE; WARN override logged to audit_log; billing dashboard aggregates aging by rule group correctly.
+**Bulk hold operations (new in T3-12 — extends T3-7a's single-claim hold infra):**
+- `POST /api/v1/claims/bulk-hold` — bulk hold `{ claimIds: string[]; holdReason: HoldReason }` — atomic
+- `POST /api/v1/claims/bulk-release-hold` — bulk release `{ claimIds: string[] }` — atomic
+
+**Dashboard:**
+- `GET /api/v1/billing/audit-dashboard` — all 7 dashboard sections
+
+> Single-claim hold/unhold (`POST /api/v1/claims/:id/hold` + `POST /api/v1/claims/:id/unhold`) are T3-7a routes. T3-12's auto-hold engine calls T3-7a's hold service internally — no route duplication.
+
+---
+
+**Done when:**
+- Claim with missing F2F → `F2F_AND_CERTIFICATION` BLOCK → stays at `AUDIT_FAILED`; auto-hold placed (claimBlocking=true)
+- Claim with WARN-only failures → supervisor override stores reason in `overrideTrail` and `audit_log`; claim advances to `READY_TO_SUBMIT`
+- All 12 rule groups produce correctly typed `AuditFailure` objects on seeded test data
+- `claim_audit_snapshots` row stored per revision with correct `blockCount`/`warnCount` caches
+- NOE `isClaimBlocking=true` auto-places `COMPLIANCE_BLOCK` hold
+- T3-4 `billingRisk=true` auto-places `COMPLIANCE_BLOCK` hold
+- `billing:audit:failed` + `billing:hold:placed` Socket.IO events emitted to location room
+- Dashboard returns all 7 sections; aging buckets are correct; empty sections (T3-7b-dependent) return `[]` with `availableAfter` flag
+- Bulk hold/release is atomic — partial failure rolls back all
+- RLS: location A cannot read location B audit snapshots
 
 ---
 
@@ -1825,7 +2067,7 @@ Dashboard route: `GET /api/v1/billing/audit-dashboard`
 
 A checklist template is a set of required items for a given `(discipline, visit_type)` pair. Supervisors step through checklist items when reviewing a note.
 
-**New table `review_checklist_templates`** (Migration 0015):
+**New table `review_checklist_templates`** (next available migration number — run `pnpm --filter @hospici/backend db:next-migration-number` first):
 ```typescript
 {
   discipline: DisciplineType;           // RN | SW | CHAPLAIN | THERAPY | AIDE
