@@ -37,6 +37,67 @@ vi.mock("@/config/logging.config.js", () => ({
   createLoggingConfig: () => ({ level: "silent" }),
 }));
 
+// Prevent real pg.Pool from being created during import
+vi.mock("@/db/client.js", () => {
+  const fakeAssessment = {
+    id: "assess-123",
+    assessmentDate: new Date("2026-01-01"),
+    electionDate: new Date("2026-01-01"),
+    data: {},
+    status: "ready_to_submit",
+    locationId: "loc-456",
+  };
+
+  const fakeSubmission = {
+    id: "sub-uuid-001",
+    submittedAt: new Date("2026-01-01T12:00:00Z"),
+  };
+
+  let selectCallCount = 0;
+
+  return {
+    db: {
+      select: () => {
+        const callIndex = ++selectCallCount;
+        // call 1 → load assessment; call 2 → max(attemptNumber)
+        const resolved =
+          callIndex === 1
+            ? Promise.resolve([fakeAssessment])
+            : Promise.resolve([{ maxAttempt: null }]);
+
+        const chain: Record<string, unknown> = {
+          from: () => chain,
+          where: () => ({
+            limit: () => resolved,
+            then: (onFulfilled: (v: unknown) => unknown) => resolved.then(onFulfilled),
+          }),
+        };
+        return chain;
+      },
+      insert: () => ({
+        values: () => ({
+          returning: () => Promise.resolve([fakeSubmission]),
+        }),
+      }),
+      update: () => ({
+        set: () => ({
+          where: () => Promise.resolve([]),
+        }),
+      }),
+    },
+  };
+});
+
+// sha256 is a pure function but its parent module imports db — mock it to keep tests isolated
+vi.mock("@/contexts/analytics/services/hope.service.js", () => ({
+  sha256: (payload: string) => `sha256-stub-${payload.length}`,
+}));
+
+// compliance-events is a Node EventEmitter — safe to import real, but mock to avoid noise
+vi.mock("@/events/compliance-events.js", () => ({
+  complianceEvents: { emit: vi.fn() },
+}));
+
 describe("hopeSubmissionHandler()", () => {
   it("returns submitted status with assessmentId", async () => {
     const { hopeSubmissionHandler } = await import("./hope-submission.worker.js");
