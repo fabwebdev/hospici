@@ -4,6 +4,15 @@
 // request handlers, or loops. Module-level only (here or in schema files).
 
 import {
+  AuditDashboardResponseSchema,
+  AuditFailureSchema,
+  AuditResultSchema,
+  AuditSnapshotResponseSchema,
+  BulkHoldBodySchema,
+  BulkReleaseBodySchema,
+  WarnOverrideBodySchema,
+} from "@/contexts/billing/schemas/claimAudit.schema.js";
+import {
   CountersignBodySchema,
   CreateSignatureRequestBodySchema,
   MarkExceptionBodySchema,
@@ -395,6 +404,15 @@ export const Validators = {
   PatientSearchQuery: TypeCompiler.Compile(PatientSearchQuerySchema),
   ObservationSearchQuery: TypeCompiler.Compile(ObservationSearchQuerySchema),
   OperationOutcome: TypeCompiler.Compile(OperationOutcomeSchema),
+
+  // Claim Audit Rules Engine (T3-12)
+  AuditFailure: TypeCompiler.Compile(AuditFailureSchema),
+  AuditResult: TypeCompiler.Compile(AuditResultSchema),
+  AuditSnapshotResponse: TypeCompiler.Compile(AuditSnapshotResponseSchema),
+  WarnOverrideBody: TypeCompiler.Compile(WarnOverrideBodySchema),
+  BulkHoldBody: TypeCompiler.Compile(BulkHoldBodySchema),
+  BulkReleaseBody: TypeCompiler.Compile(BulkReleaseBodySchema),
+  AuditDashboardResponse: TypeCompiler.Compile(AuditDashboardResponseSchema),
 };
 
 /**

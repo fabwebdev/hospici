@@ -32,4 +32,5 @@ export * from "./cap-snapshots.table.js";
 export * from "./cap-patient-contributions.table.js";
 export * from "./signature-requests.table.js";
 export * from "./claims.table.js";
+export * from "./claim-audit-snapshots.table.js";
 export * from "./remittances.table.js";

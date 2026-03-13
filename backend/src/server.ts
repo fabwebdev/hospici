@@ -7,6 +7,7 @@ import hopeRoutes, { analyticsRoutes } from "@/contexts/analytics/routes/hope.ro
 import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
 import capRoutes from "@/contexts/billing/routes/cap.routes.js";
 import { claimRoutes } from "@/contexts/billing/routes/claim.routes.js";
+import { claimAuditRoutes } from "@/contexts/billing/routes/claimAudit.routes.js";
 import noePatientRoutes, { noeStandaloneRoutes } from "@/contexts/billing/routes/noe.routes.js";
 import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
