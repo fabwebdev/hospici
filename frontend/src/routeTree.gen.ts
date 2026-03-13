@@ -20,6 +20,7 @@ import { Route as AuthedReviewQueueIndexImport } from './routes/_authed/review-q
 import { Route as AuthedQapiIndexImport } from './routes/_authed/qapi/index'
 import { Route as AuthedPatientsIndexImport } from './routes/_authed/patients/index'
 import { Route as AuthedFilingsIndexImport } from './routes/_authed/filings/index'
+import { Route as AuthedChartAuditIndexImport } from './routes/_authed/chart-audit/index'
 import { Route as AuthedCapIndexImport } from './routes/_authed/cap/index'
 import { Route as AuthedBenefitPeriodsIndexImport } from './routes/_authed/benefit-periods/index'
 import { Route as AuthedAlertsIndexImport } from './routes/_authed/alerts/index'
@@ -97,6 +98,12 @@ const AuthedPatientsIndexRoute = AuthedPatientsIndexImport.update({
 const AuthedFilingsIndexRoute = AuthedFilingsIndexImport.update({
   id: '/filings/',
   path: '/filings/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+
+const AuthedChartAuditIndexRoute = AuthedChartAuditIndexImport.update({
+  id: '/chart-audit/',
+  path: '/chart-audit/',
   getParentRoute: () => AuthedRoute,
 } as any)
 
@@ -370,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedCapIndexImport
       parentRoute: typeof AuthedImport
     }
+    '/_authed/chart-audit/': {
+      id: '/_authed/chart-audit/'
+      path: '/chart-audit'
+      fullPath: '/chart-audit'
+      preLoaderRoute: typeof AuthedChartAuditIndexImport
+      parentRoute: typeof AuthedImport
+    }
     '/_authed/filings/': {
       id: '/_authed/filings/'
       path: '/filings'
@@ -536,6 +550,7 @@ interface AuthedRouteChildren {
   AuthedAlertsIndexRoute: typeof AuthedAlertsIndexRoute
   AuthedBenefitPeriodsIndexRoute: typeof AuthedBenefitPeriodsIndexRoute
   AuthedCapIndexRoute: typeof AuthedCapIndexRoute
+  AuthedChartAuditIndexRoute: typeof AuthedChartAuditIndexRoute
   AuthedFilingsIndexRoute: typeof AuthedFilingsIndexRoute
   AuthedPatientsIndexRoute: typeof AuthedPatientsIndexRoute
   AuthedQapiIndexRoute: typeof AuthedQapiIndexRoute
@@ -563,6 +578,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAlertsIndexRoute: AuthedAlertsIndexRoute,
   AuthedBenefitPeriodsIndexRoute: AuthedBenefitPeriodsIndexRoute,
   AuthedCapIndexRoute: AuthedCapIndexRoute,
+  AuthedChartAuditIndexRoute: AuthedChartAuditIndexRoute,
   AuthedFilingsIndexRoute: AuthedFilingsIndexRoute,
   AuthedPatientsIndexRoute: AuthedPatientsIndexRoute,
   AuthedQapiIndexRoute: AuthedQapiIndexRoute,
@@ -596,6 +612,7 @@ export interface FileRoutesByFullPath {
   '/alerts': typeof AuthedAlertsIndexRoute
   '/benefit-periods': typeof AuthedBenefitPeriodsIndexRoute
   '/cap': typeof AuthedCapIndexRoute
+  '/chart-audit': typeof AuthedChartAuditIndexRoute
   '/filings': typeof AuthedFilingsIndexRoute
   '/patients': typeof AuthedPatientsIndexRoute
   '/qapi': typeof AuthedQapiIndexRoute
@@ -632,6 +649,7 @@ export interface FileRoutesByTo {
   '/alerts': typeof AuthedAlertsIndexRoute
   '/benefit-periods': typeof AuthedBenefitPeriodsIndexRoute
   '/cap': typeof AuthedCapIndexRoute
+  '/chart-audit': typeof AuthedChartAuditIndexRoute
   '/filings': typeof AuthedFilingsIndexRoute
   '/patients': typeof AuthedPatientsIndexRoute
   '/qapi': typeof AuthedQapiIndexRoute
@@ -669,6 +687,7 @@ export interface FileRoutesById {
   '/_authed/alerts/': typeof AuthedAlertsIndexRoute
   '/_authed/benefit-periods/': typeof AuthedBenefitPeriodsIndexRoute
   '/_authed/cap/': typeof AuthedCapIndexRoute
+  '/_authed/chart-audit/': typeof AuthedChartAuditIndexRoute
   '/_authed/filings/': typeof AuthedFilingsIndexRoute
   '/_authed/patients/': typeof AuthedPatientsIndexRoute
   '/_authed/qapi/': typeof AuthedQapiIndexRoute
@@ -707,6 +726,7 @@ export interface FileRouteTypes {
     | '/alerts'
     | '/benefit-periods'
     | '/cap'
+    | '/chart-audit'
     | '/filings'
     | '/patients'
     | '/qapi'
@@ -742,6 +762,7 @@ export interface FileRouteTypes {
     | '/alerts'
     | '/benefit-periods'
     | '/cap'
+    | '/chart-audit'
     | '/filings'
     | '/patients'
     | '/qapi'
@@ -777,6 +798,7 @@ export interface FileRouteTypes {
     | '/_authed/alerts/'
     | '/_authed/benefit-periods/'
     | '/_authed/cap/'
+    | '/_authed/chart-audit/'
     | '/_authed/filings/'
     | '/_authed/patients/'
     | '/_authed/qapi/'
@@ -843,6 +865,7 @@ export const routeTree = rootRoute
         "/_authed/alerts/",
         "/_authed/benefit-periods/",
         "/_authed/cap/",
+        "/_authed/chart-audit/",
         "/_authed/filings/",
         "/_authed/patients/",
         "/_authed/qapi/",
@@ -917,6 +940,10 @@ export const routeTree = rootRoute
     },
     "/_authed/cap/": {
       "filePath": "_authed/cap/index.tsx",
+      "parent": "/_authed"
+    },
+    "/_authed/chart-audit/": {
+      "filePath": "_authed/chart-audit/index.tsx",
       "parent": "/_authed"
     },
     "/_authed/filings/": {

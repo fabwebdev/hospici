@@ -351,6 +351,30 @@ export type {
   QualityOutlierListResponse,
 } from "./qapi.js";
 export { EXPORT_STATUS_LABELS, EXPORT_PURPOSE_LABELS, EXPORT_SECTION_LABELS, CANONICAL_SECTION_ORDER } from "./audit-export.js";
+export { REVIEW_AUDIT_STATUS_LABELS, REVIEW_AUDIT_STATUS_COLORS } from "./chart-audit.js";
+export type {
+  JsonFilterValue,
+  ReviewAuditStatus,
+  ViewScope,
+  MissingDocSeverity,
+  ChecklistItem,
+  ChecklistResponse,
+  ReviewChecklistTemplate,
+  ReviewChecklistTemplateListResponse,
+  SortConfig,
+  ColumnConfig,
+  ReviewQueueView,
+  ReviewQueueViewListResponse,
+  CreateReviewQueueViewInput,
+  PatchReviewQueueViewInput,
+  ChartAuditQueueRow,
+  ChartAuditQueueResponse,
+  ChartAuditDashboardResponse,
+  MissingDocument,
+  ChartAuditDetailResponse,
+  ChartBulkActionInput,
+  ReviewQueueBulkActionInput,
+} from "./chart-audit.js";
 export type {
   ExportPurpose,
   ExportStatus,

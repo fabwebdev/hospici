@@ -107,6 +107,9 @@ function AuthedLayout() {
                 <Link to="/billing/audit" className="px-3 py-2 text-gray-700 hover:text-blue-600">
                   Billing Audit
                 </Link>
+                <Link to="/chart-audit" className="px-3 py-2 text-gray-700 hover:text-blue-600">
+                  Chart Audit
+                </Link>
                 <Link to="/qapi" className="px-3 py-2 text-gray-700 hover:text-blue-600">
                   QAPI
                 </Link>

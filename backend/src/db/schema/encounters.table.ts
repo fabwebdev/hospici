@@ -92,6 +92,9 @@ export const encounters = pgTable(
     firstPassApproved: boolean("first_pass_approved").notNull().default(false),
     revisionCount: integer("revision_count").notNull().default(0),
 
+    /** T3-13 checklist responses: ChecklistResponse[] JSONB */
+    checklistResponses: jsonb("checklist_responses").notNull().default([]),
+
     visitedAt: timestamp("visited_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

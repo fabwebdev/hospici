@@ -20,6 +20,21 @@ import {
   TrendQuerySchema,
 } from "@/contexts/qapi/schemas/qapi.schema.js";
 import {
+  ChartAuditDashboardResponseSchema,
+  ChartAuditDetailResponseSchema,
+  ChartAuditQueueResponseSchema,
+  ChartBulkActionBodySchema,
+  ChartBulkActionResultSchema,
+  CreateReviewQueueViewBodySchema,
+  PatchReviewQueueViewBodySchema,
+  ReviewChecklistTemplateListResponseSchema,
+  ReviewChecklistTemplateSchema,
+  ReviewQueueBulkActionBodySchema,
+  ReviewQueueBulkActionResultSchema,
+  ReviewQueueViewListResponseSchema,
+  ReviewQueueViewSchema,
+} from "@/contexts/compliance/schemas/chartAudit.schema.js";
+import {
   AuditDashboardResponseSchema,
   AuditFailureSchema,
   AuditResultSchema,
@@ -492,6 +507,21 @@ export const Validators = {
   DeficiencyTrendReport: TypeCompiler.Compile(DeficiencyTrendReportSchema),
   QualityOutlier: TypeCompiler.Compile(QualityOutlierSchema),
   QualityOutlierListResponse: TypeCompiler.Compile(QualityOutlierListResponseSchema),
+
+  // Chart Audit Mode (T3-13)
+  ReviewChecklistTemplate: TypeCompiler.Compile(ReviewChecklistTemplateSchema),
+  ReviewChecklistTemplateListResponse: TypeCompiler.Compile(ReviewChecklistTemplateListResponseSchema),
+  ReviewQueueView: TypeCompiler.Compile(ReviewQueueViewSchema),
+  ReviewQueueViewListResponse: TypeCompiler.Compile(ReviewQueueViewListResponseSchema),
+  CreateReviewQueueViewBody: TypeCompiler.Compile(CreateReviewQueueViewBodySchema),
+  PatchReviewQueueViewBody: TypeCompiler.Compile(PatchReviewQueueViewBodySchema),
+  ChartAuditQueueResponse: TypeCompiler.Compile(ChartAuditQueueResponseSchema),
+  ChartAuditDashboardResponse: TypeCompiler.Compile(ChartAuditDashboardResponseSchema),
+  ChartAuditDetailResponse: TypeCompiler.Compile(ChartAuditDetailResponseSchema),
+  ChartBulkActionBody: TypeCompiler.Compile(ChartBulkActionBodySchema),
+  ChartBulkActionResult: TypeCompiler.Compile(ChartBulkActionResultSchema),
+  ReviewQueueBulkActionBody: TypeCompiler.Compile(ReviewQueueBulkActionBodySchema),
+  ReviewQueueBulkActionResult: TypeCompiler.Compile(ReviewQueueBulkActionResultSchema),
 
   // Claim Audit Rules Engine (T3-12)
   AuditFailure: TypeCompiler.Compile(AuditFailureSchema),

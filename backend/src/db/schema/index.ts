@@ -39,3 +39,5 @@ export * from "./vendor-reviews.table.js";
 export * from "./audit-record-exports.table.js";
 export * from "./qapi-events.table.js";
 export * from "./qapi-action-items.table.js";
+export * from "./review-checklist-templates.table.js";
+export * from "./review-queue-views.table.js";
