@@ -313,3 +313,31 @@ export type {
   ExpiringBaaItem,
   ExpiringBaaResponse,
 } from "./vendors.js";
+export type {
+  OrderStatus,
+  OrderType,
+  OrderDeliveryMethod,
+  UrgencyLabel,
+  OrderResponse,
+  OrderInboxResponse,
+  OrderInboxCounts,
+  OrderListResponse,
+  CreateOrderInput,
+  SignOrderBody,
+  RejectOrderBody,
+  ExceptionOrderBody,
+  ResendOrderBody,
+} from "./orders.js";
+export { EXPORT_STATUS_LABELS, EXPORT_PURPOSE_LABELS, EXPORT_SECTION_LABELS, CANONICAL_SECTION_ORDER } from "./audit-export.js";
+export type {
+  ExportPurpose,
+  ExportStatus,
+  ExportSectionKey,
+  AuditRecordExportManifestSection,
+  AuditRecordExportManifestOmission,
+  AuditRecordExportManifest,
+  AuditRecordExport,
+  AuditRecordExportListResponse,
+  CreateAuditRecordExportInput,
+  AuditRecordExportDownloadResponse,
+} from "./audit-export.js";

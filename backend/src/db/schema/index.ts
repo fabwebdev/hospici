@@ -36,3 +36,4 @@ export * from "./claim-audit-snapshots.table.js";
 export * from "./remittances.table.js";
 export * from "./vendors.table.js";
 export * from "./vendor-reviews.table.js";
+export * from "./audit-record-exports.table.js";

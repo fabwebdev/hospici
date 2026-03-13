@@ -24,6 +24,16 @@ import {
   VendorReviewResponseSchema,
 } from "@/contexts/vendors/schemas/vendor.schema.js";
 import {
+  CreateOrderBodySchema,
+  ExceptionOrderBodySchema,
+  OrderInboxResponseSchema,
+  OrderListResponseSchema,
+  OrderResponseSchema,
+  RejectOrderBodySchema,
+  ResendOrderBodySchema,
+  SignOrderBodySchema,
+} from "@/contexts/orders/schemas/order.schema.js";
+import {
   CountersignBodySchema,
   CreateSignatureRequestBodySchema,
   MarkExceptionBodySchema,
@@ -179,6 +189,13 @@ import {
   AlertListResponseSchema,
   AlertStatusPatchBodySchema,
 } from "@/contexts/compliance/schemas/alert.schema.js";
+import {
+  AuditRecordExportDownloadResponseSchema,
+  AuditRecordExportListResponseSchema,
+  AuditRecordExportManifestSchema,
+  AuditRecordExportRequestSchema,
+  AuditRecordExportSchema,
+} from "@/contexts/compliance/schemas/auditExport.schema.js";
 import {
   CreateF2FBodySchema,
   F2FEncounterListResponseSchema,
@@ -426,6 +443,23 @@ export const Validators = {
   VendorListQuery: TypeCompiler.Compile(VendorListQuerySchema),
   VendorListResponse: TypeCompiler.Compile(VendorListResponseSchema),
   ExpiringBaaResponse: TypeCompiler.Compile(ExpiringBaaResponseSchema),
+
+  // Physician Order Inbox (T3-9)
+  CreateOrderBody: TypeCompiler.Compile(CreateOrderBodySchema),
+  OrderResponse: TypeCompiler.Compile(OrderResponseSchema),
+  OrderInboxResponse: TypeCompiler.Compile(OrderInboxResponseSchema),
+  OrderListResponse: TypeCompiler.Compile(OrderListResponseSchema),
+  SignOrderBody: TypeCompiler.Compile(SignOrderBodySchema),
+  RejectOrderBody: TypeCompiler.Compile(RejectOrderBodySchema),
+  ExceptionOrderBody: TypeCompiler.Compile(ExceptionOrderBodySchema),
+  ResendOrderBody: TypeCompiler.Compile(ResendOrderBodySchema),
+
+  // ADR Export (T3-10)
+  AuditRecordExportRequest: TypeCompiler.Compile(AuditRecordExportRequestSchema),
+  AuditRecordExportManifest: TypeCompiler.Compile(AuditRecordExportManifestSchema),
+  AuditRecordExport: TypeCompiler.Compile(AuditRecordExportSchema),
+  AuditRecordExportListResponse: TypeCompiler.Compile(AuditRecordExportListResponseSchema),
+  AuditRecordExportDownloadResponse: TypeCompiler.Compile(AuditRecordExportDownloadResponseSchema),
 
   // Claim Audit Rules Engine (T3-12)
   AuditFailure: TypeCompiler.Compile(AuditFailureSchema),

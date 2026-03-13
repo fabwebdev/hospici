@@ -31,6 +31,9 @@ export const QUEUE_NAMES = {
   ERA_INGESTION: "era-ingestion",
   ERA_RECONCILIATION: "era-reconciliation",
   VENDOR_COMPLIANCE_CHECK: "vendor-compliance-check",
+  ORDER_EXPIRY_CHECK: "order-expiry-check",
+  ORDER_REMINDER: "order-reminder",
+  AUDIT_EXPORT: "audit-export",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -167,6 +170,42 @@ export const vendorComplianceQueue = new Queue(QUEUE_NAMES.VENDOR_COMPLIANCE_CHE
   defaultJobOptions,
 });
 
+// ── Physician Order Inbox queues (T3-9) ───────────────────────────────────────
+
+/**
+ * Daily expiry check — 07:00 UTC.
+ * Transitions overdue orders to EXPIRED and emits compliance alerts.
+ */
+export const orderExpiryCheckQueue = new Queue(QUEUE_NAMES.ORDER_EXPIRY_CHECK, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
+/**
+ * Daily reminder check — 09:00 UTC.
+ * Sends reminder events for PENDING_SIGNATURE orders not yet signed.
+ */
+export const orderReminderQueue = new Queue(QUEUE_NAMES.ORDER_REMINDER, {
+  connection: createBullMQConnection(),
+  defaultJobOptions,
+});
+
+// ── Audit Export queue (T3-10) ────────────────────────────────────────────────
+
+/**
+ * Event-driven — triggered when a compliance officer requests an export.
+ * 3 retries with exponential backoff. Keep failed jobs for DLQ review.
+ */
+export const auditExportQueue = new Queue(QUEUE_NAMES.AUDIT_EXPORT, {
+  connection: createBullMQConnection(),
+  defaultJobOptions: {
+    removeOnComplete: { count: 100 },
+    removeOnFail: false,
+    attempts: 3,
+    backoff: { type: "exponential" as const, delay: 5000 },
+  },
+});
+
 // ── Claim submission queue (T3-7a) ────────────────────────────────────────────
 
 /**
@@ -300,6 +339,26 @@ export async function scheduleDailyJobs(): Promise<void> {
       jobId: "vendor-weekly-compliance-check",
     },
   );
+
+  // Order expiry check — daily at 07:00 UTC (T3-9)
+  await orderExpiryCheckQueue.add(
+    "daily-check",
+    {},
+    {
+      repeat: { pattern: "0 7 * * *" },
+      jobId: "order-expiry-daily-check",
+    },
+  );
+
+  // Order reminder check — daily at 09:00 UTC (T3-9)
+  await orderReminderQueue.add(
+    "daily-check",
+    {},
+    {
+      repeat: { pattern: "0 9 * * *" },
+      jobId: "order-reminder-daily-check",
+    },
+  );
 }
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
@@ -320,4 +379,7 @@ export async function closeQueues(): Promise<void> {
   await eraIngestionQueue.close();
   await eraReconciliationQueue.close();
   await vendorComplianceQueue.close();
+  await orderExpiryCheckQueue.close();
+  await orderReminderQueue.close();
+  await auditExportQueue.close();
 }

@@ -9,6 +9,12 @@ import capRoutes from "@/contexts/billing/routes/cap.routes.js";
 import { claimRoutes } from "@/contexts/billing/routes/claim.routes.js";
 import { claimAuditRoutes } from "@/contexts/billing/routes/claimAudit.routes.js";
 import { vendorRoutes } from "@/contexts/vendors/routes/vendor.routes.js";
+import { orderRoutes, orderPatientRoutes } from "@/contexts/orders/routes/order.routes.js";
+import auditExportRoutes from "@/contexts/compliance/routes/auditExport.routes.js";
+import { createAuditExportWorker } from "@/jobs/workers/audit-export.worker.js";
+import { setOrderEventEmitter } from "@/contexts/orders/services/order.service.js";
+import { createOrderExpiryWorker } from "@/jobs/workers/order-expiry-check.worker.js";
+import { createOrderReminderWorker } from "@/jobs/workers/order-reminder.worker.js";
 import { setClaimEventEmitter } from "@/contexts/billing/services/claim.service.js";
 import { setClaimAuditEventEmitter } from "@/contexts/billing/services/claimAudit.service.js";
 import { complianceEvents } from "@/events/compliance-events.js";
@@ -130,6 +136,8 @@ export async function buildApp() {
   // Socket.IO clients receive real-time billing events (T3-7a, T3-12).
   setClaimEventEmitter(complianceEvents);
   setClaimAuditEventEmitter(complianceEvents);
+  // Wire order events to the compliance event bus (T3-9)
+  setOrderEventEmitter(complianceEvents);
 
   // ── RLS Middleware (Parameterized - Safe) ───────────────────────────────────
   registerRLSMiddleware(fastify);
@@ -199,6 +207,9 @@ export async function buildApp() {
   await fastify.register(claimRoutes, { prefix: "/api/v1" });
   await fastify.register(claimAuditRoutes, { prefix: "/api/v1" });
   await fastify.register(vendorRoutes, { prefix: "/api/v1/vendors" });
+  await fastify.register(orderRoutes, { prefix: "/api/v1" });
+  await fastify.register(orderPatientRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(auditExportRoutes, { prefix: "/api/v1/patients" });
 
   // ── Internal PHI Encryption Health Check ─────────────────────────────────
   // 127.0.0.1 only — not exposed through reverse proxy or auth middleware.
@@ -262,6 +273,9 @@ export async function buildApp() {
   const f2fDeadlineWorker = createF2FDeadlineWorker(fastify.valkey);
   const claimSubmissionWorker = createClaimSubmissionWorker(fastify.valkey);
   const vendorComplianceWorker = createVendorComplianceWorker(fastify.valkey);
+  const orderExpiryWorker = createOrderExpiryWorker(fastify.valkey);
+  const orderReminderWorker = createOrderReminderWorker(fastify.valkey);
+  const auditExportWorker = createAuditExportWorker(fastify.valkey);
 
   fastify.addHook("onClose", async () => {
     await noeWorker.close();
@@ -275,6 +289,9 @@ export async function buildApp() {
     await f2fDeadlineWorker.close();
     await claimSubmissionWorker.close();
     await vendorComplianceWorker.close();
+    await orderExpiryWorker.close();
+    await orderReminderWorker.close();
+    await auditExportWorker.close();
     await closeQueues();
     fastify.log.info("BullMQ workers and queues closed");
   });

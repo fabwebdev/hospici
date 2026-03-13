@@ -49,6 +49,8 @@ export const AlertType = {
 	BAA_EXPIRING: "BAA_EXPIRING", // BAA renewal within 90 days
 	BAA_MISSING: "BAA_MISSING", // baaRequired=true but baaStatus != SIGNED
 	SECURITY_REVIEW_OVERDUE: "SECURITY_REVIEW_OVERDUE", // securityReviewDueDate passed
+	// T3-9 — Physician Order Inbox + Paperless Order Routing
+	ORDER_EXPIRY: "ORDER_EXPIRY", // order past dueAt without signature
 } as const;
 
 export type AlertType = (typeof AlertType)[keyof typeof AlertType];

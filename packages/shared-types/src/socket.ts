@@ -345,6 +345,87 @@ export interface ServerToClientEvents {
 		ruleCode: string;
 		overriddenBy: string;
 	}) => void;
+
+	// Physician Order Inbox (T3-9)
+	"order:created": (data: {
+		orderId: string;
+		type: string;
+		patientId: string;
+		physicianId: string | null;
+		dueAt: string;
+		urgencyReason: string | null;
+	}) => void;
+
+	"order:viewed": (data: {
+		orderId: string;
+		physicianId: string;
+	}) => void;
+
+	"order:signed": (data: {
+		orderId: string;
+		signedAt: string;
+	}) => void;
+
+	"order:rejected": (data: {
+		orderId: string;
+		rejectionReason: string;
+	}) => void;
+
+	"order:expired": (data: {
+		orderId: string;
+		type: string;
+		patientId: string;
+	}) => void;
+
+	"order:overdue": (data: {
+		orderId: string;
+		hoursOverdue: number;
+		blockedDownstream: string | null;
+	}) => void;
+
+	"order:expiring": (data: {
+		orderId: string;
+		hoursRemaining: number;
+		blockedDownstream: string | null;
+	}) => void;
+
+	"order:exception": (data: {
+		orderId: string;
+		noSignatureReason: string;
+	}) => void;
+
+	"order:completed_returned": (data: {
+		orderId: string;
+		completedReturnedAt: string;
+	}) => void;
+
+	"order:reminder": (data: {
+		orderId: string;
+		patientId: string;
+		reminderCount: number;
+	}) => void;
+
+	"order:return:overdue": (data: {
+		orderId: string;
+		patientId: string;
+		daysSinceSigned: number;
+	}) => void;
+
+	// ADR / TPE / Survey Record Packet Export (T3-10)
+	"export:ready": (data: {
+		exportId: string;
+		patientId: string;
+		locationId: string;
+		purpose: string;
+		generatedAt: string;
+	}) => void;
+
+	"export:failed": (data: {
+		exportId: string;
+		patientId: string;
+		locationId: string;
+		errorMessage: string;
+	}) => void;
 }
 
 /**

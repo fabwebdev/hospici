@@ -23,6 +23,7 @@ import { Route as AuthedCapIndexImport } from './routes/_authed/cap/index'
 import { Route as AuthedBenefitPeriodsIndexImport } from './routes/_authed/benefit-periods/index'
 import { Route as AuthedAlertsIndexImport } from './routes/_authed/alerts/index'
 import { Route as AuthedPatientsPatientIdImport } from './routes/_authed/patients/$patientId'
+import { Route as AuthedOrdersInboxImport } from './routes/_authed/orders/inbox'
 import { Route as AuthedHopeSubmissionsImport } from './routes/_authed/hope/submissions'
 import { Route as AuthedHopeDashboardImport } from './routes/_authed/hope/dashboard'
 import { Route as AuthedFilingsF2fQueueImport } from './routes/_authed/filings/f2f-queue'
@@ -32,6 +33,8 @@ import { Route as AuthedSettingsBaaIndexImport } from './routes/_authed/settings
 import { Route as AuthedHopeAssessmentsIndexImport } from './routes/_authed/hope/assessments/index'
 import { Route as AuthedSettingsBaaNewImport } from './routes/_authed/settings/baa/new'
 import { Route as AuthedSettingsBaaIdImport } from './routes/_authed/settings/baa/$id'
+import { Route as AuthedPatientsPatientIdOrdersImport } from './routes/_authed/patients/$patientId/orders'
+import { Route as AuthedPatientsPatientIdAuditExportImport } from './routes/_authed/patients/$patientId/audit-export'
 import { Route as AuthedHopeAssessmentsNewImport } from './routes/_authed/hope/assessments/new'
 import { Route as AuthedHopeAssessmentsIdImport } from './routes/_authed/hope/assessments/$id'
 import { Route as AuthedPatientsPatientIdVisitsIndexImport } from './routes/_authed/patients/$patientId/visits/index'
@@ -112,6 +115,12 @@ const AuthedPatientsPatientIdRoute = AuthedPatientsPatientIdImport.update({
   getParentRoute: () => AuthedRoute,
 } as any)
 
+const AuthedOrdersInboxRoute = AuthedOrdersInboxImport.update({
+  id: '/orders/inbox',
+  path: '/orders/inbox',
+  getParentRoute: () => AuthedRoute,
+} as any)
+
 const AuthedHopeSubmissionsRoute = AuthedHopeSubmissionsImport.update({
   id: '/hope/submissions',
   path: '/hope/submissions',
@@ -168,6 +177,20 @@ const AuthedSettingsBaaIdRoute = AuthedSettingsBaaIdImport.update({
   path: '/settings/baa/$id',
   getParentRoute: () => AuthedRoute,
 } as any)
+
+const AuthedPatientsPatientIdOrdersRoute =
+  AuthedPatientsPatientIdOrdersImport.update({
+    id: '/orders',
+    path: '/orders',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
+
+const AuthedPatientsPatientIdAuditExportRoute =
+  AuthedPatientsPatientIdAuditExportImport.update({
+    id: '/audit-export',
+    path: '/audit-export',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
 
 const AuthedHopeAssessmentsNewRoute = AuthedHopeAssessmentsNewImport.update({
   id: '/hope/assessments/new',
@@ -276,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedHopeSubmissionsImport
       parentRoute: typeof AuthedImport
     }
+    '/_authed/orders/inbox': {
+      id: '/_authed/orders/inbox'
+      path: '/orders/inbox'
+      fullPath: '/orders/inbox'
+      preLoaderRoute: typeof AuthedOrdersInboxImport
+      parentRoute: typeof AuthedImport
+    }
     '/_authed/patients/$patientId': {
       id: '/_authed/patients/$patientId'
       path: '/patients/$patientId'
@@ -346,6 +376,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedHopeAssessmentsNewImport
       parentRoute: typeof AuthedImport
     }
+    '/_authed/patients/$patientId/audit-export': {
+      id: '/_authed/patients/$patientId/audit-export'
+      path: '/audit-export'
+      fullPath: '/patients/$patientId/audit-export'
+      preLoaderRoute: typeof AuthedPatientsPatientIdAuditExportImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
+    }
+    '/_authed/patients/$patientId/orders': {
+      id: '/_authed/patients/$patientId/orders'
+      path: '/orders'
+      fullPath: '/patients/$patientId/orders'
+      preLoaderRoute: typeof AuthedPatientsPatientIdOrdersImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
+    }
     '/_authed/settings/baa/$id': {
       id: '/_authed/settings/baa/$id'
       path: '/settings/baa/$id'
@@ -408,6 +452,8 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface AuthedPatientsPatientIdRouteChildren {
+  AuthedPatientsPatientIdAuditExportRoute: typeof AuthedPatientsPatientIdAuditExportRoute
+  AuthedPatientsPatientIdOrdersRoute: typeof AuthedPatientsPatientIdOrdersRoute
   AuthedPatientsPatientIdF2fNewRoute: typeof AuthedPatientsPatientIdF2fNewRoute
   AuthedPatientsPatientIdIdgScheduleRoute: typeof AuthedPatientsPatientIdIdgScheduleRoute
   AuthedPatientsPatientIdVisitsIndexRoute: typeof AuthedPatientsPatientIdVisitsIndexRoute
@@ -416,6 +462,9 @@ interface AuthedPatientsPatientIdRouteChildren {
 
 const AuthedPatientsPatientIdRouteChildren: AuthedPatientsPatientIdRouteChildren =
   {
+    AuthedPatientsPatientIdAuditExportRoute:
+      AuthedPatientsPatientIdAuditExportRoute,
+    AuthedPatientsPatientIdOrdersRoute: AuthedPatientsPatientIdOrdersRoute,
     AuthedPatientsPatientIdF2fNewRoute: AuthedPatientsPatientIdF2fNewRoute,
     AuthedPatientsPatientIdIdgScheduleRoute:
       AuthedPatientsPatientIdIdgScheduleRoute,
@@ -437,6 +486,7 @@ interface AuthedRouteChildren {
   AuthedFilingsF2fQueueRoute: typeof AuthedFilingsF2fQueueRoute
   AuthedHopeDashboardRoute: typeof AuthedHopeDashboardRoute
   AuthedHopeSubmissionsRoute: typeof AuthedHopeSubmissionsRoute
+  AuthedOrdersInboxRoute: typeof AuthedOrdersInboxRoute
   AuthedPatientsPatientIdRoute: typeof AuthedPatientsPatientIdRouteWithChildren
   AuthedAlertsIndexRoute: typeof AuthedAlertsIndexRoute
   AuthedBenefitPeriodsIndexRoute: typeof AuthedBenefitPeriodsIndexRoute
@@ -460,6 +510,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFilingsF2fQueueRoute: AuthedFilingsF2fQueueRoute,
   AuthedHopeDashboardRoute: AuthedHopeDashboardRoute,
   AuthedHopeSubmissionsRoute: AuthedHopeSubmissionsRoute,
+  AuthedOrdersInboxRoute: AuthedOrdersInboxRoute,
   AuthedPatientsPatientIdRoute: AuthedPatientsPatientIdRouteWithChildren,
   AuthedAlertsIndexRoute: AuthedAlertsIndexRoute,
   AuthedBenefitPeriodsIndexRoute: AuthedBenefitPeriodsIndexRoute,
@@ -489,6 +540,7 @@ export interface FileRoutesByFullPath {
   '/filings/f2f-queue': typeof AuthedFilingsF2fQueueRoute
   '/hope/dashboard': typeof AuthedHopeDashboardRoute
   '/hope/submissions': typeof AuthedHopeSubmissionsRoute
+  '/orders/inbox': typeof AuthedOrdersInboxRoute
   '/patients/$patientId': typeof AuthedPatientsPatientIdRouteWithChildren
   '/alerts': typeof AuthedAlertsIndexRoute
   '/benefit-periods': typeof AuthedBenefitPeriodsIndexRoute
@@ -499,6 +551,8 @@ export interface FileRoutesByFullPath {
   '/signatures': typeof AuthedSignaturesIndexRoute
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
+  '/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
+  '/patients/$patientId/orders': typeof AuthedPatientsPatientIdOrdersRoute
   '/settings/baa/$id': typeof AuthedSettingsBaaIdRoute
   '/settings/baa/new': typeof AuthedSettingsBaaNewRoute
   '/hope/assessments': typeof AuthedHopeAssessmentsIndexRoute
@@ -519,6 +573,7 @@ export interface FileRoutesByTo {
   '/filings/f2f-queue': typeof AuthedFilingsF2fQueueRoute
   '/hope/dashboard': typeof AuthedHopeDashboardRoute
   '/hope/submissions': typeof AuthedHopeSubmissionsRoute
+  '/orders/inbox': typeof AuthedOrdersInboxRoute
   '/patients/$patientId': typeof AuthedPatientsPatientIdRouteWithChildren
   '/alerts': typeof AuthedAlertsIndexRoute
   '/benefit-periods': typeof AuthedBenefitPeriodsIndexRoute
@@ -529,6 +584,8 @@ export interface FileRoutesByTo {
   '/signatures': typeof AuthedSignaturesIndexRoute
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
+  '/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
+  '/patients/$patientId/orders': typeof AuthedPatientsPatientIdOrdersRoute
   '/settings/baa/$id': typeof AuthedSettingsBaaIdRoute
   '/settings/baa/new': typeof AuthedSettingsBaaNewRoute
   '/hope/assessments': typeof AuthedHopeAssessmentsIndexRoute
@@ -550,6 +607,7 @@ export interface FileRoutesById {
   '/_authed/filings/f2f-queue': typeof AuthedFilingsF2fQueueRoute
   '/_authed/hope/dashboard': typeof AuthedHopeDashboardRoute
   '/_authed/hope/submissions': typeof AuthedHopeSubmissionsRoute
+  '/_authed/orders/inbox': typeof AuthedOrdersInboxRoute
   '/_authed/patients/$patientId': typeof AuthedPatientsPatientIdRouteWithChildren
   '/_authed/alerts/': typeof AuthedAlertsIndexRoute
   '/_authed/benefit-periods/': typeof AuthedBenefitPeriodsIndexRoute
@@ -560,6 +618,8 @@ export interface FileRoutesById {
   '/_authed/signatures/': typeof AuthedSignaturesIndexRoute
   '/_authed/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/_authed/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
+  '/_authed/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
+  '/_authed/patients/$patientId/orders': typeof AuthedPatientsPatientIdOrdersRoute
   '/_authed/settings/baa/$id': typeof AuthedSettingsBaaIdRoute
   '/_authed/settings/baa/new': typeof AuthedSettingsBaaNewRoute
   '/_authed/hope/assessments/': typeof AuthedHopeAssessmentsIndexRoute
@@ -582,6 +642,7 @@ export interface FileRouteTypes {
     | '/filings/f2f-queue'
     | '/hope/dashboard'
     | '/hope/submissions'
+    | '/orders/inbox'
     | '/patients/$patientId'
     | '/alerts'
     | '/benefit-periods'
@@ -592,6 +653,8 @@ export interface FileRouteTypes {
     | '/signatures'
     | '/hope/assessments/$id'
     | '/hope/assessments/new'
+    | '/patients/$patientId/audit-export'
+    | '/patients/$patientId/orders'
     | '/settings/baa/$id'
     | '/settings/baa/new'
     | '/hope/assessments'
@@ -611,6 +674,7 @@ export interface FileRouteTypes {
     | '/filings/f2f-queue'
     | '/hope/dashboard'
     | '/hope/submissions'
+    | '/orders/inbox'
     | '/patients/$patientId'
     | '/alerts'
     | '/benefit-periods'
@@ -621,6 +685,8 @@ export interface FileRouteTypes {
     | '/signatures'
     | '/hope/assessments/$id'
     | '/hope/assessments/new'
+    | '/patients/$patientId/audit-export'
+    | '/patients/$patientId/orders'
     | '/settings/baa/$id'
     | '/settings/baa/new'
     | '/hope/assessments'
@@ -640,6 +706,7 @@ export interface FileRouteTypes {
     | '/_authed/filings/f2f-queue'
     | '/_authed/hope/dashboard'
     | '/_authed/hope/submissions'
+    | '/_authed/orders/inbox'
     | '/_authed/patients/$patientId'
     | '/_authed/alerts/'
     | '/_authed/benefit-periods/'
@@ -650,6 +717,8 @@ export interface FileRouteTypes {
     | '/_authed/signatures/'
     | '/_authed/hope/assessments/$id'
     | '/_authed/hope/assessments/new'
+    | '/_authed/patients/$patientId/audit-export'
+    | '/_authed/patients/$patientId/orders'
     | '/_authed/settings/baa/$id'
     | '/_authed/settings/baa/new'
     | '/_authed/hope/assessments/'
@@ -700,6 +769,7 @@ export const routeTree = rootRoute
         "/_authed/filings/f2f-queue",
         "/_authed/hope/dashboard",
         "/_authed/hope/submissions",
+        "/_authed/orders/inbox",
         "/_authed/patients/$patientId",
         "/_authed/alerts/",
         "/_authed/benefit-periods/",
@@ -743,10 +813,16 @@ export const routeTree = rootRoute
       "filePath": "_authed/hope/submissions.tsx",
       "parent": "/_authed"
     },
+    "/_authed/orders/inbox": {
+      "filePath": "_authed/orders/inbox.tsx",
+      "parent": "/_authed"
+    },
     "/_authed/patients/$patientId": {
       "filePath": "_authed/patients/$patientId.tsx",
       "parent": "/_authed",
       "children": [
+        "/_authed/patients/$patientId/audit-export",
+        "/_authed/patients/$patientId/orders",
         "/_authed/patients/$patientId/f2f/new",
         "/_authed/patients/$patientId/idg/schedule",
         "/_authed/patients/$patientId/visits/",
@@ -788,6 +864,14 @@ export const routeTree = rootRoute
     "/_authed/hope/assessments/new": {
       "filePath": "_authed/hope/assessments/new.tsx",
       "parent": "/_authed"
+    },
+    "/_authed/patients/$patientId/audit-export": {
+      "filePath": "_authed/patients/$patientId/audit-export.tsx",
+      "parent": "/_authed/patients/$patientId"
+    },
+    "/_authed/patients/$patientId/orders": {
+      "filePath": "_authed/patients/$patientId/orders.tsx",
+      "parent": "/_authed/patients/$patientId"
     },
     "/_authed/settings/baa/$id": {
       "filePath": "_authed/settings/baa/$id.tsx",

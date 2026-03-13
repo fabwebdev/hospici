@@ -50,6 +50,8 @@ export const alertTypeEnum = pgEnum("alert_type_enum", [
   "BAA_EXPIRING",
   "BAA_MISSING",
   "SECURITY_REVIEW_OVERDUE",
+  // T3-9 Physician Order Inbox
+  "ORDER_EXPIRY",
 ]);
 
 export const alertSeverityEnum = pgEnum("alert_severity_enum", ["critical", "warning", "info"]);

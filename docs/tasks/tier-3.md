@@ -2382,12 +2382,14 @@ Add to `shared-types/socket.ts` and emit from `claimAudit.service.ts`:
 
 ---
 
-## T3-13 · Chart audit mode + review checklists + survey-readiness `MEDIUM`
+## T3-13 · Chart audit mode + review checklists + survey-readiness `HIGH`
 
-> Full chart-level audit capability — from individual note QA to survey-readiness packet completeness. Deferred from T2-9 because it requires T3-5 (signatures), T3-1 (HOPE), T3-2 (NOE/NOTR), and T3-9 (orders) to be complete.
+> Full chart-level audit capability — centralized workbench queue, discipline-specific review checklists, chart completeness scoring, survey-readiness, missing-document indicators, saved audit views, bulk QA actions. Deferred from T2-9 because it requires T3-5 (signatures), T3-1 (HOPE), T3-2 (NOE/NOTR), and T3-9 (orders) to be complete.
+>
+> Competitive context: Axxess is the strongest public benchmark for QA-center mechanics (queue, filters, bulk approve/return, comments, validation-driven review); FireNote is strongest on missing-document visibility and audit-readiness outcome messaging; WellSky is strongest on chart packaging. No competitor publicly exposes the full architecture below — differentiation opportunity on checklist templates, completeness scoring, DB-persisted saved views, and atomic bulk QA.
 
-`needs:` T2-9 (note review), T3-1 (HOPE), T3-2 (NOE/NOTR), T3-5 (electronic signatures), T3-9 (physician orders)
-`feeds:` T3-10 (completeness summary consumed as optional cover-sheet section in audit packet export)
+`needs:` T2-9 (note review + RevisionRequest type), T3-1 (HOPE), T3-2 (NOE/NOTR), T3-5 (electronic signatures), T3-9 (physician orders)
+`feeds:` T3-10 (completeness summary consumed as optional cover-sheet section in audit packet export), T3-11 (checklist completion rates + deficiency mix feed QAPI scorecards)
 
 `read:` `BE-SPEC`, `DB-ARCH`
 
@@ -2395,7 +2397,7 @@ Add to `shared-types/socket.ts` and emit from `claimAudit.service.ts`:
 
 ### Discipline-specific review checklists
 
-A checklist template is a set of required items for a given `(discipline, visit_type)` pair. Supervisors step through checklist items when reviewing a note.
+A checklist template is a set of required items for a given `(discipline, visit_type)` pair. Supervisors step through checklist items when reviewing a note. Checklist completion percentage feeds the patient's `surveyReadiness.score`.
 
 **New table `review_checklist_templates`** (next available migration number — run `pnpm --filter @hospici/backend db:next-migration-number` first):
 ```typescript
@@ -2403,21 +2405,64 @@ A checklist template is a set of required items for a given `(discipline, visit_
   discipline: DisciplineType;           // RN | SW | CHAPLAIN | THERAPY | AIDE
   visitType: VisitType;                 // ROUTINE | ADMISSION | RECERTIFICATION | DISCHARGE
   items: ChecklistItem[];               // JSONB
-  version: integer;
+  version: integer;                     // increment on every item change; old responses reference version at time of review
   isActive: boolean;
+  effectiveDate: date;                  // when this version became active
 }
-// ChecklistItem: { id, label, required: boolean, regulatoryRef?: string }
+// ChecklistItem: { id, label, required: boolean, regulatoryRef?: string, scoringWeight?: number }
+// scoringWeight: optional 0-1 float; if present, item contributes proportionally to surveyReadiness.score
 ```
 
 Seed templates for: `RN × ROUTINE`, `RN × ADMISSION`, `RN × RECERTIFICATION`, `SW × ROUTINE`, `CHAPLAIN × ROUTINE`.
 
-**Checklist response stored per review** — add `checklist_responses` JSONB column to encounters (array of `{ itemId, checked, reviewerId, timestamp }`).
+**Checklist response stored per review** — add `checklist_responses` JSONB column to encounters (array of `{ itemId, checked, reviewerId, timestamp, templateVersion }`). Store `templateVersion` so historical responses remain interpretable after template version bumps.
 
-**Route:** `GET /api/v1/review-checklist-templates?discipline=&visitType=` — returns active template for that pair.
+**Routes:**
+- `GET /api/v1/review-checklist-templates?discipline=&visitType=` — returns active template for that pair
+- `GET /api/v1/review-checklist-templates/:id/history` — returns all versions for a `(discipline, visitType)` pair (audit/change history)
 
 ---
 
-### Chart audit mode
+### Chart-audit workbench queue
+
+A centralized supervisor workspace — a paginated list of patients in the audit queue, not patient-detail views. This is the primary entry point for QA staff doing routine or survey-prep chart review.
+
+**Route:** `GET /api/v1/chart-audit/queue`
+- `supervisor` + `compliance_officer` + `admin` roles
+- Query params: `locationId`, `discipline`, `reviewerId`, `status` (NOT_STARTED | IN_PROGRESS | COMPLETE | FLAGGED), `deficiencyType`, `billingImpact: boolean`, `complianceImpact: boolean`, `missingDocSeverity: critical|warning`, `dateRangeStart`, `dateRangeEnd`, `page`, `limit`, `sortBy`, `sortDir`, `groupBy`
+- Returns paginated list; each row:
+```typescript
+{
+  patientId: string;
+  patientName: string;           // PHI-encrypted value, decrypted for authorized roles
+  primaryDiscipline: string;
+  reviewStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE' | 'FLAGGED';
+  missingDocCount: number;
+  surveyReadinessScore: number;  // 0-100, computed lazily or from last chart-audit run
+  assignedReviewerId: string | null;
+  assignedReviewerName: string | null;
+  lastActivityAt: string | null;
+  billingImpact: boolean;
+  complianceImpact: boolean;
+}
+```
+
+**Route:** `GET /api/v1/chart-audit/dashboard`
+- Returns workload summary cards:
+```typescript
+{
+  total: number;
+  byStatus: Record<ReviewStatus, number>;
+  byDiscipline: Record<string, number>;
+  byReviewer: { reviewerId: string; name: string; count: number }[];
+  bySeverity: { critical: number; warning: number };
+  avgSurveyReadinessScore: number;
+}
+```
+
+---
+
+### Chart audit mode (single-patient detail)
 
 A supervisor audits a patient's full chart packet — not a single encounter.
 
@@ -2455,24 +2500,32 @@ A supervisor audits a patient's full chart packet — not a single encounter.
 
 ---
 
-### DB-persisted saved filter views
+### DB-persisted saved audit views
 
-Supervisors can save named filter configurations for the note review queue.
+Supervisors save named filter/sort/column configurations for both the note review queue and the chart-audit workbench queue. Large audit queues without saved views force repeated manual re-filtering — this is a primary usability differentiator.
 
 **New table `review_queue_views`:**
 ```typescript
 {
   ownerId: uuid FK → users.id;
   name: string;
-  filters: jsonb;   // same shape as GET /review-queue query params
+  viewScope: 'note_review' | 'chart_audit';  // which queue this view applies to
+  filters: jsonb;        // same shape as query params for the scoped queue endpoint
+  sortConfig: jsonb;     // { sortBy: string; sortDir: 'asc' | 'desc' }
+  columnConfig: jsonb;   // { visibleColumns: string[]; columnOrder: string[] }
+  groupBy: text | null;  // e.g. 'discipline' | 'reviewer' | 'status'
   isShared: boolean;
+  isPinned: boolean;     // pinned views appear at top of the saved-views list
+  isDefault: boolean;    // at most one default per (ownerId, viewScope) — enforce with partial unique index
   locationId: uuid;
 }
+// Partial unique index: (ownerId, viewScope) WHERE isDefault = true
 ```
 
 **Routes:**
-- `GET /api/v1/review-queue/views` — list saved views for current user + shared views in location
+- `GET /api/v1/review-queue/views?viewScope=` — list saved views for current user + shared views in location
 - `POST /api/v1/review-queue/views` — save filter config
+- `PATCH /api/v1/review-queue/views/:id` — update (name / filters / sort / columns / isShared / isPinned / isDefault)
 - `DELETE /api/v1/review-queue/views/:id` — delete own view
 
 ---
@@ -2481,7 +2534,7 @@ Supervisors can save named filter configurations for the note review queue.
 
 Beyond bulk-acknowledge (already in T2-9), add:
 
-**Route:** `POST /api/v1/review-queue/bulk-action`
+**Route:** `POST /api/v1/review-queue/bulk-action` (encounter-level, for note review queue)
 ```typescript
 body: {
   encounterIds: string[];
@@ -2493,7 +2546,27 @@ body: {
 }
 ```
 
+**Route:** `POST /api/v1/chart-audit/bulk-action` (chart-level, for workbench queue)
+```typescript
+body: {
+  patientIds: string[];
+  action: 'ASSIGN' | 'REQUEST_REVISION' | 'EXPORT_CSV';
+  assignedReviewerId?: string;
+  revisionRequest?: Omit<RevisionRequest, 'id' | 'resolvedAt' | 'resolvedComment'>;
+}
+// EXPORT_CSV: returns a CSV file (Content-Disposition: attachment) of the filtered queue rows
+// All mutating actions are all-or-none (db.transaction). AuditService.log on every bulk action.
+```
+
 ---
 
-**Done when:** Checklist template returns correct items for `RN × ROUTINE`; checklist responses stored per review; chart audit endpoint returns all 8 sections + surveyReadiness score; missing documents listed with severity; saved filter views persist across sessions; bulk-assign and bulk-revision-request work atomically (all or none, rolled back on partial failure); unauthorized roles get 403 on all routes
+**Done when:**
+- Checklist template returns correct items for `RN × ROUTINE`; template version stored on checklist responses
+- `GET /api/v1/chart-audit/queue` returns paginated rows with all queue columns; all filter/sort/group params work
+- `GET /api/v1/chart-audit/dashboard` returns workload cards broken out by status, discipline, reviewer, and severity
+- `GET /api/v1/patients/:id/chart-audit` returns all 8 sections + `surveyReadiness` score; checklist completion percentage influences score; missing documents listed with severity
+- Saved views persist across sessions; `viewScope`, `sortConfig`, `columnConfig`, `groupBy`, `isPinned`, `isDefault` all round-trip; partial unique index prevents two defaults for same (owner, scope)
+- `PATCH /api/v1/review-queue/views/:id` works; shared views visible to location colleagues
+- Chart-level `bulk-action` ASSIGN and REQUEST_REVISION are all-or-none (rolled back on partial failure); EXPORT_CSV returns downloadable CSV
+- All mutating routes emit AuditService.log entries; unauthorized roles get 403 on all routes
 
