@@ -115,7 +115,7 @@ export interface AuditDashboardResponse {
   agingByBranch: AgingByBranchItem[];
   ownerLaneQueue: OwnerLaneQueueItem[];
   topDenialDrivers: {
-    data: unknown[];
+    data: never[];
     availableAfter: string;
   };
   warnOverrideVolume: WarnOverrideDayBucket[];
