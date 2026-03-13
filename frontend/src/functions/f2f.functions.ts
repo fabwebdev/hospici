@@ -11,7 +11,7 @@ import type {
   PatchF2FInput,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal fetch helpers ────────────────────────────────────────────────────
 
@@ -75,39 +75,34 @@ export async function fetchF2FQueue(cookieHeader: string): Promise<F2FQueueRespo
 // ── createServerFn wrappers ───────────────────────────────────────────────────
 
 export const getPatientF2FFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return fetchPatientF2F(data.patientId, cookie);
   });
 
 export const createF2FFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { patientId: string; body: CreateF2FInput })
+  .validator((data: unknown) => data as { patientId: string; body: CreateF2FInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return createF2F(data.patientId, data.body, cookie);
   });
 
 export const patchF2FFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { id: string; body: PatchF2FInput })
+  .validator((data: unknown) => data as { id: string; body: PatchF2FInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return patchF2F(data.id, data.body, cookie);
   });
 
 export const validateF2FFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { id: string })
+  .validator((data: unknown) => data as { id: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return validateF2F(data.id, cookie);
   });
 
 export const getF2FQueueFn = createServerFn({ method: "GET" }).handler(async () => {
-  const request = getRequest();
-  const cookie = request.headers.get("cookie") ?? "";
+  const cookie = getRequestHeader("cookie") ?? "";
   return fetchF2FQueue(cookie);
 });

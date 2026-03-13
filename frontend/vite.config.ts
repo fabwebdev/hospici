@@ -1,18 +1,27 @@
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { resolve } from "node:path";
-import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    tanstackStart({
+      router: {
+        routesDirectory: "./src/routes",
+        generatedRouteTree: "./src/routeTree.gen.ts",
+      },
+      server: {
+        entry: "./src/entry-server.tsx",
+      },
+    }),
+  ],
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
+      "@": resolve(import.meta.dirname, "./src"),
     },
   },
   server: {
     port: 5173,
     proxy: {
-      // Proxy /api and /auth to the backend in dev
       "/api": "http://localhost:3000",
       "/auth": "http://localhost:3000",
       "/fhir": "http://localhost:3000",

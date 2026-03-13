@@ -11,7 +11,7 @@ import type {
   RecalculateCapResponse,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal fetch helpers ────────────────────────────────────────────────────
 
@@ -88,39 +88,34 @@ export async function postCapRecalculate(cookieHeader: string): Promise<Recalcul
 // ── Server functions ──────────────────────────────────────────────────────────
 
 export const getCapSummaryFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { capYear?: number } | undefined)
+  .validator((data: unknown) => data as { capYear?: number } | undefined)
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchCapSummary(cookieHeader, data?.capYear);
   });
 
 export const getCapPatientsFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as CapPatientListQuery | undefined)
+  .validator((data: unknown) => data as CapPatientListQuery | undefined)
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchCapPatients(cookieHeader, data ?? {});
   });
 
 export const getCapTrendsFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { capYear?: number } | undefined)
+  .validator((data: unknown) => data as { capYear?: number } | undefined)
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchCapTrends(cookieHeader, data?.capYear);
   });
 
 export const getCapSnapshotFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { snapshotId: string })
+  .validator((data: unknown) => data as { snapshotId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchCapSnapshot(cookieHeader, data.snapshotId);
   });
 
 export const recalculateCapFn = createServerFn({ method: "POST" }).handler(async () => {
-  const request = getRequest();
-  const cookieHeader = request.headers.get("cookie") ?? "";
+  const cookieHeader = getRequestHeader("cookie") ?? "";
   return postCapRecalculate(cookieHeader);
 });

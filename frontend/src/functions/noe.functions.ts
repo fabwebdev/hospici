@@ -17,7 +17,7 @@ import type {
   ReadinessResponse,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -333,111 +333,98 @@ export async function recordCMSResponseNOE(
 // ── Server functions ───────────────────────────────────────────────────────────
 
 export const getNOEFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchNOE(data.patientId, cookieHeader);
   });
 
 export const createNOEFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { patientId: string; body: CreateNOEInput })
+  .validator((data: unknown) => data as { patientId: string; body: CreateNOEInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return createNOE(data.patientId, data.body, cookieHeader);
   });
 
 export const submitNOEFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { noeId: string })
+  .validator((data: unknown) => data as { noeId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return submitNOE(data.noeId, cookieHeader);
   });
 
 export const correctNOEFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { noeId: string; body: CorrectNOEInput })
+  .validator((data: unknown) => data as { noeId: string; body: CorrectNOEInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return correctNOE(data.noeId, data.body, cookieHeader);
   });
 
 export const lateOverrideNOEFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { noeId: string; body: LateOverrideInput })
+  .validator((data: unknown) => data as { noeId: string; body: LateOverrideInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return lateOverrideNOE(data.noeId, data.body, cookieHeader);
   });
 
 export const getNOEReadinessFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { noeId: string })
+  .validator((data: unknown) => data as { noeId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchNOEReadiness(data.noeId, cookieHeader);
   });
 
 export const getNOEHistoryFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { noeId: string })
+  .validator((data: unknown) => data as { noeId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchNOEHistory(data.noeId, cookieHeader);
   });
 
 export const getNOTRFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchNOTR(data.patientId, cookieHeader);
   });
 
 export const createNOTRFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { patientId: string; body: CreateNOTRInput })
+  .validator((data: unknown) => data as { patientId: string; body: CreateNOTRInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return createNOTR(data.patientId, data.body, cookieHeader);
   });
 
 export const submitNOTRFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { notrId: string })
+  .validator((data: unknown) => data as { notrId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return submitNOTR(data.notrId, cookieHeader);
   });
 
 export const correctNOTRFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { notrId: string; body: CreateNOTRInput })
+  .validator((data: unknown) => data as { notrId: string; body: CreateNOTRInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return correctNOTR(data.notrId, data.body, cookieHeader);
   });
 
 export const lateOverrideNOTRFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { notrId: string; body: LateOverrideInput })
+  .validator((data: unknown) => data as { notrId: string; body: LateOverrideInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return lateOverrideNOTR(data.notrId, data.body, cookieHeader);
   });
 
 export const getNOTRReadinessFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { notrId: string })
+  .validator((data: unknown) => data as { notrId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchNOTRReadiness(data.notrId, cookieHeader);
   });
 
 export const getFilingQueueFn = createServerFn({ method: "GET" })
-  .inputValidator(
+  .validator(
     (data: unknown) =>
       data as {
         type?: "NOE" | "NOTR";
@@ -447,7 +434,6 @@ export const getFilingQueueFn = createServerFn({ method: "GET" })
       },
   )
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchFilingQueue(data, cookieHeader);
   });

@@ -1,10 +1,7 @@
 // routes/_authed/compliance/recert-queue.tsx
 // Recertifications Due Report — T3-4
 
-import {
-  getBenefitPeriodsFn,
-  recertifyFn,
-} from "@/functions/benefit-period.functions.js";
+import { getBenefitPeriodsFn, recertifyFn } from "@/functions/benefit-period.functions.js";
 import type {
   BenefitPeriodDetail,
   BenefitPeriodListResponse,
@@ -86,8 +83,7 @@ function RecertifyDrawer({
   const [completedAt, setCompletedAt] = useState(new Date().toISOString().slice(0, 10));
 
   const mutation = useMutation({
-    mutationFn: () =>
-      recertifyFn({ data: { id: period.id, physicianId, completedAt } }),
+    mutationFn: () => recertifyFn({ data: { id: period.id, physicianId, completedAt } }),
     onSuccess: () => {
       onSuccess();
       onClose();
@@ -98,7 +94,11 @@ function RecertifyDrawer({
     <div className="fixed inset-y-0 right-0 w-[440px] bg-white border-l border-gray-200 shadow-xl z-40 flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <h2 className="font-semibold text-gray-900">Record Recertification</h2>
-        <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 text-xl"
+        >
           ×
         </button>
       </div>
@@ -114,7 +114,10 @@ function RecertifyDrawer({
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="recert-physician">
+          <label
+            className="block text-sm font-medium text-gray-700 mb-1"
+            htmlFor="recert-physician"
+          >
             Certifying Physician ID
           </label>
           <input
@@ -181,9 +184,7 @@ function RecertQueuePage() {
     queryFn: () =>
       getBenefitPeriodsFn({
         data: {
-          query: statusFilter
-            ? { status: statusFilter }
-            : { status: "recert_due" },
+          query: statusFilter ? { status: statusFilter } : { status: "recert_due" },
         },
       }) as Promise<BenefitPeriodListResponse>,
   });
@@ -251,6 +252,7 @@ function RecertQueuePage() {
                 <th
                   className="px-4 py-3 font-medium cursor-pointer select-none"
                   onClick={() => toggleSort("periodNumber")}
+                  onKeyDown={(e) => e.key === "Enter" && toggleSort("periodNumber")}
                 >
                   Period #
                   <SortIcon field="periodNumber" />
@@ -258,6 +260,7 @@ function RecertQueuePage() {
                 <th
                   className="px-4 py-3 font-medium cursor-pointer select-none"
                   onClick={() => toggleSort("recertDueDate")}
+                  onKeyDown={(e) => e.key === "Enter" && toggleSort("recertDueDate")}
                 >
                   Recert Due
                   <SortIcon field="recertDueDate" />
@@ -265,6 +268,7 @@ function RecertQueuePage() {
                 <th
                   className="px-4 py-3 font-medium cursor-pointer select-none"
                   onClick={() => toggleSort("status")}
+                  onKeyDown={(e) => e.key === "Enter" && toggleSort("status")}
                 >
                   Status
                   <SortIcon field="status" />
@@ -288,9 +292,7 @@ function RecertQueuePage() {
                   </td>
                   <td className="px-4 py-3 text-center">{period.periodNumber}</td>
                   <td className="px-4 py-3">
-                    {period.recertDueDate ?? (
-                      <span className="text-gray-400 italic">N/A</span>
-                    )}
+                    {period.recertDueDate ?? <span className="text-gray-400 italic">N/A</span>}
                   </td>
                   <td className="px-4 py-3">
                     <span

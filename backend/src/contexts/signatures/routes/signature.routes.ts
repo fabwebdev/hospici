@@ -53,9 +53,12 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
     handler: async (request, reply) => {
       try {
         const body = request.body as CreateSignatureRequestBody;
-        const userId = request.user!.id;
-        const locationId = request.user!.locationId;
-        const result = await signatureService.createSignatureRequest(body, userId, locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.createSignatureRequest(
+          body,
+          request.user.id,
+          request.user.locationId,
+        );
         return reply.status(201).send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -69,8 +72,8 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
     handler: async (request, reply) => {
       try {
         const query = request.query as SignatureListQuery;
-        const locationId = request.user!.locationId;
-        const result = await signatureService.listSignatures(query, locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.listSignatures(query, request.user.locationId);
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -83,8 +86,8 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get("/outstanding", {
     handler: async (request, reply) => {
       try {
-        const locationId = request.user!.locationId;
-        const result = await signatureService.getOutstandingSignatures(locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.getOutstandingSignatures(request.user.locationId);
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -98,8 +101,8 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
     handler: async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
-        const locationId = request.user!.locationId;
-        const result = await signatureService.getSignatureRequest(id, locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.getSignatureRequest(id, request.user.locationId);
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -113,9 +116,12 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
     handler: async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
-        const userId = request.user!.id;
-        const locationId = request.user!.locationId;
-        const result = await signatureService.sendForSignature(id, userId, locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.sendForSignature(
+          id,
+          request.user.id,
+          request.user.locationId,
+        );
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -129,9 +135,12 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
     handler: async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
-        const userId = request.user!.id;
-        const locationId = request.user!.locationId;
-        const result = await signatureService.markViewed(id, userId, locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.markViewed(
+          id,
+          request.user.id,
+          request.user.locationId,
+        );
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -159,15 +168,14 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
       try {
         const { id } = request.params as { id: string };
         const body = request.body as SignDocumentBody;
-        const userId = request.user?.id ?? null;
-        const locationId = request.user!.locationId;
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
         const ipAddress = request.ip;
         const userAgent = request.headers["user-agent"];
         const result = await signatureService.signDocument(
           id,
           body,
-          userId,
-          locationId,
+          request.user.id ?? null,
+          request.user.locationId,
           ipAddress,
           userAgent,
         );
@@ -198,15 +206,14 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
       try {
         const { id } = request.params as { id: string };
         const body = request.body as CountersignBody;
-        const userId = request.user!.id;
-        const locationId = request.user!.locationId;
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
         const ipAddress = request.ip;
         const userAgent = request.headers["user-agent"];
         const result = await signatureService.countersignDocument(
           id,
           body,
-          userId,
-          locationId,
+          request.user.id,
+          request.user.locationId,
           ipAddress,
           userAgent,
         );
@@ -237,9 +244,13 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
       try {
         const { id } = request.params as { id: string };
         const body = request.body as RejectSignatureBody;
-        const userId = request.user!.id;
-        const locationId = request.user!.locationId;
-        const result = await signatureService.rejectSignature(id, body, userId, locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.rejectSignature(
+          id,
+          body,
+          request.user.id,
+          request.user.locationId,
+        );
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -267,9 +278,13 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
       try {
         const { id } = request.params as { id: string };
         const body = request.body as VoidSignatureBody;
-        const userId = request.user!.id;
-        const locationId = request.user!.locationId;
-        const result = await signatureService.voidSignature(id, body, userId, locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.voidSignature(
+          id,
+          body,
+          request.user.id,
+          request.user.locationId,
+        );
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -297,9 +312,13 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
       try {
         const { id } = request.params as { id: string };
         const body = request.body as MarkExceptionBody;
-        const userId = request.user!.id;
-        const locationId = request.user!.locationId;
-        const result = await signatureService.markNoSignatureRequired(id, body, userId, locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.markNoSignatureRequired(
+          id,
+          body,
+          request.user.id,
+          request.user.locationId,
+        );
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -313,8 +332,8 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
     handler: async (request, reply) => {
       try {
         const { signatureId } = request.params as { signatureId: string };
-        const locationId = request.user!.locationId;
-        const result = await signatureService.verifySignature(signatureId, locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.verifySignature(signatureId, request.user.locationId);
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -334,8 +353,11 @@ export async function patientSignatureRoutes(fastify: FastifyInstance): Promise<
       try {
         const { patientId } = request.params as { patientId: string };
         const query = request.query as SignatureListQuery;
-        const locationId = request.user!.locationId;
-        const result = await signatureService.listSignatures({ ...query, patientId }, locationId);
+        if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+        const result = await signatureService.listSignatures(
+          { ...query, patientId },
+          request.user.locationId,
+        );
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);

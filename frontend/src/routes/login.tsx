@@ -1,11 +1,12 @@
 // routes/login.tsx
 // Public login route
 
+import type { RouterContext } from "@/routes/__root.js";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/login")({
   // Redirect to dashboard if already authenticated
-  beforeLoad: ({ context }) => {
+  beforeLoad: ({ context }: { context: RouterContext }) => {
     if (context.session) {
       throw redirect({ to: "/dashboard" });
     }

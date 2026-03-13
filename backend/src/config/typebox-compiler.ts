@@ -62,6 +62,22 @@ import {
   RecalculateCapResponseSchema,
 } from "@/contexts/billing/schemas/capIntelligence.schema.js";
 import {
+  BillHoldSchema,
+  BulkSubmitBodySchema,
+  BulkSubmitResponseSchema,
+  ClaimDetailResponseSchema,
+  ClaimListQuerySchema,
+  ClaimListResponseSchema,
+  ClaimReadinessResultSchema,
+  ClaimRejectionSchema,
+  ClaimRevisionSchema,
+  ClaimSchema,
+  ClaimSubmissionSchema,
+  CreateClaimBodySchema,
+  HoldBodySchema,
+  ReplaceClaimBodySchema,
+} from "@/contexts/billing/schemas/claim.schema.js";
+import {
   CMSResponseBodySchema,
   CorrectNOEBodySchema,
   CreateNOEBodySchema,
@@ -327,6 +343,22 @@ export const Validators = {
   MarkExceptionBody: TypeCompiler.Compile(MarkExceptionBodySchema),
   SignatureListQuery: TypeCompiler.Compile(SignatureListQuerySchema),
   SignatureListResponse: TypeCompiler.Compile(SignatureListResponseSchema),
+
+  // Claim Lifecycle (T3-7a)
+  Claim: TypeCompiler.Compile(ClaimSchema),
+  ClaimRevision: TypeCompiler.Compile(ClaimRevisionSchema),
+  ClaimSubmission: TypeCompiler.Compile(ClaimSubmissionSchema),
+  ClaimRejection: TypeCompiler.Compile(ClaimRejectionSchema),
+  BillHold: TypeCompiler.Compile(BillHoldSchema),
+  CreateClaimBody: TypeCompiler.Compile(CreateClaimBodySchema),
+  HoldBody: TypeCompiler.Compile(HoldBodySchema),
+  ReplaceClaimBody: TypeCompiler.Compile(ReplaceClaimBodySchema),
+  BulkSubmitBody: TypeCompiler.Compile(BulkSubmitBodySchema),
+  ClaimListQuery: TypeCompiler.Compile(ClaimListQuerySchema),
+  ClaimDetailResponse: TypeCompiler.Compile(ClaimDetailResponseSchema),
+  ClaimListResponse: TypeCompiler.Compile(ClaimListResponseSchema),
+  BulkSubmitResponse: TypeCompiler.Compile(BulkSubmitResponseSchema),
+  ClaimReadinessResult: TypeCompiler.Compile(ClaimReadinessResultSchema),
 
   // FHIR R4 (T3-6)
   FhirPatient: TypeCompiler.Compile(FhirPatientSchema),

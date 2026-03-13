@@ -76,10 +76,7 @@ export function BenefitPeriodRiskWidget({ showLink = true }: BenefitPeriodRiskWi
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-gray-900 text-sm">Benefit Period Status</h3>
         {showLink && (
-          <Link
-            to="/benefit-periods"
-            className="text-xs text-blue-600 hover:underline"
-          >
+          <Link to="/benefit-periods" className="text-xs text-blue-600 hover:underline">
             View all →
           </Link>
         )}

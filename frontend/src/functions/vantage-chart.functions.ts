@@ -14,7 +14,7 @@ import type {
   VantageChartInput,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ────────────────────────
 
@@ -128,64 +128,58 @@ export async function fetchEnhanceNarrative(
 // ── Server functions ──────────────────────────────────────────────────────────
 
 export const createEncounterFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { patientId: string; body: CreateEncounterInput })
+  .validator((data: unknown) => data as { patientId: string; body: CreateEncounterInput })
   .handler(async ({ data }) => {
-    const req = getRequest();
-    return fetchCreateEncounter(data.patientId, data.body, req.headers.get("cookie") ?? "");
+    return fetchCreateEncounter(data.patientId, data.body, getRequestHeader("cookie") ?? "");
   });
 
 export const listEncountersFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const req = getRequest();
-    return fetchListEncounters(data.patientId, req.headers.get("cookie") ?? "");
+    return fetchListEncounters(data.patientId, getRequestHeader("cookie") ?? "");
   });
 
 export const getEncounterFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string; encounterId: string })
+  .validator((data: unknown) => data as { patientId: string; encounterId: string })
   .handler(async ({ data }) => {
-    const req = getRequest();
-    return fetchGetEncounter(data.patientId, data.encounterId, req.headers.get("cookie") ?? "");
+    return fetchGetEncounter(data.patientId, data.encounterId, getRequestHeader("cookie") ?? "");
   });
 
 export const patchEncounterFn = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (data: unknown) =>
       data as { patientId: string; encounterId: string; body: PatchEncounterInput },
   )
   .handler(async ({ data }) => {
-    const req = getRequest();
     return fetchPatchEncounter(
       data.patientId,
       data.encounterId,
       data.body,
-      req.headers.get("cookie") ?? "",
+      getRequestHeader("cookie") ?? "",
     );
   });
 
 export const getPatientContextFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string; encounterId: string })
+  .validator((data: unknown) => data as { patientId: string; encounterId: string })
   .handler(async ({ data }) => {
-    const req = getRequest();
-    return fetchPatientContext(data.patientId, data.encounterId, req.headers.get("cookie") ?? "");
+    return fetchPatientContext(data.patientId, data.encounterId, getRequestHeader("cookie") ?? "");
   });
 
 export const previewNarrativeFn = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (data: unknown) => data as { patientId: string; encounterId: string; input: VantageChartInput },
   )
   .handler(async ({ data }) => {
-    const req = getRequest();
     return fetchGenerateNarrative(
       data.patientId,
       data.encounterId,
       data.input,
-      req.headers.get("cookie") ?? "",
+      getRequestHeader("cookie") ?? "",
     );
   });
 
 export const finalizeNoteFn = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (data: unknown) =>
       data as {
         patientId: string;
@@ -197,8 +191,7 @@ export const finalizeNoteFn = createServerFn({ method: "POST" })
       },
   )
   .handler(async ({ data }) => {
-    const req = getRequest();
-    const cookie = req.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     // Accept the note: patch encounter with draft + method + accepted timestamp
     return fetchPatchEncounter(
       data.patientId,
@@ -216,15 +209,12 @@ export const finalizeNoteFn = createServerFn({ method: "POST" })
   });
 
 export const enhanceWithLLMFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (data: unknown) => data as { patientId: string; encounterId: string; draft: string },
-  )
+  .validator((data: unknown) => data as { patientId: string; encounterId: string; draft: string })
   .handler(async ({ data }) => {
-    const req = getRequest();
     return fetchEnhanceNarrative(
       data.patientId,
       data.encounterId,
       data.draft,
-      req.headers.get("cookie") ?? "",
+      getRequestHeader("cookie") ?? "",
     );
   });

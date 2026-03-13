@@ -4,7 +4,7 @@
 import type { HospiciSession } from "@/lib/auth.server.js";
 import { authClient, parseHospiciSession } from "@/lib/auth.server.js";
 import { createMiddleware } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 /**
  * Auth middleware — validates the session cookie via the Better Auth backend.
@@ -14,9 +14,8 @@ import { getRequest } from "@tanstack/react-start/server";
  *
  * Usage: .middleware([authMiddleware])
  */
-export const authMiddleware = createMiddleware({ type: "function" }).server(async ({ next }) => {
-  const request = getRequest();
-  const cookieHeader = request.headers.get("cookie") ?? "";
+export const authMiddleware = createMiddleware().server(async ({ next }) => {
+  const cookieHeader = getRequestHeader("cookie") ?? "";
 
   const { data: baSession } = await authClient.getSession({
     fetchOptions: { headers: { cookie: cookieHeader } },

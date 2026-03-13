@@ -10,7 +10,7 @@ import type {
   ScheduledVisitResponse,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -79,27 +79,22 @@ export async function patchVisitStatus(
 // ── Server functions ───────────────────────────────────────────────────────────
 
 export const getScheduledVisitsFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchScheduledVisits(data.patientId, cookieHeader);
   });
 
 export const createScheduledVisitFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { patientId: string; body: CreateScheduledVisitInput })
+  .validator((data: unknown) => data as { patientId: string; body: CreateScheduledVisitInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return createScheduledVisit(data.patientId, data.body, cookieHeader);
   });
 
 export const patchVisitStatusFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (data: unknown) => data as { visitId: string; body: PatchScheduledVisitStatusInput },
-  )
+  .validator((data: unknown) => data as { visitId: string; body: PatchScheduledVisitStatusInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return patchVisitStatus(data.visitId, data.body, cookieHeader);
   });

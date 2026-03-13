@@ -13,6 +13,7 @@ import {
   previewNarrativeFn,
 } from "@/functions/vantage-chart.functions.js";
 import { patientKeys } from "@/lib/query/keys.js";
+import type { RouterContext } from "@/routes/__root.js";
 import type {
   ContextAlert,
   EnhanceNarrativeResponse,
@@ -33,7 +34,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export const Route = createFileRoute(
   "/_authed/patients/$patientId/encounters/$encounterId/vantage-chart",
 )({
-  loader: async ({ context: { queryClient }, params: { patientId, encounterId } }) => {
+  loader: async ({
+    context: { queryClient },
+    params: { patientId, encounterId },
+  }: { context: RouterContext; params: { patientId: string; encounterId: string } }) => {
     await Promise.all([
       queryClient.ensureQueryData({
         queryKey: ["encounter", encounterId],

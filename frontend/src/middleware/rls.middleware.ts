@@ -12,7 +12,7 @@ import { authMiddleware } from "./auth.middleware";
  * directly via Better Auth. This middleware no longer injects those values as
  * headers to prevent client-forgery attacks (T1-3).
  */
-export const rlsMiddleware = createMiddleware({ type: "function" })
+export const rlsMiddleware = createMiddleware()
   .middleware([authMiddleware])
   .server(async ({ next, context }) => {
     return next({

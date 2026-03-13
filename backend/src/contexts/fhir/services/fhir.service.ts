@@ -460,7 +460,8 @@ export async function searchObservations(
         if (typeConditions.length === 1) {
           conditions.push(typeConditions[0]);
         } else {
-          conditions.push(or(...typeConditions)!);
+          const orCond = or(...typeConditions);
+          if (orCond) conditions.push(orCond);
         }
       }
     }

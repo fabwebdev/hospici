@@ -26,6 +26,8 @@ export const QUEUE_NAMES = {
   MISSED_VISIT_CHECK: "missed-visit-check",
   F2F_DEADLINE_CHECK: "f2f-deadline-check",
   BENEFIT_PERIOD_CHECK: "benefit-period-check",
+  CLAIM_SUBMISSION: "claim-submission",
+  CLAIM_SUBMISSION_DLQ: "claim-submission-dlq",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -125,6 +127,23 @@ export const f2fDeadlineCheckQueue = new Queue(QUEUE_NAMES.F2F_DEADLINE_CHECK, {
 export const benefitPeriodCheckQueue = new Queue(QUEUE_NAMES.BENEFIT_PERIOD_CHECK, {
   connection: createBullMQConnection(),
   defaultJobOptions,
+});
+
+// ── Claim submission queue (T3-7a) ────────────────────────────────────────────
+
+/**
+ * 3 retries, exponential backoff starting at 2s.
+ * Failed jobs kept for DLQ review (removeOnFail: false).
+ * DLQ transitions claim → REJECTED via worker error handler.
+ */
+export const claimSubmissionQueue = new Queue(QUEUE_NAMES.CLAIM_SUBMISSION, {
+  connection: createBullMQConnection(),
+  defaultJobOptions: {
+    removeOnComplete: { count: 100 },
+    removeOnFail: false, // Keep for DLQ review
+    attempts: 3,
+    backoff: { type: "exponential" as const, delay: 2000 },
+  },
 });
 
 // ── Daily schedule registration ───────────────────────────────────────────────
@@ -239,4 +258,5 @@ export async function closeQueues(): Promise<void> {
   await missedVisitCheckQueue.close();
   await f2fDeadlineCheckQueue.close();
   await benefitPeriodCheckQueue.close();
+  await claimSubmissionQueue.close();
 }

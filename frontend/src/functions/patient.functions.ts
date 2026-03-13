@@ -4,7 +4,7 @@
 import { env } from "@/lib/env.server.js";
 import type { PatientListResponse, PatientResponse } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -48,13 +48,11 @@ export async function fetchPatient(
 // ── Server functions ──────────────────────────────────────────────────────────
 
 export const getPatientsFn = createServerFn({ method: "GET" }).handler(async () => {
-  const request = getRequest();
-  return fetchPatients(request.headers.get("cookie") ?? "");
+  return fetchPatients(getRequestHeader("cookie") ?? "");
 });
 
 export const getPatientFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchPatient(data.patientId, request.headers.get("cookie") ?? "");
+    return fetchPatient(data.patientId, getRequestHeader("cookie") ?? "");
   });

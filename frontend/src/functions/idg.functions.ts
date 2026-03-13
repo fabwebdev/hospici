@@ -9,7 +9,7 @@ import type {
   IDGMeetingResponse,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -79,22 +79,19 @@ export async function fetchCreateIDGMeeting(
 // ── Server functions ──────────────────────────────────────────────────────────
 
 export const getIDGMeetingsFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchIDGMeetings(data.patientId, request.headers.get("cookie") ?? "");
+    return fetchIDGMeetings(data.patientId, getRequestHeader("cookie") ?? "");
   });
 
 export const getIDGComplianceFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchIDGCompliance(data.patientId, request.headers.get("cookie") ?? "");
+    return fetchIDGCompliance(data.patientId, getRequestHeader("cookie") ?? "");
   });
 
 export const createIDGMeetingFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { input: CreateIDGMeetingInput })
+  .validator((data: unknown) => data as { input: CreateIDGMeetingInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchCreateIDGMeeting(data.input, request.headers.get("cookie") ?? "");
+    return fetchCreateIDGMeeting(data.input, getRequestHeader("cookie") ?? "");
   });

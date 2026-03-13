@@ -6,16 +6,13 @@ import { env } from "@/lib/env.server.js";
 import { BreakGlassInputValidator, LoginInputValidator } from "@/lib/validators/auth.validators.js";
 import { redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { appendResponseHeader, getEvent } from "vinxi/http";
+import { appendResponseHeader, getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 
 export const loginFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => LoginInputValidator.Decode(data))
+  .validator((data: unknown) => LoginInputValidator.Decode(data))
   .handler(async ({ data }) => {
-    const event = getEvent();
-
     const { error } = await authClient.signIn.email({
       email: data.email,
       password: data.password,
@@ -23,9 +20,8 @@ export const loginFn = createServerFn({ method: "POST" })
         onResponse(ctx) {
           // Forward Set-Cookie from backend to browser.
           // Session cookie is httpOnly — JS on the client cannot read it.
-          const cookies = ctx.response.headers.getSetCookie();
-          for (const cookie of cookies) {
-            appendResponseHeader(event, "set-cookie", cookie);
+          for (const cookie of ctx.response.headers.getSetCookie()) {
+            appendResponseHeader("set-cookie", cookie);
           }
         },
       },
@@ -41,18 +37,15 @@ export const loginFn = createServerFn({ method: "POST" })
 // ── Logout ────────────────────────────────────────────────────────────────────
 
 export const logoutFn = createServerFn({ method: "POST" }).handler(async () => {
-  const request = getRequest();
-  const event = getEvent();
-  const cookieHeader = request.headers.get("cookie") ?? "";
+  const cookieHeader = getRequestHeader("cookie") ?? "";
 
   await authClient.signOut({
     fetchOptions: {
       headers: { cookie: cookieHeader },
       onResponse(ctx) {
         // Forward cleared cookie to browser
-        const cookies = ctx.response.headers.getSetCookie();
-        for (const cookie of cookies) {
-          appendResponseHeader(event, "set-cookie", cookie);
+        for (const cookie of ctx.response.headers.getSetCookie()) {
+          appendResponseHeader("set-cookie", cookie);
         }
       },
     },
@@ -64,8 +57,7 @@ export const logoutFn = createServerFn({ method: "POST" }).handler(async () => {
 // ── Get current session ───────────────────────────────────────────────────────
 
 export const getCurrentSessionFn = createServerFn({ method: "GET" }).handler(async () => {
-  const request = getRequest();
-  const cookieHeader = request.headers.get("cookie") ?? "";
+  const cookieHeader = getRequestHeader("cookie") ?? "";
 
   const { data: session, error } = await authClient.getSession({
     fetchOptions: { headers: { cookie: cookieHeader } },
@@ -83,10 +75,9 @@ export const getCurrentSessionFn = createServerFn({ method: "GET" }).handler(asy
 // Reason must be ≥ 20 characters per HIPAA §164.312(a)(2)(ii) audit requirements.
 
 export const breakGlassFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => BreakGlassInputValidator.Decode(data))
+  .validator((data: unknown) => BreakGlassInputValidator.Decode(data))
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
 
     const response = await fetch(`${env.apiUrl}/api/v1/break-glass`, {
       method: "POST",

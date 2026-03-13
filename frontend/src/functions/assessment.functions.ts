@@ -4,7 +4,7 @@
 import { env } from "@/lib/env.server.js";
 import type { TrajectoryResponse } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -33,8 +33,7 @@ export async function fetchTrajectory(
 // ── Server functions ──────────────────────────────────────────────────────────
 
 export const getTrajectoryFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchTrajectory(data.patientId, request.headers.get("cookie") ?? "");
+    return fetchTrajectory(data.patientId, getRequestHeader("cookie") ?? "");
   });

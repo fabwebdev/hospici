@@ -3,19 +3,19 @@
 
 import { env } from "@/lib/env.server.js";
 import type {
-  CreateSignatureRequestBody,
-  SignDocumentBody,
   CountersignBody,
-  RejectSignatureBody,
-  VoidSignatureBody,
+  CreateSignatureRequestBody,
   MarkExceptionBody,
+  OutstandingSignaturesResponse,
+  RejectSignatureBody,
+  SignDocumentBody,
   SignatureListQuery,
   SignatureRequestWithSignatures,
   SignatureVerificationResult,
-  OutstandingSignaturesResponse,
+  VoidSignatureBody,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // JSON-safe wrapper types — TanStack server functions require serializable return types.
 // SignatureEvent.eventData is typed as Record<string, unknown> in shared-types but at
@@ -82,7 +82,9 @@ export async function fetchOutstandingSignatures(
       error?: { message?: string };
       message?: string;
     };
-    throw new Error(body.message ?? body.error?.message ?? "Failed to fetch outstanding signatures");
+    throw new Error(
+      body.message ?? body.error?.message ?? "Failed to fetch outstanding signatures",
+    );
   }
 
   return (await response.json()) as OutstandingSignaturesResponse;
@@ -318,85 +320,73 @@ export async function fetchVerifySignature(
 // ── Server functions ──────────────────────────────────────────────────────────
 
 export const getSignaturesFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { query: SignatureListQuery })
+  .validator((data: unknown) => data as { query: SignatureListQuery })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchSignatures(data.query, request.headers.get("cookie") ?? "");
+    return fetchSignatures(data.query, getRequestHeader("cookie") ?? "");
   });
 
 export const getOutstandingSignaturesFn = createServerFn({ method: "GET" })
-  .inputValidator(() => ({}))
+  .validator(() => ({}))
   .handler(async () => {
-    const request = getRequest();
-    return fetchOutstandingSignatures(request.headers.get("cookie") ?? "");
+    return fetchOutstandingSignatures(getRequestHeader("cookie") ?? "");
   });
 
 export const getSignatureRequestFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { requestId: string })
+  .validator((data: unknown) => data as { requestId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchSignatureRequest(data.requestId, request.headers.get("cookie") ?? "");
+    return fetchSignatureRequest(data.requestId, getRequestHeader("cookie") ?? "");
   });
 
 export const createSignatureRequestFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { input: CreateSignatureRequestBody })
+  .validator((data: unknown) => data as { input: CreateSignatureRequestBody })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchCreateSignatureRequest(data.input, request.headers.get("cookie") ?? "");
+    return fetchCreateSignatureRequest(data.input, getRequestHeader("cookie") ?? "");
   });
 
 export const sendForSignatureFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { requestId: string })
+  .validator((data: unknown) => data as { requestId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchSendForSignature(data.requestId, request.headers.get("cookie") ?? "");
+    return fetchSendForSignature(data.requestId, getRequestHeader("cookie") ?? "");
   });
 
 export const markViewedFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { requestId: string })
+  .validator((data: unknown) => data as { requestId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchMarkViewed(data.requestId, request.headers.get("cookie") ?? "");
+    return fetchMarkViewed(data.requestId, getRequestHeader("cookie") ?? "");
   });
 
 export const signDocumentFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { requestId: string; input: SignDocumentBody })
+  .validator((data: unknown) => data as { requestId: string; input: SignDocumentBody })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchSignDocument(data.requestId, data.input, request.headers.get("cookie") ?? "");
+    return fetchSignDocument(data.requestId, data.input, getRequestHeader("cookie") ?? "");
   });
 
 export const countersignFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { requestId: string; input: CountersignBody })
+  .validator((data: unknown) => data as { requestId: string; input: CountersignBody })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchCountersign(data.requestId, data.input, request.headers.get("cookie") ?? "");
+    return fetchCountersign(data.requestId, data.input, getRequestHeader("cookie") ?? "");
   });
 
 export const rejectSignatureFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { requestId: string; input: RejectSignatureBody })
+  .validator((data: unknown) => data as { requestId: string; input: RejectSignatureBody })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchRejectSignature(data.requestId, data.input, request.headers.get("cookie") ?? "");
+    return fetchRejectSignature(data.requestId, data.input, getRequestHeader("cookie") ?? "");
   });
 
 export const voidSignatureFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { requestId: string; input: VoidSignatureBody })
+  .validator((data: unknown) => data as { requestId: string; input: VoidSignatureBody })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchVoidSignature(data.requestId, data.input, request.headers.get("cookie") ?? "");
+    return fetchVoidSignature(data.requestId, data.input, getRequestHeader("cookie") ?? "");
   });
 
 export const markExceptionFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { requestId: string; input: MarkExceptionBody })
+  .validator((data: unknown) => data as { requestId: string; input: MarkExceptionBody })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchMarkException(data.requestId, data.input, request.headers.get("cookie") ?? "");
+    return fetchMarkException(data.requestId, data.input, getRequestHeader("cookie") ?? "");
   });
 
 export const verifySignatureFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { signatureId: string })
+  .validator((data: unknown) => data as { signatureId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    return fetchVerifySignature(data.signatureId, request.headers.get("cookie") ?? "");
+    return fetchVerifySignature(data.signatureId, getRequestHeader("cookie") ?? "");
   });

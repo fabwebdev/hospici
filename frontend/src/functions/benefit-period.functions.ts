@@ -10,7 +10,7 @@ import type {
   RecalculationPreview,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // JSON-safe wrapper types — TanStack server functions require serializable return types.
 // CorrectionEntry.oldValue/newValue are typed as `unknown` in shared-types but at
@@ -34,17 +34,19 @@ type JsonBenefitPeriodListResponse = Omit<BenefitPeriodListResponse, "items"> & 
 };
 
 type JsonBenefitPeriodTimeline = Omit<BenefitPeriodTimeline, "periods"> & {
-  periods: Array<Omit<BenefitPeriodTimeline["periods"][number], "correctionHistory"> & {
-    correctionHistory: Array<{
-      correctedAt: string;
-      correctedByUserId: string;
-      field: string;
-      oldValue: string | number | boolean | null;
-      newValue: string | number | boolean | null;
-      reason: string;
-      previewApproved: boolean;
-    }>;
-  }>;
+  periods: Array<
+    Omit<BenefitPeriodTimeline["periods"][number], "correctionHistory"> & {
+      correctionHistory: Array<{
+        correctedAt: string;
+        correctedByUserId: string;
+        field: string;
+        oldValue: string | number | boolean | null;
+        newValue: string | number | boolean | null;
+        reason: string;
+        previewApproved: boolean;
+      }>;
+    }
+  >;
 };
 
 type JsonRecalculationPreview = Omit<RecalculationPreview, "affectedPeriods"> & {
@@ -190,36 +192,30 @@ async function patchReportingPeriod(
 // ── Server functions ──────────────────────────────────────────────────────────
 
 export const getBenefitPeriodsFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { query?: BenefitPeriodListQuery })
+  .validator((data: unknown) => data as { query?: BenefitPeriodListQuery })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return fetchBenefitPeriods(cookie, data?.query ?? {});
   });
 
 export const getPatientTimelineFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return fetchPatientTimeline(cookie, data.patientId);
   });
 
 export const getBenefitPeriodFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { id: string })
+  .validator((data: unknown) => data as { id: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return fetchBenefitPeriod(cookie, data.id);
   });
 
 export const recertifyFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (data: unknown) => data as { id: string; physicianId: string; completedAt: string },
-  )
+  .validator((data: unknown) => data as { id: string; physicianId: string; completedAt: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return postRecertify(cookie, data.id, {
       physicianId: data.physicianId,
       completedAt: data.completedAt,
@@ -227,13 +223,17 @@ export const recertifyFn = createServerFn({ method: "POST" })
   });
 
 export const correctPeriodFn = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (data: unknown) =>
-      data as { id: string; field: string; newValue: string | number | boolean | null; reason: string },
+      data as {
+        id: string;
+        field: string;
+        newValue: string | number | boolean | null;
+        reason: string;
+      },
   )
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return postCorrect(cookie, data.id, {
       field: data.field,
       newValue: data.newValue,
@@ -242,25 +242,22 @@ export const correctPeriodFn = createServerFn({ method: "POST" })
   });
 
 export const recalculatePreviewFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { id: string })
+  .validator((data: unknown) => data as { id: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return postRecalculatePreview(cookie, data.id);
   });
 
 export const recalculateCommitFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { id: string; previewToken: string })
+  .validator((data: unknown) => data as { id: string; previewToken: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return postRecalculateCommit(cookie, data.id, data.previewToken);
   });
 
 export const setReportingPeriodFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { id: string })
+  .validator((data: unknown) => data as { id: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return patchReportingPeriod(cookie, data.id);
   });

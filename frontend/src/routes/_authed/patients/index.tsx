@@ -3,12 +3,13 @@
 
 import { getPatientsFn } from "@/functions/patient.functions.js";
 import { patientKeys } from "@/lib/query/keys.js";
+import type { RouterContext } from "@/routes/__root.js";
 import type { HumanName, PatientListResponse } from "@hospici/shared-types";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/patients/")({
-  loader: ({ context: { queryClient } }) =>
+  loader: ({ context: { queryClient } }: { context: RouterContext }) =>
     queryClient.ensureQueryData({
       queryKey: patientKeys.list(),
       queryFn: () => getPatientsFn(),

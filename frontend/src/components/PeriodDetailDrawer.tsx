@@ -46,9 +46,7 @@ function SetReportingButton({
   });
 
   if (period.isReportingPeriod) {
-    return (
-      <span className="text-xs text-green-700 font-medium px-2 py-1">Reporting Period</span>
-    );
+    return <span className="text-xs text-green-700 font-medium px-2 py-1">Reporting Period</span>;
   }
 
   return (
@@ -77,8 +75,7 @@ function RecertifyForm({
   const [completedAt, setCompletedAt] = useState(new Date().toISOString().slice(0, 10));
 
   const mutation = useMutation({
-    mutationFn: () =>
-      recertifyFn({ data: { id: period.id, physicianId, completedAt } }),
+    mutationFn: () => recertifyFn({ data: { id: period.id, physicianId, completedAt } }),
     onSuccess: () => {
       setOpen(false);
       onSuccess();
@@ -168,8 +165,7 @@ function CorrectPeriodForm({
   const CORRECTABLE_FIELDS = ["startDate", "endDate", "recertDueDate", "noeId"];
 
   const mutation = useMutation({
-    mutationFn: () =>
-      correctPeriodFn({ data: { id: period.id, field, newValue, reason } }),
+    mutationFn: () => correctPeriodFn({ data: { id: period.id, field, newValue, reason } }),
     onSuccess: () => {
       setOpen(false);
       onSuccess();
@@ -270,7 +266,11 @@ interface PeriodDetailDrawerProps {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function PeriodDetailDrawer({ period, onClose, onMutationSuccess }: PeriodDetailDrawerProps) {
+export function PeriodDetailDrawer({
+  period,
+  onClose,
+  onMutationSuccess,
+}: PeriodDetailDrawerProps) {
   const handleSuccess = () => {
     onMutationSuccess?.();
   };
@@ -378,7 +378,15 @@ export function PeriodDetailDrawer({ period, onClose, onMutationSuccess }: Perio
           <>
             <SectionHeading title="Correction History" />
             <div className="space-y-2">
-              {(period.correctionHistory as Array<{ correctedAt: string; field: string; oldValue: unknown; newValue: unknown; reason: string }>).map((entry, idx) => (
+              {(
+                period.correctionHistory as Array<{
+                  correctedAt: string;
+                  field: string;
+                  oldValue: unknown;
+                  newValue: unknown;
+                  reason: string;
+                }>
+              ).map((entry, idx) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: correction history is append-only
                 <div key={idx} className="text-xs bg-gray-50 rounded p-2">
                   <div className="font-medium text-gray-700">

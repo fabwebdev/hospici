@@ -108,7 +108,15 @@ export function RecalculationPreviewModal({
                 </tr>
               </thead>
               <tbody>
-                {(preview.affectedPeriods as Array<{ id: string; periodNumber: number; field: string; oldValue: unknown; newValue: unknown }>).map((ap, idx) => (
+                {(
+                  preview.affectedPeriods as Array<{
+                    id: string;
+                    periodNumber: number;
+                    field: string;
+                    oldValue: unknown;
+                    newValue: unknown;
+                  }>
+                ).map((ap, idx) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: static preview list
                   <tr key={idx} className="border-b hover:bg-gray-50">
                     <td className="py-2 font-medium">{ap.periodNumber}</td>
@@ -124,9 +132,7 @@ export function RecalculationPreviewModal({
 
         {/* Footer */}
         <div className="border-t px-5 py-4 flex items-center justify-between">
-          <div className="text-xs text-gray-400">
-            Token: {preview.previewToken.slice(0, 8)}...
-          </div>
+          <div className="text-xs text-gray-400">Token: {preview.previewToken.slice(0, 8)}...</div>
           <div className="flex gap-3">
             <button
               type="button"
@@ -148,7 +154,9 @@ export function RecalculationPreviewModal({
 
         {mutation.isError && (
           <div className="px-5 pb-3 text-red-600 text-sm">
-            {mutation.error instanceof Error ? mutation.error.message : "Failed to commit recalculation"}
+            {mutation.error instanceof Error
+              ? mutation.error.message
+              : "Failed to commit recalculation"}
           </div>
         )}
       </div>

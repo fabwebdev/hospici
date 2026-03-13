@@ -10,7 +10,7 @@ import type {
   PhysicianReviewInput,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -121,36 +121,32 @@ export async function postPhysicianReview(
 // ── Server functions (TanStack Start createServerFn) ─────────────────────────
 
 export const getCarePlanFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchCarePlan(data.patientId, cookieHeader);
   });
 
 export const createCarePlanFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { patientId: string; input: CreateCarePlanInput })
+  .validator((data: unknown) => data as { patientId: string; input: CreateCarePlanInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return postCarePlan(data.patientId, data.input, cookieHeader);
   });
 
 export const physicianReviewFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { patientId: string; input: PhysicianReviewInput })
+  .validator((data: unknown) => data as { patientId: string; input: PhysicianReviewInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return postPhysicianReview(data.patientId, data.input, cookieHeader);
   });
 
 export const patchCarePlanFn = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (data: unknown) =>
       data as { patientId: string; discipline: DisciplineType; input: PatchCarePlanInput },
   )
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return patchCarePlanDiscipline(data.patientId, data.discipline, data.input, cookieHeader);
   });

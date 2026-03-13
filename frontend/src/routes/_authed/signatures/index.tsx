@@ -1,23 +1,21 @@
 // routes/_authed/signatures/index.tsx
 // Electronic signature workbench — outstanding signatures queue
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   getOutstandingSignaturesFn,
   sendForSignatureFn,
   voidSignatureFn,
 } from "@/functions/signature.functions.js";
+import type { RouterContext } from "@/routes/__root.js";
 import type { OutstandingSignatureItem } from "@hospici/shared-types";
-import {
-  SIGNATURE_STATUS_LABELS,
-  DOCUMENT_TYPE_LABELS,
-} from "@hospici/shared-types";
+import { DOCUMENT_TYPE_LABELS, SIGNATURE_STATUS_LABELS } from "@hospici/shared-types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/signatures/")({
   component: SignatureWorkbenchPage,
-  loader: async ({ context }) => {
+  loader: async ({ context }: { context: RouterContext }) => {
     await context.queryClient.prefetchQuery({
       queryKey: ["outstanding-signatures"],
       queryFn: () => getOutstandingSignaturesFn({}),
@@ -59,14 +57,10 @@ function SignatureCard({
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-600">
-            {DOCUMENT_TYPE_LABELS[item.documentType]}
-          </p>
+          <p className="text-sm text-gray-600">{DOCUMENT_TYPE_LABELS[item.documentType]}</p>
           <div className="flex items-center gap-4 text-xs text-gray-500">
             <span>Requested {new Date(item.requestedAt).toLocaleDateString()}</span>
-            {item.sentAt && (
-              <span>Sent {new Date(item.sentAt).toLocaleDateString()}</span>
-            )}
+            {item.sentAt && <span>Sent {new Date(item.sentAt).toLocaleDateString()}</span>}
             <span>Signatures: {item.signatureCount}</span>
             {item.requireCountersign && (
               <span className="text-xs border px-1 rounded">Countersign required</span>
@@ -83,6 +77,7 @@ function SignatureCard({
           </Link>
           {item.status === "READY_FOR_SIGNATURE" && (
             <button
+              type="button"
               className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
               onClick={() => onSend(item.id)}
             >
@@ -90,6 +85,7 @@ function SignatureCard({
             </button>
           )}
           <button
+            type="button"
             className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
             onClick={() => onVoid(item.id)}
           >
@@ -103,7 +99,9 @@ function SignatureCard({
 
 function SignatureWorkbenchPage() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"all" | "pending" | "sent" | "overdue" | "exception">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "pending" | "sent" | "overdue" | "exception">(
+    "all",
+  );
 
   const { data, isLoading } = useQuery({
     queryKey: ["outstanding-signatures"],
@@ -111,7 +109,7 @@ function SignatureWorkbenchPage() {
   });
 
   const sendMutation = useMutation({
-    mutationFn: ({ requestId }: { requestId: string }) => 
+    mutationFn: ({ requestId }: { requestId: string }) =>
       sendForSignatureFn({ data: { requestId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["outstanding-signatures"] });
@@ -147,11 +145,16 @@ function SignatureWorkbenchPage() {
 
   const getItemsForTab = () => {
     switch (activeTab) {
-      case "pending": return outstanding.pending;
-      case "sent": return outstanding.sent;
-      case "overdue": return outstanding.overdue;
-      case "exception": return outstanding.exception;
-      default: return allItems;
+      case "pending":
+        return outstanding.pending;
+      case "sent":
+        return outstanding.sent;
+      case "overdue":
+        return outstanding.overdue;
+      case "exception":
+        return outstanding.exception;
+      default:
+        return allItems;
     }
   };
 
@@ -186,6 +189,7 @@ function SignatureWorkbenchPage() {
             { key: "exception", label: "Partial", count: outstanding.exception.length },
           ].map((tab) => (
             <button
+              type="button"
               key={tab.key}
               className={`px-4 py-2 text-sm font-medium border-b-2 ${
                 activeTab === tab.key

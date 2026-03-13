@@ -213,6 +213,32 @@ export type {
   OutstandingSignatureItem,
   OutstandingSignaturesResponse,
 } from "./signatures.js";
+export {
+  CLAIM_STATE_LABELS,
+  CLAIM_STATE_COLORS,
+  TERMINAL_CLAIM_STATES,
+  SUBMITTABLE_CLAIM_STATES,
+} from "./billing/claim.js";
+export type {
+  ClaimState,
+  ClaimBillType,
+  BillHoldReason,
+  LevelOfCare,
+  ClaimLine,
+  ClaimReadinessBlocker,
+  ClaimReadinessResult,
+  ClaimSummary,
+  ClaimRevision,
+  ClaimSubmission,
+  ClaimRejection,
+  BillHold,
+  ClaimDetail,
+  CreateClaimInput,
+  HoldClaimInput,
+  ReplaceClaimInput,
+  BulkSubmitInput,
+  BulkSubmitResult,
+} from "./billing/claim.js";
 export type {
   FhirId,
   FhirUri,

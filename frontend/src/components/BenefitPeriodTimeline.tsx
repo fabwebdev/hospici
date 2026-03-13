@@ -13,24 +13,59 @@ function statusColor(status: BenefitPeriodStatus): {
 } {
   switch (status) {
     case "current":
-      return { bg: "bg-green-50", border: "border-green-300", text: "text-green-800", dot: "bg-green-500" };
+      return {
+        bg: "bg-green-50",
+        border: "border-green-300",
+        text: "text-green-800",
+        dot: "bg-green-500",
+      };
     case "upcoming":
-      return { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-800", dot: "bg-blue-400" };
+      return {
+        bg: "bg-blue-50",
+        border: "border-blue-200",
+        text: "text-blue-800",
+        dot: "bg-blue-400",
+      };
     case "recert_due":
-      return { bg: "bg-amber-50", border: "border-amber-300", text: "text-amber-800", dot: "bg-amber-500" };
+      return {
+        bg: "bg-amber-50",
+        border: "border-amber-300",
+        text: "text-amber-800",
+        dot: "bg-amber-500",
+      };
     case "at_risk":
-      return { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-800", dot: "bg-orange-500" };
+      return {
+        bg: "bg-orange-50",
+        border: "border-orange-300",
+        text: "text-orange-800",
+        dot: "bg-orange-500",
+      };
     case "past_due":
       return { bg: "bg-red-50", border: "border-red-300", text: "text-red-800", dot: "bg-red-500" };
     case "revoked":
     case "closed":
     case "discharged":
     case "transferred_out":
-      return { bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-500", dot: "bg-gray-400" };
+      return {
+        bg: "bg-gray-50",
+        border: "border-gray-200",
+        text: "text-gray-500",
+        dot: "bg-gray-400",
+      };
     case "concurrent_care":
-      return { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-800", dot: "bg-purple-400" };
+      return {
+        bg: "bg-purple-50",
+        border: "border-purple-200",
+        text: "text-purple-800",
+        dot: "bg-purple-400",
+      };
     default:
-      return { bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-600", dot: "bg-gray-300" };
+      return {
+        bg: "bg-gray-50",
+        border: "border-gray-200",
+        text: "text-gray-600",
+        dot: "bg-gray-300",
+      };
   }
 }
 
@@ -70,7 +105,7 @@ function PeriodCard({
       } ${colors.border} ${isActive ? "ring-2 ring-offset-1 ring-blue-400 shadow-md" : "hover:shadow-sm"}`}
     >
       {/* Period number badge */}
-      <div className={`flex items-center gap-1.5 mb-2`}>
+      <div className={"flex items-center gap-1.5 mb-2"}>
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${colors.dot}`} />
         <span className={`text-xs font-semibold uppercase tracking-wide ${colors.text}`}>
           Period #{period.periodNumber}

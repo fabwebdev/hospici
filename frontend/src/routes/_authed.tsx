@@ -2,13 +2,14 @@
 // Protected layout route — all children require authentication
 
 import { getComplianceAlertsFn } from "@/functions/alerts.functions.js";
+import type { RouterContext } from "@/routes/__root.js";
 import type { AlertListResponse } from "@hospici/shared-types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authed")({
-  beforeLoad: ({ context }) => {
+  beforeLoad: ({ context }: { context: RouterContext }) => {
     if (!context.session) {
       throw redirect({
         to: "/login",

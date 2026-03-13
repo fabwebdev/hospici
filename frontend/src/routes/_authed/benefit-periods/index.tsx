@@ -6,7 +6,11 @@ import {
   recertifyFn,
   setReportingPeriodFn,
 } from "@/functions/benefit-period.functions.js";
-import type { BenefitPeriodDetail, BenefitPeriodListResponse, BenefitPeriodStatus } from "@hospici/shared-types";
+import type {
+  BenefitPeriodDetail,
+  BenefitPeriodListResponse,
+  BenefitPeriodStatus,
+} from "@hospici/shared-types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -189,9 +193,7 @@ function PeriodTable({
   onSetReporting: (id: string) => void;
 }) {
   if (items.length === 0) {
-    return (
-      <div className="text-center text-gray-400 py-10">No benefit periods in this view.</div>
-    );
+    return <div className="text-center text-gray-400 py-10">No benefit periods in this view.</div>;
   }
 
   return (
@@ -236,8 +238,7 @@ function RecertifyDrawer({
   const [completedAt, setCompletedAt] = useState(new Date().toISOString().slice(0, 10));
 
   const mutation = useMutation({
-    mutationFn: () =>
-      recertifyFn({ data: { id: period.id, physicianId, completedAt } }),
+    mutationFn: () => recertifyFn({ data: { id: period.id, physicianId, completedAt } }),
     onSuccess: () => {
       onSuccess();
       onClose();
@@ -248,7 +249,11 @@ function RecertifyDrawer({
     <div className="fixed inset-y-0 right-0 w-[420px] bg-white border-l border-gray-200 shadow-xl z-40 flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <h2 className="font-semibold text-gray-900">Record Recertification</h2>
-        <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 text-xl"
+        >
           ×
         </button>
       </div>
@@ -283,7 +288,9 @@ function RecertifyDrawer({
         </div>
         {mutation.isError && (
           <div className="text-red-600 text-sm">
-            {mutation.error instanceof Error ? mutation.error.message : "Failed to record recertification"}
+            {mutation.error instanceof Error
+              ? mutation.error.message
+              : "Failed to record recertification"}
           </div>
         )}
       </div>

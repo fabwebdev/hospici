@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { Db } from "@/db/client.js";
 import type * as schema from "@/db/schema/index.js";
 import { and, count, desc, eq, lt, sql } from "drizzle-orm";
@@ -734,12 +734,11 @@ export class SignatureService {
     }
 
     if (overdue) {
-      conditions.push(
-        and(
-          eq(signatureRequests.status, "SENT_FOR_SIGNATURE"),
-          lt(signatureRequests.expiresAt, new Date()),
-        )!,
+      const overdueCond = and(
+        eq(signatureRequests.status, "SENT_FOR_SIGNATURE"),
+        lt(signatureRequests.expiresAt, new Date()),
       );
+      if (overdueCond) conditions.push(overdueCond);
     }
 
     const whereClause = and(...conditions);

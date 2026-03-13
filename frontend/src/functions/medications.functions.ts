@@ -16,7 +16,7 @@ import type {
   RecordAdministrationInput,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -183,72 +183,64 @@ export async function patchAllergy(
 // ── Server functions (TanStack Start createServerFn) ─────────────────────────
 
 export const getMedicationsFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchMedications(data.patientId, cookieHeader);
   });
 
 export const createMedicationFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { patientId: string; input: CreateMedicationInput })
+  .validator((data: unknown) => data as { patientId: string; input: CreateMedicationInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return postMedication(data.patientId, data.input, cookieHeader);
   });
 
 export const updateMedicationFn = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (data: unknown) => data as { patientId: string; medId: string; input: PatchMedicationInput },
   )
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return patchMedication(data.patientId, data.medId, data.input, cookieHeader);
   });
 
 export const getAdministrationsFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string; medId: string })
+  .validator((data: unknown) => data as { patientId: string; medId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchAdministrations(data.patientId, data.medId, cookieHeader);
   });
 
 export const recordAdministrationFn = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (data: unknown) =>
       data as { patientId: string; medId: string; input: RecordAdministrationInput },
   )
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return postAdministration(data.patientId, data.medId, data.input, cookieHeader);
   });
 
 export const getAllergiesFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchAllergies(data.patientId, cookieHeader);
   });
 
 export const createAllergyFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { patientId: string; input: CreateAllergyInput })
+  .validator((data: unknown) => data as { patientId: string; input: CreateAllergyInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return postAllergy(data.patientId, data.input, cookieHeader);
   });
 
 export const updateAllergyFn = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (data: unknown) => data as { patientId: string; allergyId: string; input: PatchAllergyInput },
   )
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return patchAllergy(data.patientId, data.allergyId, data.input, cookieHeader);
   });

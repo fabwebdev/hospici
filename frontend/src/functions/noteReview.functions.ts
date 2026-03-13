@@ -11,7 +11,7 @@ import type {
 } from "@hospici/shared-types";
 import type { ReviewQueueItem } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -149,7 +149,7 @@ export async function bulkAcknowledge(
 // ── Server functions ──────────────────────────────────────────────────────────
 
 export const getReviewQueueFn = createServerFn({ method: "GET" })
-  .inputValidator(
+  .validator(
     (data: unknown) =>
       data as {
         status?: string;
@@ -161,47 +161,41 @@ export const getReviewQueueFn = createServerFn({ method: "GET" })
       },
   )
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchReviewQueue(cookieHeader, data);
   });
 
 export const submitReviewFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { encounterId: string; body: SubmitReviewInput })
+  .validator((data: unknown) => data as { encounterId: string; body: SubmitReviewInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return submitReview(data.encounterId, data.body, cookieHeader);
   });
 
 export const assignReviewerFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { encounterId: string; body: AssignReviewInput })
+  .validator((data: unknown) => data as { encounterId: string; body: AssignReviewInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return assignReviewer(data.encounterId, data.body, cookieHeader);
   });
 
 export const escalateReviewFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { encounterId: string; body: EscalateReviewInput })
+  .validator((data: unknown) => data as { encounterId: string; body: EscalateReviewInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return escalateReview(data.encounterId, data.body, cookieHeader);
   });
 
 export const getReviewHistoryFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { encounterId: string })
+  .validator((data: unknown) => data as { encounterId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return fetchReviewHistory(data.encounterId, cookieHeader);
   });
 
 export const bulkAcknowledgeFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as BulkAcknowledgeInput)
+  .validator((data: unknown) => data as BulkAcknowledgeInput)
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return bulkAcknowledge(data, cookieHeader);
   });

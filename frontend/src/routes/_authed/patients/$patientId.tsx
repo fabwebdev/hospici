@@ -13,6 +13,7 @@ import {
 import { getIDGComplianceFn } from "@/functions/idg.functions.js";
 import { getPatientFn } from "@/functions/patient.functions.js";
 import { patientKeys } from "@/lib/query/keys.js";
+import type { RouterContext } from "@/routes/__root.js";
 import type {
   CarePlanResponse,
   DisciplineType,
@@ -40,7 +41,10 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/patients/$patientId")({
-  loader: ({ context: { queryClient }, params: { patientId } }) =>
+  loader: ({
+    context: { queryClient },
+    params: { patientId },
+  }: { context: RouterContext; params: { patientId: string } }) =>
     Promise.all([
       queryClient.ensureQueryData({
         queryKey: patientKeys.detail(patientId),

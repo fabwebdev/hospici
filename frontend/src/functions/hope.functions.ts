@@ -16,7 +16,7 @@ import type {
   PatchHOPEAssessmentInput,
 } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -163,72 +163,63 @@ export async function fetchQualityBenchmarks(cookieHeader: string): Promise<HOPE
 // ── Server functions (createServerFn wrappers) ────────────────────────────────
 
 export const getHOPEAssessmentsFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as HOPEAssessmentListQuery)
+  .validator((data: unknown) => data as HOPEAssessmentListQuery)
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return fetchHOPEAssessments(data, cookie);
   });
 
 export const getHOPEAssessmentFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { id: string })
+  .validator((data: unknown) => data as { id: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return fetchHOPEAssessment(data.id, cookie);
   });
 
 export const createHOPEAssessmentFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as CreateHOPEAssessmentInput)
+  .validator((data: unknown) => data as CreateHOPEAssessmentInput)
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return createHOPEAssessment(data, cookie);
   });
 
 export const patchHOPEAssessmentFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { id: string; body: PatchHOPEAssessmentInput })
+  .validator((data: unknown) => data as { id: string; body: PatchHOPEAssessmentInput })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return patchHOPEAssessment(data.id, data.body, cookie);
   });
 
 export const validateHOPEAssessmentFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { id: string })
+  .validator((data: unknown) => data as { id: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return validateHOPEAssessment(data.id, cookie);
   });
 
 export const approveHOPEAssessmentFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { id: string })
+  .validator((data: unknown) => data as { id: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return approveHOPEAssessment(data.id, cookie);
   });
 
 export const reprocessHOPESubmissionFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { submissionId: string })
+  .validator((data: unknown) => data as { submissionId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return reprocessHOPESubmission(data.submissionId, cookie);
   });
 
 export const revertHOPEToReviewFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { submissionId: string })
+  .validator((data: unknown) => data as { submissionId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return revertHOPEToReview(data.submissionId, cookie);
   });
 
 export const getQualityBenchmarksFn = createServerFn({ method: "GET" }).handler(async () => {
-  const request = getRequest();
-  const cookie = request.headers.get("cookie") ?? "";
+  const cookie = getRequestHeader("cookie") ?? "";
   return fetchQualityBenchmarks(cookie);
 });
 
@@ -277,23 +268,20 @@ export async function fetchHOPESubmissionsByAssessment(
 }
 
 export const getHOPEDashboardFn = createServerFn({ method: "GET" }).handler(async () => {
-  const request = getRequest();
-  const cookie = request.headers.get("cookie") ?? "";
+  const cookie = getRequestHeader("cookie") ?? "";
   return fetchHOPEDashboard(cookie);
 });
 
 export const getHOPEPatientTimelineFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { patientId: string })
+  .validator((data: unknown) => data as { patientId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return fetchHOPEPatientTimeline(data.patientId, cookie);
   });
 
 export const getHOPESubmissionsByAssessmentFn = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => data as { assessmentId: string })
+  .validator((data: unknown) => data as { assessmentId: string })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookie = request.headers.get("cookie") ?? "";
+    const cookie = getRequestHeader("cookie") ?? "";
     return fetchHOPESubmissionsByAssessment(data.assessmentId, cookie);
   });

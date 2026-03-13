@@ -25,7 +25,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/_authed/hope/assessments/$id")({
-  loader: async ({ params }) => {
+  loader: async ({ params }: { params: { id: string } }) => {
     return getHOPEAssessmentFn({ data: { id: params.id } });
   },
   component: HOPEAssessmentDetailPage,
@@ -127,7 +127,7 @@ function HOPEAssessmentDetailPage() {
 
   const isSupervisor = ["supervisor", "admin", "super_admin"].includes(session?.role ?? "");
 
-  const { data: assessment } = useQuery({
+  const { data: assessment } = useQuery<HOPEAssessmentResponse>({
     queryKey: ["hope", "assessment", id],
     queryFn: () => getHOPEAssessmentFn({ data: { id } }),
     initialData,

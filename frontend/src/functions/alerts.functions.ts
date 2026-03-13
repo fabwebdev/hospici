@@ -4,7 +4,7 @@
 import { env } from "@/lib/env.server.js";
 import type { Alert, AlertListResponse, AlertStatusPatchBody } from "@hospici/shared-types";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 // ── Internal handlers (exported for contract testing) ─────────────────────────
 
@@ -67,21 +67,18 @@ export async function patchAlertStatus(
 // ── Server functions ──────────────────────────────────────────────────────────
 
 export const getComplianceAlertsFn = createServerFn({ method: "GET" }).handler(async () => {
-  const request = getRequest();
-  const cookieHeader = request.headers.get("cookie") ?? "";
+  const cookieHeader = getRequestHeader("cookie") ?? "";
   return fetchComplianceAlerts(cookieHeader);
 });
 
 export const getBillingAlertsFn = createServerFn({ method: "GET" }).handler(async () => {
-  const request = getRequest();
-  const cookieHeader = request.headers.get("cookie") ?? "";
+  const cookieHeader = getRequestHeader("cookie") ?? "";
   return fetchBillingAlerts(cookieHeader);
 });
 
 export const patchAlertStatusFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => data as { alertId: string; body: AlertStatusPatchBody })
+  .validator((data: unknown) => data as { alertId: string; body: AlertStatusPatchBody })
   .handler(async ({ data }) => {
-    const request = getRequest();
-    const cookieHeader = request.headers.get("cookie") ?? "";
+    const cookieHeader = getRequestHeader("cookie") ?? "";
     return patchAlertStatus(data.alertId, data.body, cookieHeader);
   });

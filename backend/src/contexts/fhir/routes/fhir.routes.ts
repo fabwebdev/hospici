@@ -201,7 +201,8 @@ export default async function fhirRoutes(fastify: FastifyInstance): Promise<void
         _page?: number;
       };
 
-      const bundle = await FhirService.searchPatients(request.user!, query);
+      if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+      const bundle = await FhirService.searchPatients(request.user, query);
       reply.code(200).send(bundle);
     },
   );
@@ -234,7 +235,8 @@ export default async function fhirRoutes(fastify: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const patient = await FhirService.getPatient(id, request.user!);
+      if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+      const patient = await FhirService.getPatient(id, request.user);
 
       if (!patient) {
         return reply.code(404).send({
@@ -291,7 +293,8 @@ export default async function fhirRoutes(fastify: FastifyInstance): Promise<void
         _page?: number;
       };
 
-      const bundle = await FhirService.searchObservations(request.user!, query);
+      if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+      const bundle = await FhirService.searchObservations(request.user, query);
       reply.code(200).send(bundle);
     },
   );
@@ -324,7 +327,8 @@ export default async function fhirRoutes(fastify: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const observation = await FhirService.getObservation(id, request.user!);
+      if (!request.user) return reply.code(401).send({ message: "Unauthorized" });
+      const observation = await FhirService.getObservation(id, request.user);
 
       if (!observation) {
         return reply.code(404).send({

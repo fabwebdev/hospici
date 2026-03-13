@@ -8,6 +8,7 @@ import {
   getScheduledVisitsFn,
   patchVisitStatusFn,
 } from "@/functions/visitSchedule.functions.js";
+import type { RouterContext } from "@/routes/__root.js";
 import type {
   CreateScheduledVisitInput,
   ScheduledVisitListResponse,
@@ -20,7 +21,10 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/patients/$patientId/visits/")({
-  loader: ({ context: { queryClient }, params: { patientId } }) =>
+  loader: ({
+    context: { queryClient },
+    params: { patientId },
+  }: { context: RouterContext; params: { patientId: string } }) =>
     queryClient.ensureQueryData({
       queryKey: ["scheduled-visits", patientId],
       queryFn: () => getScheduledVisitsFn({ data: { patientId } }),
