@@ -262,6 +262,11 @@ async function socketPlugin(fastify: FastifyInstance) {
     io.emit("quality:outlier:detected", data);
   });
 
+  // ── HQRP Penalty (quarterly close worker) ────────────────────────────────
+  complianceEvents.on("hqrp:penalty:alert", (data) => {
+    io.to(`location:${data.locationId}`).emit("hqrp:penalty:alert", data);
+  });
+
   // ── Graceful shutdown ───────────────────────────────────────────────────────
   fastify.addHook("onClose", async () => {
     await new Promise<void>((resolve) => io.close(() => resolve()));

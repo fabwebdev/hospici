@@ -39,14 +39,14 @@
 | ---------------------------------------------------------------------------------------------------- | ------ |
 | NOE 5-day —`addBusinessDays()`, skips weekends + holidays, Friday edge tested                     | ✅     |
 | IDG 15-day — hard block (no dismiss), 42 CFR §418.56. Implemented T2-4: enforcement on `updateCarePlanFn`, frontend modal, no dismiss | ✅     |
-| HHA supervision 14-day — alert day 12 (`AIDE_SUPERVISION_UPCOMING`), block if overdue (`AIDE_SUPERVISION_OVERDUE`). 42 CFR §418.76 | ⬜ |
+| HHA supervision 14-day — alert day 12 (`AIDE_SUPERVISION_UPCOMING`), block if overdue (`AIDE_SUPERVISION_OVERDUE`). 42 CFR §418.76 | ✅ |
 | Hospice cap year — Nov 1–Oct 31. `getCapYear()` implemented. T3-3 expanded: `cap_snapshots` + `cap_patient_contributions` tables, 5 routes, 7-section dashboard, 4 alert thresholds (70/80/90/projected), branch benchmarking, audit trail | ✅     |
 | Benefit periods — 90d/90d/60d/60d/60d… period engine. F2F required period 3+, within 30 **calendar days before** recert date (42 CFR §418.22). Transfer-aware (H→H inherits period number). Downstream recalculation with preview + audit trail. billingRisk flag feeds T3-12 (T3-7a wired) | ✅     |
 | HOPE windows — admission ≤7 days, discharge ≤7 days. Full T3-1a: CRUD, two-tier validation, iQIES BullMQ pipeline, payloadHash, DLQ, Socket.IO events, completeness ring | ✅     |
-| HQRP penalty — missed iQIES deadline = 2% reduction. Track `penaltyApplied` flag                  | ⬜     |
+| HQRP penalty — missed iQIES deadline = 2% reduction. Track `penaltyApplied` flag. `hqrp-period-close.worker.ts` closes open periods, sets `penaltyApplied`, emits `hqrp:penalty:alert` Socket.IO event per location | ✅     |
 | HIS — retired 2025-10-01.**Never reference HIS**. HOPE only                                   | ✅     |
 | NOTR — 5 business days from revocation. Mirrors NOE logic. Implemented T3-2a: full NOTR state machine, deadline, auto-create on revocation | ✅     |
-| Session auto-logoff — 30 min idle,`session:expiring` Socket.IO event at 25 min                    | ⬜     |
+| Session auto-logoff — 30 min idle, `session:expiring` Socket.IO event at 25 min. `useSessionExpiry` hook + `SessionExpiryModal` in `_authed.tsx` with countdown, Continue/Logout CTAs, auto-logout on zero | ✅     |
 
 ---
 
@@ -124,8 +124,8 @@ Legend: `⬜ TODO` · `🔄 IN PROGRESS` · `✅ DONE` · `🚫 BLOCKED`
 | ---- | ------------------------------------ | ------ | ------ |
 | T4-1 | SMART on FHIR 2.0 (Backend Services) | ⬜     | HIGH   |
 | T4-2 | FHIR R4 `$export` bulk operation   | ⬜     | HIGH   |
-| T4-3 | eRx integration (EPCS)               | ⬜     | HIGH   |
-| T4-4 | Direct Secure Messaging              | ⬜     | HIGH   |
+| T4-3 | eRx integration (EPCS) — DoseSpot/NewCrop vendor embed, controlled-substance gating, prescriber EPCS readiness | ⬜ | HIGH |
+| T4-4 | Direct Secure Messaging — HISP vendor (Kno2/Surescripts), C-CDA R2.1 assembly, XDM packaging, inbound patient matching, discharge auto-trigger | ⬜ | HIGH |
 | T4-5 | DDE/FISS Integration                 | ⬜     | HIGH   |
 | T4-6 | TypeBox AOT CI verification          | ⬜     | LOW    |
 | T4-7 | Load testing                         | ⬜     | MEDIUM |

@@ -100,6 +100,16 @@ export interface ServerToClientEvents {
 		requiresAcknowledgement: boolean;
 	}) => void;
 
+	// HQRP Penalty (T1-7 / HQRP compliance)
+	"hqrp:penalty:alert": (data: {
+		locationId: string;
+		calendarYear: number;
+		quarter: number;
+		periodId: string;
+		/** Fiscal year in which the 2% Medicare reduction will apply */
+		penaltyFiscalYear: number;
+	}) => void;
+
 	// System
 	"system:maintenance": (data: {
 		scheduledAt: string;
