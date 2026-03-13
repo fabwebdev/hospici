@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  SignatureService,
+  InvalidSignatureTransitionError,
   SignatureAlreadyExistsError,
   SignatureAlreadySignedError,
-  InvalidSignatureTransitionError,
   SignatureNotFoundError,
+  SignatureService,
 } from "./signature.service.js";
 
 // Mock the database
@@ -16,7 +16,9 @@ const mockDb = {
   },
   select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn(() => [{ count: 0 }]) })) })),
   insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn(() => [{}]) })) })),
-  update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(() => [{}]) })) })) })),
+  update: vi.fn(() => ({
+    set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(() => [{}]) })) })),
+  })),
 };
 
 const mockTx = {
@@ -25,7 +27,9 @@ const mockTx = {
     electronicSignatures: { findMany: vi.fn() },
   },
   insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn(() => [{}]) })) })),
-  update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(() => [{}]) })) })) })),
+  update: vi.fn(() => ({
+    set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(() => [{}]) })) })),
+  })),
 };
 
 describe("SignatureService", () => {

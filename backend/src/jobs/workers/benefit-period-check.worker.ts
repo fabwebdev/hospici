@@ -100,9 +100,7 @@ export async function benefitPeriodCheckHandler(
         if (t.newStatus === "recert_due" && t.recertDueDate) {
           const daysRemaining = Math.max(
             0,
-            Math.floor(
-              (new Date(t.recertDueDate).getTime() - Date.now()) / 86_400_000,
-            ),
+            Math.floor((new Date(t.recertDueDate).getTime() - Date.now()) / 86_400_000),
           );
           alertsToUpsert.push({
             locationId: t.locationId,
@@ -130,9 +128,7 @@ export async function benefitPeriodCheckHandler(
         if (t.newStatus === "at_risk" && t.recertDueDate) {
           const daysRemaining = Math.max(
             0,
-            Math.floor(
-              (new Date(t.recertDueDate).getTime() - Date.now()) / 86_400_000,
-            ),
+            Math.floor((new Date(t.recertDueDate).getTime() - Date.now()) / 86_400_000),
           );
           alertsToUpsert.push({
             locationId: t.locationId,

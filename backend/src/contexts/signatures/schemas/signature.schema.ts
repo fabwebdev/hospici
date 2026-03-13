@@ -1,4 +1,4 @@
-import { Type, type Static } from "@sinclair/typebox";
+import { type Static, Type } from "@sinclair/typebox";
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 
@@ -62,7 +62,9 @@ export const ElectronicSignatureSchema = Type.Object({
   attestationAccepted: Type.Boolean(),
   attestationText: Type.String(),
 
-  documentedSignedAt: Type.Optional(Type.Union([Type.String({ format: "date-time" }), Type.Null()])),
+  documentedSignedAt: Type.Optional(
+    Type.Union([Type.String({ format: "date-time" }), Type.Null()]),
+  ),
   signedAt: Type.String({ format: "date-time" }),
 
   ipAddress: Type.Optional(Type.Union([Type.String(), Type.Null()])),
@@ -77,7 +79,9 @@ export const ElectronicSignatureSchema = Type.Object({
   representativeRelationship: Type.Optional(Type.Union([Type.String(), Type.Null()])),
   patientUnableReason: Type.Optional(Type.Union([Type.String(), Type.Null()])),
 
-  countersignsSignatureId: Type.Optional(Type.Union([Type.String({ format: "uuid" }), Type.Null()])),
+  countersignsSignatureId: Type.Optional(
+    Type.Union([Type.String({ format: "uuid" }), Type.Null()]),
+  ),
 
   createdAt: Type.String({ format: "date-time" }),
 });
@@ -109,8 +113,12 @@ export const SignatureRequestSchema = Type.Object({
 
   deliveryMethod: DeliveryMethodSchema,
 
-  documentedSignedAt: Type.Optional(Type.Union([Type.String({ format: "date-time" }), Type.Null()])),
-  sentForSignatureAt: Type.Optional(Type.Union([Type.String({ format: "date-time" }), Type.Null()])),
+  documentedSignedAt: Type.Optional(
+    Type.Union([Type.String({ format: "date-time" }), Type.Null()]),
+  ),
+  sentForSignatureAt: Type.Optional(
+    Type.Union([Type.String({ format: "date-time" }), Type.Null()]),
+  ),
   viewedAt: Type.Optional(Type.Union([Type.String({ format: "date-time" }), Type.Null()])),
   completedAt: Type.Optional(Type.Union([Type.String({ format: "date-time" }), Type.Null()])),
   expiresAt: Type.Optional(Type.Union([Type.String({ format: "date-time" }), Type.Null()])),
@@ -121,7 +129,9 @@ export const SignatureRequestSchema = Type.Object({
   exceptionType: Type.Optional(Type.Union([SignatureExceptionTypeSchema, Type.Null()])),
   exceptionReason: Type.Optional(Type.Union([Type.String(), Type.Null()])),
   exceptionApprovedBy: Type.Optional(Type.Union([Type.String({ format: "uuid" }), Type.Null()])),
-  exceptionApprovedAt: Type.Optional(Type.Union([Type.String({ format: "date-time" }), Type.Null()])),
+  exceptionApprovedAt: Type.Optional(
+    Type.Union([Type.String({ format: "date-time" }), Type.Null()]),
+  ),
 
   rejectedAt: Type.Optional(Type.Union([Type.String({ format: "date-time" }), Type.Null()])),
   rejectedBy: Type.Optional(Type.Union([Type.String({ format: "uuid" }), Type.Null()])),

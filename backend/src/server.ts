@@ -4,7 +4,6 @@
 import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
 import hopeRoutes, { analyticsRoutes } from "@/contexts/analytics/routes/hope.routes.js";
-import fhirRoutes from "@/contexts/fhir/routes/fhir.routes.js";
 import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
 import capRoutes from "@/contexts/billing/routes/cap.routes.js";
 import noePatientRoutes, { noeStandaloneRoutes } from "@/contexts/billing/routes/noe.routes.js";
@@ -16,6 +15,7 @@ import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
 import vantageChartRoutes from "@/contexts/clinical/routes/vantageChart.routes.js";
 import alertRoutes from "@/contexts/compliance/routes/alert.routes.js";
 import { f2fPatientRoutes, f2fStandaloneRoutes } from "@/contexts/f2f/routes/f2f.routes.js";
+import fhirRoutes from "@/contexts/fhir/routes/fhir.routes.js";
 import authRoutes from "@/contexts/identity/routes/auth.routes.js";
 import { idgMeetingsRoutes, patientIdgRoutes } from "@/contexts/scheduling/routes/idg.routes.js";
 import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
@@ -23,8 +23,8 @@ import visitSchedulePatientRoutes, {
   visitScheduleStandaloneRoutes,
 } from "@/contexts/scheduling/routes/visitSchedule.routes.js";
 import {
-  signatureRoutes,
   patientSignatureRoutes,
+  signatureRoutes,
 } from "@/contexts/signatures/routes/signature.routes.js";
 import { closeQueues, scheduleDailyJobs } from "@/jobs/queue.js";
 import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.worker.js";
@@ -176,7 +176,9 @@ export async function buildApp() {
   await fastify.register(f2fStandaloneRoutes, { prefix: "/api/v1" });
   await fastify.register(capRoutes, { prefix: "/api/v1/cap" });
   await fastify.register(signatureRoutes, { prefix: "/api/v1/signatures" });
-  await fastify.register(patientSignatureRoutes, { prefix: "/api/v1/patients/:patientId/signatures" });
+  await fastify.register(patientSignatureRoutes, {
+    prefix: "/api/v1/patients/:patientId/signatures",
+  });
   await fastify.register(fhirRoutes, { prefix: "/fhir/r4" });
 
   // ── BullMQ Workers ────────────────────────────────────────────────────────────

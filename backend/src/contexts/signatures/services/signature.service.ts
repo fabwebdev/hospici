@@ -1,30 +1,30 @@
-import { eq, and, desc, sql, count, lt } from "drizzle-orm";
 import { createHash, randomUUID } from "crypto";
 import type { Db } from "@/db/client.js";
 import type * as schema from "@/db/schema/index.js";
+import { and, count, desc, eq, lt, sql } from "drizzle-orm";
 import type { ExtractTablesWithRelations } from "drizzle-orm";
 import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
 import type { PgTransaction } from "drizzle-orm/pg-core";
-import type {
-  CreateSignatureRequestBody,
-  SignDocumentBody,
-  CountersignBody,
-  RejectSignatureBody,
-  VoidSignatureBody,
-  MarkExceptionBody,
-  SignatureVerificationResult,
-  SignatureRequestWithSignatures,
-  OutstandingSignaturesResponse,
-  SignatureListQuery,
-  SignatureListResponse,
-} from "../schemas/signature.schema.js";
+import type { patients } from "../../../db/schema/patients.table.js";
 import {
-  signatureRequests,
   electronicSignatures,
   signatureEvents,
+  signatureRequests,
 } from "../../../db/schema/signature-requests.table.js";
 import { logAudit } from "../../identity/services/audit.service.js";
-import { patients } from "../../../db/schema/patients.table.js";
+import type {
+  CountersignBody,
+  CreateSignatureRequestBody,
+  MarkExceptionBody,
+  OutstandingSignaturesResponse,
+  RejectSignatureBody,
+  SignDocumentBody,
+  SignatureListQuery,
+  SignatureListResponse,
+  SignatureRequestWithSignatures,
+  SignatureVerificationResult,
+  VoidSignatureBody,
+} from "../schemas/signature.schema.js";
 
 type SignatureRequestStatus = (typeof signatureRequests.$inferSelect)["status"];
 
@@ -38,7 +38,7 @@ export class SignatureError extends Error {
   constructor(
     message: string,
     public code: string,
-    public statusCode: number = 400,
+    public statusCode = 400,
   ) {
     super(message);
     this.name = "SignatureError";
@@ -59,7 +59,11 @@ export class SignatureAlreadySignedError extends SignatureError {
 
 export class InvalidSignatureTransitionError extends SignatureError {
   constructor(from: string, to: string) {
-    super(`Invalid signature transition from ${from} to ${to}`, "INVALID_SIGNATURE_TRANSITION", 400);
+    super(
+      `Invalid signature transition from ${from} to ${to}`,
+      "INVALID_SIGNATURE_TRANSITION",
+      400,
+    );
   }
 }
 
@@ -236,10 +240,7 @@ export class SignatureService {
     locationId: string,
   ): Promise<SignatureRequestWithSignatures> {
     const request = await this.db.query.signatureRequests.findFirst({
-      where: and(
-        eq(signatureRequests.id, requestId),
-        eq(signatureRequests.locationId, locationId),
-      ),
+      where: and(eq(signatureRequests.id, requestId), eq(signatureRequests.locationId, locationId)),
       with: {
         signatures: true,
         events: {
@@ -369,7 +370,9 @@ export class SignatureService {
 
       if (
         !input.countersignsSignatureId &&
-        existingSignatures.some((s) => s.signerType === input.signerType && !s.countersignsSignatureId)
+        existingSignatures.some(
+          (s) => s.signerType === input.signerType && !s.countersignsSignatureId,
+        )
       ) {
         throw new SignatureAlreadySignedError();
       }
@@ -698,11 +701,12 @@ export class SignatureService {
       contentHashMatch,
       signatureHashMatch,
       currentContentHash: request.contentHash,
-      message: contentHashMatch && signatureHashMatch
-        ? "Signature is valid and document has not been modified"
-        : !contentHashMatch
-          ? "Document content has been modified since signature"
-          : "Signature record has been tampered with",
+      message:
+        contentHashMatch && signatureHashMatch
+          ? "Signature is valid and document has not been modified"
+          : !contentHashMatch
+            ? "Document content has been modified since signature"
+            : "Signature record has been tampered with",
     };
   }
 
@@ -804,7 +808,9 @@ export class SignatureService {
       const item = {
         id: request.id,
         patientId: request.patientId,
-        patientName: request.patient ? this.decryptPatientName(request.patient as typeof patients.$inferSelect) : "Unknown",
+        patientName: request.patient
+          ? this.decryptPatientName(request.patient as typeof patients.$inferSelect)
+          : "Unknown",
         documentType: request.documentType,
         documentId: request.documentId,
         status: request.status,
@@ -831,16 +837,9 @@ export class SignatureService {
 
   // ── Helper Methods ──────────────────────────────────────────────────────────
 
-  private async getRequestForUpdate(
-    tx: DbOrTx,
-    requestId: string,
-    locationId: string,
-  ) {
+  private async getRequestForUpdate(tx: DbOrTx, requestId: string, locationId: string) {
     const request = await tx.query.signatureRequests.findFirst({
-      where: and(
-        eq(signatureRequests.id, requestId),
-        eq(signatureRequests.locationId, locationId),
-      ),
+      where: and(eq(signatureRequests.id, requestId), eq(signatureRequests.locationId, locationId)),
     });
 
     if (!request) {
@@ -850,7 +849,10 @@ export class SignatureService {
     return request;
   }
 
-  private calculateRequiredSignatures(request: { requireCountersign: boolean; requirePatientSignature: boolean }): number {
+  private calculateRequiredSignatures(request: {
+    requireCountersign: boolean;
+    requirePatientSignature: boolean;
+  }): number {
     let count = 1; // At minimum one signature required
     if (request.requireCountersign) count++;
     if (request.requirePatientSignature) count++;
@@ -860,12 +862,16 @@ export class SignatureService {
   private decryptPatientName(patient: typeof patients.$inferSelect): string {
     // Extract name from FHIR data jsonb — no dedicated name columns on patients table
     const pData = patient.data as Record<string, unknown> | null;
-    const humanName = (pData?.name as Array<{ given?: string[]; family?: string }> | undefined)?.[0];
+    const humanName = (
+      pData?.name as Array<{ given?: string[]; family?: string }> | undefined
+    )?.[0];
     if (!humanName) return "[unknown]";
     return `${humanName.given?.join(" ") ?? ""} ${humanName.family ?? ""}`.trim() || "[unknown]";
   }
 
-  private mapToResponse(request: typeof signatureRequests.$inferSelect): Omit<SignatureRequestWithSignatures, "signatures" | "events"> {
+  private mapToResponse(
+    request: typeof signatureRequests.$inferSelect,
+  ): Omit<SignatureRequestWithSignatures, "signatures" | "events"> {
     return {
       ...request,
       createdAt: request.createdAt.toISOString(),

@@ -14,6 +14,7 @@
  *   - RLS context injected via parameterized sql tag
  */
 
+import { randomUUID } from "node:crypto";
 import { logAudit } from "@/contexts/identity/services/audit.service.js";
 import { db } from "@/db/client.js";
 import {
@@ -27,10 +28,7 @@ import { patients } from "@/db/schema/patients.table.js";
 import { and, asc, eq, lte, ne, notInArray, sql } from "drizzle-orm";
 import type { FastifyBaseLogger } from "fastify";
 import type Valkey from "iovalkey";
-import { randomUUID } from "node:crypto";
 import {
-  getPeriodLengthDays,
-  isF2FRequired,
   type BenefitPeriodDetailResponse,
   type BenefitPeriodListQuery,
   type BenefitPeriodListResponseType,
@@ -41,6 +39,8 @@ import {
   type RecalculationPreviewResponse,
   type RecertifyBody,
   type SetReportingPeriodBody,
+  getPeriodLengthDays,
+  isF2FRequired,
 } from "../schemas/benefitPeriod.schema.js";
 
 // ── Custom errors ─────────────────────────────────────────────────────────────
@@ -127,11 +127,11 @@ function todayStr(): string {
 
 // ── Row mapper ────────────────────────────────────────────────────────────────
 
-function rowToResponse(row: BenefitPeriodRow & { periodLengthDays?: number | null }): BenefitPeriodResponse {
+function rowToResponse(
+  row: BenefitPeriodRow & { periodLengthDays?: number | null },
+): BenefitPeriodResponse {
   const lengthDays =
-    row.periodLengthDays != null
-      ? row.periodLengthDays
-      : daysBetween(row.startDate, row.endDate);
+    row.periodLengthDays != null ? row.periodLengthDays : daysBetween(row.startDate, row.endDate);
   return {
     id: row.id,
     patientId: row.patientId,
@@ -315,7 +315,9 @@ export class BenefitPeriodService {
 
     const items: BenefitPeriodDetailResponse[] = rows.map((r) => {
       const pData = r.patientData as Record<string, unknown> | null;
-      const humanName = (pData?.name as Array<{ given?: string[]; family?: string }> | undefined)?.[0];
+      const humanName = (
+        pData?.name as Array<{ given?: string[]; family?: string }> | undefined
+      )?.[0];
       const patientName = humanName
         ? `${humanName.given?.join(" ") ?? ""} ${humanName.family ?? ""}`.trim()
         : "[unknown]";
@@ -342,7 +344,10 @@ export class BenefitPeriodService {
   /**
    * Get a patient's full benefit period timeline + active alerts.
    */
-  async getPatientTimeline(patientId: string, user: UserCtx): Promise<BenefitPeriodTimelineResponse> {
+  async getPatientTimeline(
+    patientId: string,
+    user: UserCtx,
+  ): Promise<BenefitPeriodTimelineResponse> {
     const rows = await db.transaction(async (tx) => {
       await applyRlsContext(tx, user);
       return tx
@@ -370,14 +375,12 @@ export class BenefitPeriodService {
       })
       .from(complianceAlerts)
       .where(
-        and(
-          eq(complianceAlerts.patientId, patientId),
-          ne(complianceAlerts.status, "resolved"),
-        ),
+        and(eq(complianceAlerts.patientId, patientId), ne(complianceAlerts.status, "resolved")),
       );
 
     const firstRow = rows[0];
-    const admissionType = (firstRow?.admissionType ?? "new_admission") as BenefitPeriodTimelineResponse["admissionType"];
+    const admissionType = (firstRow?.admissionType ??
+      "new_admission") as BenefitPeriodTimelineResponse["admissionType"];
 
     return {
       patientId,
@@ -416,7 +419,9 @@ export class BenefitPeriodService {
     if (!r) throw new BenefitPeriodNotFoundError(id);
 
     const pData = r.patientData as Record<string, unknown> | null;
-    const humanName = (pData?.name as Array<{ given?: string[]; family?: string }> | undefined)?.[0];
+    const humanName = (
+      pData?.name as Array<{ given?: string[]; family?: string }> | undefined
+    )?.[0];
     const patientName = humanName
       ? `${humanName.given?.join(" ") ?? ""} ${humanName.family ?? ""}`.trim()
       : "[unknown]";
@@ -493,10 +498,7 @@ export class BenefitPeriodService {
    * Preview recalculation of all periods for a patient starting from the given period.
    * Stores result in Valkey with TTL; returns preview without mutating the DB.
    */
-  async recalculateFromPeriod(
-    id: string,
-    user: UserCtx,
-  ): Promise<RecalculationPreviewResponse> {
+  async recalculateFromPeriod(id: string, user: UserCtx): Promise<RecalculationPreviewResponse> {
     const rows = await db.transaction(async (tx) => {
       await applyRlsContext(tx, user);
 
@@ -587,7 +589,10 @@ export class BenefitPeriodService {
     const preview = JSON.parse(raw) as RecalculationPreviewResponse;
 
     // Group changes by period id
-    const changesByPeriod = new Map<string, Array<{ field: string; oldValue: unknown; newValue: unknown }>>();
+    const changesByPeriod = new Map<
+      string,
+      Array<{ field: string; oldValue: unknown; newValue: unknown }>
+    >();
     for (const ap of preview.affectedPeriods) {
       const list = changesByPeriod.get(ap.id) ?? [];
       list.push({ field: ap.field, oldValue: ap.oldValue, newValue: ap.newValue });
@@ -625,10 +630,7 @@ export class BenefitPeriodService {
           if (c.field === "endDate") setClause.endDate = c.newValue;
         }
 
-        await tx
-          .update(benefitPeriods)
-          .set(setClause)
-          .where(eq(benefitPeriods.id, periodId));
+        await tx.update(benefitPeriods).set(setClause).where(eq(benefitPeriods.id, periodId));
       }
     });
 
@@ -687,7 +689,11 @@ export class BenefitPeriodService {
   /**
    * Revoke a patient's election — sets status='revoked', revocationDate.
    */
-  async revokeElection(id: string, revocationDate: string, user: UserCtx): Promise<BenefitPeriodDetailResponse> {
+  async revokeElection(
+    id: string,
+    revocationDate: string,
+    user: UserCtx,
+  ): Promise<BenefitPeriodDetailResponse> {
     const row = await db.transaction(async (tx) => {
       await applyRlsContext(tx, user);
 
@@ -755,9 +761,7 @@ export class BenefitPeriodService {
       type AffectedPeriod = RecalculationPreviewResponse["affectedPeriods"][number];
       const affectedPeriods: AffectedPeriod[] = [];
       let runningStart =
-        body.field === "startDate"
-          ? (body.newValue as string)
-          : (rows[0]?.startDate ?? todayStr());
+        body.field === "startDate" ? (body.newValue as string) : (rows[0]?.startDate ?? todayStr());
 
       for (const row of rows) {
         const expectedStart = runningStart;

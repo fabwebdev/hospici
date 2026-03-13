@@ -204,7 +204,10 @@ export default async function benefitPeriodRoutes(fastify: FastifyInstance): Pro
       if (!["billing_coordinator", "admin", "super_admin"].includes(user.role)) {
         reply.code(403).send({
           success: false,
-          error: { code: "FORBIDDEN", message: "Only billing coordinators and admins may set the reporting period" },
+          error: {
+            code: "FORBIDDEN",
+            message: "Only billing coordinators and admins may set the reporting period",
+          },
         });
         return;
       }

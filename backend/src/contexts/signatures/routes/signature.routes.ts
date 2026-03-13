@@ -1,19 +1,16 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
-import {
-  SignatureService,
-  SignatureError,
-} from "../services/signature.service.js";
 import { Validators } from "../../../config/typebox-compiler.js";
 import { db } from "../../../db/client.js";
 import type {
-  CreateSignatureRequestBody,
-  SignDocumentBody,
   CountersignBody,
-  RejectSignatureBody,
-  VoidSignatureBody,
+  CreateSignatureRequestBody,
   MarkExceptionBody,
+  RejectSignatureBody,
+  SignDocumentBody,
   SignatureListQuery,
+  VoidSignatureBody,
 } from "../schemas/signature.schema.js";
+import { SignatureError, SignatureService } from "../services/signature.service.js";
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -302,12 +299,7 @@ export async function signatureRoutes(fastify: FastifyInstance): Promise<void> {
         const body = request.body as MarkExceptionBody;
         const userId = request.user!.id;
         const locationId = request.user!.locationId;
-        const result = await signatureService.markNoSignatureRequired(
-          id,
-          body,
-          userId,
-          locationId,
-        );
+        const result = await signatureService.markNoSignatureRequired(id, body, userId, locationId);
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
@@ -343,10 +335,7 @@ export async function patientSignatureRoutes(fastify: FastifyInstance): Promise<
         const { patientId } = request.params as { patientId: string };
         const query = request.query as SignatureListQuery;
         const locationId = request.user!.locationId;
-        const result = await signatureService.listSignatures(
-          { ...query, patientId },
-          locationId,
-        );
+        const result = await signatureService.listSignatures({ ...query, patientId }, locationId);
         return reply.send(result);
       } catch (error) {
         handleSignatureError(reply, error);
