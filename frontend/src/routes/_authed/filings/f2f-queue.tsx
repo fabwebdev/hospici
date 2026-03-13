@@ -44,7 +44,7 @@ function daysRemainingBadge(days: number) {
 function F2FQueue() {
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["f2f-queue"],
-		queryFn: () => getF2FQueueFn({ data: {} }),
+		queryFn: () => getF2FQueueFn(),
 	});
 
 	if (isLoading) {
@@ -145,7 +145,7 @@ function F2FQueueRow({ item }: { item: F2FQueueItem }) {
 					<Link
 						to="/patients/$patientId/f2f/new"
 						params={{ patientId: item.patientId }}
-						search={{}}
+						search={{ periodId: undefined }}
 						className="inline-flex items-center px-3 py-1 text-xs font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700"
 					>
 						Document F2F

@@ -697,7 +697,7 @@ function F2FPanel({ patientId }: { patientId: string }) {
           <Link
             to="/patients/$patientId/f2f/new"
             params={{ patientId }}
-            search={{}}
+            search={{ periodId: undefined }}
             className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
           >
             Document F2F Encounter

@@ -164,14 +164,8 @@ export async function buildApp() {
   await fastify.register(noteReviewRoutes, { prefix: "/api/v1" });
   await fastify.register(visitSchedulePatientRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(visitScheduleStandaloneRoutes, { prefix: "/api/v1/scheduled-visits" });
-  await fastify.register(f2fPatientRoutes, {
-    prefix: "/api/v1/patients",
-    valkey: fastify.valkey,
-  } as Parameters<typeof f2fPatientRoutes>[1] & { prefix: string });
-  await fastify.register(f2fStandaloneRoutes, {
-    prefix: "/api/v1",
-    valkey: fastify.valkey,
-  } as Parameters<typeof f2fStandaloneRoutes>[1] & { prefix: string });
+  await fastify.register(f2fPatientRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(f2fStandaloneRoutes, { prefix: "/api/v1" });
 
   // ── BullMQ Workers ────────────────────────────────────────────────────────────
   // Workers are created after Fastify is fully configured so the logger is ready.

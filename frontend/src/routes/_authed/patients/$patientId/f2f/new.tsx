@@ -10,6 +10,7 @@
 import { createF2FFn } from "@/functions/f2f.functions.js";
 import type {
 	CreateF2FInput,
+	F2FEncounterResponse,
 	F2FEncounterSetting,
 	F2FProviderRole,
 	F2FValidityResult,
@@ -19,14 +20,15 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/patients/$patientId/f2f/new")({
+	validateSearch: (search: Record<string, unknown>) => ({
+		periodId: typeof search.periodId === "string" ? search.periodId : undefined,
+	}),
 	component: NewF2FForm,
 });
 
 function NewF2FForm() {
 	const { patientId } = Route.useParams();
-	const search = useSearch({ from: "/_authed/patients/$patientId/f2f/new" }) as {
-		periodId?: string;
-	};
+	const search = useSearch({ from: "/_authed/patients/$patientId/f2f/new" });
 	const navigate = useNavigate();
 
 	const [form, setForm] = useState<CreateF2FInput>({
@@ -38,7 +40,11 @@ function NewF2FForm() {
 	});
 	const [validity, setValidity] = useState<F2FValidityResult | null>(null);
 
-	const createMutation = useMutation({
+	const createMutation = useMutation<
+		F2FEncounterResponse & { validity: F2FValidityResult },
+		Error,
+		void
+	>({
 		mutationFn: () => createF2FFn({ data: { patientId, body: form } }),
 		onSuccess: (result) => {
 			setValidity(result.validity);

@@ -23,6 +23,9 @@ export const AlertType = {
 	// T3-2a — NOE/NOTR filing workbench
 	NOE_LATE: "NOE_LATE", // NOE deadline passed — claims blocked
 	NOTR_LATE: "NOTR_LATE", // NOTR deadline passed — claims blocked
+	// T3-2b — F2F Validity Engine
+	F2F_MISSING: "F2F_MISSING", // no valid F2F for period 3+ recertification
+	F2F_INVALID: "F2F_INVALID", // F2F exists but failed CMS validity rules
 } as const;
 
 export type AlertType = (typeof AlertType)[keyof typeof AlertType];

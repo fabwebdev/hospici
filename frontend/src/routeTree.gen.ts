@@ -12,6 +12,7 @@ import { Route as authedPatientsPatientIdRoute } from "./routes/_authed/patients
 import { Route as authedPatientsPatientIdIdgScheduleRoute } from "./routes/_authed/patients/$patientId/idg/schedule";
 import { Route as authedPatientsPatientIdEncountersEncounterIdVantageChartRoute } from "./routes/_authed/patients/$patientId/encounters/$encounterId/vantage-chart";
 import { Route as authedPatientsPatientIdVisitsIndexRoute } from "./routes/_authed/patients/$patientId/visits/index";
+import { Route as authedPatientsPatientIdF2FNewRoute } from "./routes/_authed/patients/$patientId/f2f/new";
 import { Route as authedPatientsIndexRoute } from "./routes/_authed/patients/index";
 import { Route as authedHopeAssessmentsIndexRoute } from "./routes/_authed/hope/assessments/index";
 import { Route as authedHopeAssessmentsNewRoute } from "./routes/_authed/hope/assessments/new";
@@ -19,6 +20,7 @@ import { Route as authedHopeAssessmentsIdRoute } from "./routes/_authed/hope/ass
 import { Route as authedHopeDashboardRoute } from "./routes/_authed/hope/dashboard";
 import { Route as authedHopeSubmissionsRoute } from "./routes/_authed/hope/submissions";
 import { Route as authedFilingsIndexRoute } from "./routes/_authed/filings/index";
+import { Route as authedFilingsF2FQueueRoute } from "./routes/_authed/filings/f2f-queue";
 import { Route as IndexRoute } from "./routes/index";
 import { Route as LoginRoute } from "./routes/login";
 
@@ -27,6 +29,7 @@ const authedPatientsPatientIdRouteWithChildren = authedPatientsPatientIdRoute.ad
   authedPatientsPatientIdIdgScheduleRoute,
   authedPatientsPatientIdEncountersEncounterIdVantageChartRoute,
   authedPatientsPatientIdVisitsIndexRoute,
+  authedPatientsPatientIdF2FNewRoute,
 });
 
 const authedRouteWithChildren = authedRoute.addChildren({
@@ -41,6 +44,7 @@ const authedRouteWithChildren = authedRoute.addChildren({
   authedHopeDashboardRoute,
   authedHopeSubmissionsRoute,
   authedFilingsIndexRoute,
+  authedFilingsF2FQueueRoute,
 });
 
 export const routeTree = rootRoute.addChildren({
@@ -129,6 +133,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof authedPatientsPatientIdVisitsIndexRoute;
       parentRoute: typeof authedPatientsPatientIdRoute;
     };
+    "/_authed/patients/$patientId/f2f/new": {
+      id: "/_authed/patients/$patientId/f2f/new";
+      path: "/f2f/new";
+      fullPath: "/patients/$patientId/f2f/new";
+      preLoaderRoute: typeof authedPatientsPatientIdF2FNewRoute;
+      parentRoute: typeof authedPatientsPatientIdRoute;
+    };
     "/_authed/hope/assessments/": {
       id: "/_authed/hope/assessments/";
       path: "/hope/assessments";
@@ -169,6 +180,13 @@ declare module "@tanstack/react-router" {
       path: "/filings";
       fullPath: "/filings";
       preLoaderRoute: typeof authedFilingsIndexRoute;
+      parentRoute: typeof authedRoute;
+    };
+    "/_authed/filings/f2f-queue": {
+      id: "/_authed/filings/f2f-queue";
+      path: "/filings/f2f-queue";
+      fullPath: "/filings/f2f-queue";
+      preLoaderRoute: typeof authedFilingsF2FQueueRoute;
       parentRoute: typeof authedRoute;
     };
   }

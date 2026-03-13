@@ -1308,22 +1308,141 @@ Runs on `POST /api/v1/claims` and again when transitioning to `READY_FOR_AUDIT`.
 
 ---
 
-## T3-8 · BAA registry + security hardening `MEDIUM`
+## T3-8 · Vendor Governance + BAA Registry + Security Hardening `HIGH`
 
-1. **Create `docs/compliance/baa-registry.md`** — enumerate all PHI-processing vendors:
-   - Valkey host, SMTP provider, hosting, backup/DR, clearinghouse, OpenFDA
-   - **Claude API / Anthropic** — note: PHI stripped before API calls per T2-7; document this explicitly
-   - Confirm or obtain BAA for each vendor
+> **Why HIGH:** Missing BAAs are an immediate HIPAA audit failure. Runtime hardening gaps (MFA optional, no enforced idle timeout) are live security risks. Markdown-only registry drifts; this task replaces it with a persistent, alert-driven governance system.
 
-2. **Verify MFA** is enforced (not optional) — check `auth.config.ts` from T1-1
+`read:` `docs/architecture/security-model.md`, `backend/docs/BACKEND_STRUCTURE.md`
 
-3. **Auto-logoff timeout enforcement** at Fastify session level
+---
 
-4. **Key rotation docs** at `docs/security/key-rotation.md`
+### DB Migrations
 
-5. **Incident response** at `docs/security/incident-response.md`
+Create `000X_vendor_governance.sql`:
 
-**Done when:** BAA registry lists all vendors with BAA status; session auto-logoff test passes; key rotation procedure documented
+**`vendors`** — persistent BAA and vendor-risk registry:
+```typescript
+{
+  id: uuid PK;
+  locationId: uuid FK;           // RLS anchor — org-level vendors use default location
+  vendorName: string;
+  serviceCategory: 'INFRASTRUCTURE' | 'CLINICAL' | 'BILLING' | 'COMMUNICATION'
+                 | 'AI_ML' | 'IDENTITY' | 'STORAGE' | 'MONITORING' | 'OTHER';
+  description: string;
+  phiExposureLevel: 'NONE' | 'INDIRECT' | 'DIRECT' | 'STORES_PHI';
+  transmitsPhi: boolean;
+  storesPhi: boolean;
+  subprocessor: boolean;         // processes PHI on behalf of Hospici
+  baaRequired: boolean;
+  baaStatus: 'SIGNED' | 'PENDING' | 'NOT_REQUIRED' | 'EXPIRED' | 'SUSPENDED';
+  baaEffectiveDate?: date;
+  baaRenewalDate?: date;
+  contractOwnerUserId?: uuid FK → users.id;
+  securityOwnerUserId?: uuid FK → users.id;
+  securityReviewDate?: date;     // date of last security review
+  securityReviewDueDate?: date;  // next review due
+  incidentContact?: string;      // vendor security contact email/phone
+  dataResidency?: string;        // e.g. "US-East-1", "EU"
+  exitPlan?: string;             // brief description of migration plan
+  notes?: string;
+  isActive: boolean DEFAULT true;
+  createdAt: timestamptz;
+  updatedAt: timestamptz;
+}
+```
+
+**`vendor_reviews`** — append-only review log:
+```typescript
+{
+  id: uuid PK;
+  vendorId: uuid FK → vendors.id;
+  reviewedByUserId: uuid FK → users.id;
+  reviewDate: date;
+  outcome: 'APPROVED' | 'APPROVED_WITH_CONDITIONS' | 'SUSPENDED' | 'TERMINATED';
+  baaStatusAtReview: baa_status enum;
+  notes?: string;
+  createdAt: timestamptz;
+}
+```
+
+RLS on both tables: `compliance_officer` and `super_admin` can manage; `admin` read-only.
+
+Add `baa_status` pg enum: `SIGNED | PENDING | NOT_REQUIRED | EXPIRED | SUSPENDED`
+Add `vendor_service_category` pg enum (values above)
+Add `phi_exposure_level` pg enum (values above)
+
+---
+
+### shared-types additions
+
+`packages/shared-types/src/vendors.ts`:
+```typescript
+// TypeBox schemas: VendorSchema, VendorReviewSchema, CreateVendorSchema, UpdateVendorSchema
+// Enums: BaaStatus, VendorServiceCategory, PhiExposureLevel
+```
+
+`packages/shared-types/src/alerts.ts` — add alert types:
+```typescript
+'BAA_EXPIRING'           // BAA renewal within 90 days
+'BAA_MISSING'            // baaRequired=true but baaStatus != SIGNED
+'SECURITY_REVIEW_OVERDUE' // securityReviewDueDate passed
+```
+
+---
+
+### Backend bounded context: `backend/src/contexts/vendors/`
+
+**Routes:**
+- `GET /api/v1/vendors` — list with filters: `?status=EXPIRED&category=CLINICAL&phiExposure=STORES_PHI`
+- `POST /api/v1/vendors` — create vendor record
+- `GET /api/v1/vendors/:id` — vendor detail with reviews
+- `PATCH /api/v1/vendors/:id` — update vendor
+- `POST /api/v1/vendors/:id/reviews` — append review record
+- `GET /api/v1/vendors/expiring` — BAAs expiring within 30/60/90 days (query param `?within=90`)
+- `GET /api/v1/vendors/missing-baas` — `baaRequired=true` and `baaStatus != SIGNED`
+
+Roles: `compliance_officer` + `super_admin` can write; `admin` read-only.
+
+**BullMQ job `vendor-compliance-check`** (weekly cron):
+- Scan for `baaRenewalDate` within 90 days → create `BAA_EXPIRING` alert
+- Scan for `baaRequired=true AND baaStatus != SIGNED` → create `BAA_MISSING` alert
+- Scan for `securityReviewDueDate < now()` → create `SECURITY_REVIEW_OVERDUE` alert
+- Deduplicate: don't re-create alert if open alert of same type+vendor already exists
+
+---
+
+### Security Hardening Checklist (runtime verification, not docs)
+
+Each item below must be verified in code and tested — not just documented:
+
+1. **MFA enforcement** — `auth.config.ts` must reject login for `compliance_officer` / `super_admin` / `admin` roles if TOTP is not enrolled; return `403 MFA_REQUIRED` with enrollment redirect hint
+2. **Idle timeout** — Fastify session plugin enforces 30-minute inactivity expiry server-side; test: request after 30-min idle returns `401 SESSION_EXPIRED`
+3. **Session expiry warning** — BullMQ or server-sent event emits `session:expiring` to Socket.IO at 25-minute mark (5-minute warning)
+4. **Audit log append-only** — add Postgres trigger `BEFORE UPDATE OR DELETE ON audit_logs → RAISE EXCEPTION` to enforce immutability; test: direct UPDATE returns error
+5. **PHI encryption verification** — add health-check endpoint `GET /api/v1/health/phi-encryption` (internal only, no auth, 127.0.0.1 only) that encrypts+decrypts a known test string and returns pass/fail
+
+---
+
+### Docs (generated from registry, not standalone)
+
+- `docs/security/key-rotation.md` — schedule, responsible party, procedure for: JWT signing secret, database encryption key, session secret, API keys
+- `docs/security/incident-response.md` — HIPAA Breach Notification Rule timeline (60-day), contact chain, containment steps, CMS notification procedure
+- Seed script `backend/src/seeds/vendor-seed.ts` — pre-populate all known PHI-touching vendors (Valkey host, SMTP, hosting, backup/DR, clearinghouse, OpenFDA, Claude/Anthropic, DoseSpot) with correct `baaRequired` and initial `baaStatus` values
+
+> Note on Claude/Anthropic: document explicitly that PHI is stripped before API calls (per T2-7). `baaRequired: true`, `phiExposureLevel: INDIRECT`, `storesPhi: false`.
+
+---
+
+### Frontend routes
+
+- `/settings/baa` — vendor registry table (filter by status, category, PHI exposure); shows expiring/missing BAA counts in header
+- `/settings/baa/new` — create vendor form
+- `/settings/baa/:id` — vendor detail: fields + review history timeline + "Add Review" button
+- BAA alerts surface in the existing alert dashboard (T1-8 pattern)
+
+---
+
+**Done when:** All PHI-touching vendors in the deployed stack have a DB record with owner, BAA status, and review date; expiring and missing BAAs produce visible alerts in the compliance dashboard; MFA is enforced (non-bypassable) for privileged roles; 30-minute idle timeout returns `SESSION_EXPIRED`; audit log immutability is tested with a direct-write rejection; key rotation and incident response procedures are documented
 
 ---
 

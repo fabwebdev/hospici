@@ -19,38 +19,34 @@ import { db } from "@/db/client.js";
 import { faceToFaceEncounters } from "@/db/schema/face-to-face-encounters.table.js";
 import { benefitPeriods } from "@/db/schema/benefit-periods.table.js";
 import { and, desc, eq, sql } from "drizzle-orm";
-import type Valkey from "iovalkey";
 import type { FastifyInstance } from "fastify";
 import type { CreateF2FBody, PatchF2FBody } from "../schemas/f2f.schema.js";
 
-export async function f2fPatientRoutes(
-	fastify: FastifyInstance,
-	opts: { valkey: Valkey },
-): Promise<void> {
-	const alertService = new AlertService(opts.valkey);
+export async function f2fPatientRoutes(fastify: FastifyInstance): Promise<void> {
+	const alertService = new AlertService(fastify.valkey);
 	const validityService = new F2FValidityService(fastify.log, alertService);
-	const taskService = new F2FTaskService(fastify.log, opts.valkey);
+	const taskService = new F2FTaskService(fastify.log, fastify.valkey);
 
 	// POST /patients/:patientId/f2f — create F2F encounter
-	fastify.post<{ Params: { patientId: string } }>(
+	fastify.post(
 		"/:patientId/f2f",
 		{
 			preValidation: [
-				async (req) => {
+				async (req, reply) => {
 					if (!Validators.CreateF2FBody.Check(req.body)) {
-						throw fastify.httpErrors.badRequest("Invalid F2F encounter body");
+						reply.code(400).send({ error: "Invalid F2F encounter body" });
 					}
 				},
 			],
 		},
-		async (req, reply) => {
-			const { patientId } = req.params;
-			const body = req.body as CreateF2FBody;
-			const session = req.session as { userId: string; locationId: string };
+		async (request, reply) => {
+			const { patientId } = request.params as { patientId: string };
+			const body = request.body as CreateF2FBody;
+			const user = request.user!;
 
-			await db.execute(sql`SELECT set_config('app.current_user_id', ${session.userId}, true)`);
+			await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`);
 			await db.execute(
-				sql`SELECT set_config('app.current_location_id', ${session.locationId}, true)`,
+				sql`SELECT set_config('app.current_location_id', ${user.locationId}, true)`,
 			);
 
 			// Verify period exists and belongs to this patient
@@ -65,14 +61,16 @@ export async function f2fPatientRoutes(
 				);
 
 			if (!period) {
-				throw fastify.httpErrors.notFound("Benefit period not found for this patient");
+				return reply
+					.code(404)
+					.send({ error: "Benefit period not found for this patient" });
 			}
 
 			const [encounter] = await db
 				.insert(faceToFaceEncounters)
 				.values({
 					patientId,
-					locationId: session.locationId,
+					locationId: user.locationId,
 					benefitPeriodId: body.benefitPeriodId,
 					f2fDate: body.f2fDate,
 					f2fProviderId: body.f2fProviderId,
@@ -84,14 +82,14 @@ export async function f2fPatientRoutes(
 				.returning();
 
 			if (!encounter) {
-				throw fastify.httpErrors.internalServerError("Failed to insert F2F encounter");
+				return reply.code(500).send({ error: "Failed to insert F2F encounter" });
 			}
 
 			// Auto-run validity engine
 			const validity = await validityService.validate(
 				encounter.id,
-				session.userId,
-				session.locationId,
+				user.id,
+				user.locationId,
 			);
 
 			// If a physician task exists for this period, mark it signed
@@ -109,11 +107,7 @@ export async function f2fPatientRoutes(
 
 				const physicianTaskId = taskRows[0]?.physicianTaskId;
 				if (physicianTaskId) {
-					await taskService.markTaskSigned(
-						physicianTaskId,
-						session.userId,
-						session.locationId,
-					);
+					await taskService.markTaskSigned(physicianTaskId, user.id, user.locationId);
 				}
 			}
 
@@ -127,70 +121,64 @@ export async function f2fPatientRoutes(
 	);
 
 	// GET /patients/:patientId/f2f — list all F2F encounters for patient
-	fastify.get<{ Params: { patientId: string } }>(
-		"/:patientId/f2f",
-		async (req, reply) => {
-			const { patientId } = req.params;
-			const session = req.session as { userId: string; locationId: string };
+	fastify.get("/:patientId/f2f", async (request, reply) => {
+		const { patientId } = request.params as { patientId: string };
+		const user = request.user!;
 
-			await db.execute(sql`SELECT set_config('app.current_user_id', ${session.userId}, true)`);
-			await db.execute(
-				sql`SELECT set_config('app.current_location_id', ${session.locationId}, true)`,
-			);
+		await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`);
+		await db.execute(
+			sql`SELECT set_config('app.current_location_id', ${user.locationId}, true)`,
+		);
 
-			const encounters = await db
-				.select({
-					encounter: faceToFaceEncounters,
-					periodNumber: benefitPeriods.periodNumber,
-					periodType: benefitPeriods.periodType,
-				})
-				.from(faceToFaceEncounters)
-				.innerJoin(
-					benefitPeriods,
-					eq(faceToFaceEncounters.benefitPeriodId, benefitPeriods.id),
-				)
-				.where(eq(faceToFaceEncounters.patientId, patientId))
-				.orderBy(desc(faceToFaceEncounters.f2fDate));
+		const encounters = await db
+			.select({
+				encounter: faceToFaceEncounters,
+				periodNumber: benefitPeriods.periodNumber,
+				periodType: benefitPeriods.periodType,
+			})
+			.from(faceToFaceEncounters)
+			.innerJoin(
+				benefitPeriods,
+				eq(faceToFaceEncounters.benefitPeriodId, benefitPeriods.id),
+			)
+			.where(eq(faceToFaceEncounters.patientId, patientId))
+			.orderBy(desc(faceToFaceEncounters.f2fDate));
 
-			return reply.send({
-				encounters: encounters.map(({ encounter, periodNumber, periodType }) => ({
-					...encounter,
-					periodNumber,
-					periodType,
-				})),
-				total: encounters.length,
-			});
-		},
-	);
+		return reply.send({
+			encounters: encounters.map(({ encounter, periodNumber, periodType }) => ({
+				...encounter,
+				periodNumber,
+				periodType,
+			})),
+			total: encounters.length,
+		});
+	});
 }
 
-export async function f2fStandaloneRoutes(
-	fastify: FastifyInstance,
-	opts: { valkey: Valkey },
-): Promise<void> {
-	const alertService = new AlertService(opts.valkey);
+export async function f2fStandaloneRoutes(fastify: FastifyInstance): Promise<void> {
+	const alertService = new AlertService(fastify.valkey);
 	const validityService = new F2FValidityService(fastify.log, alertService);
 
 	// PATCH /f2f/:id — update F2F encounter; re-runs validity engine
-	fastify.patch<{ Params: { id: string } }>(
+	fastify.patch(
 		"/f2f/:id",
 		{
 			preValidation: [
-				async (req) => {
+				async (req, reply) => {
 					if (!Validators.PatchF2FBody.Check(req.body)) {
-						throw fastify.httpErrors.badRequest("Invalid patch body");
+						reply.code(400).send({ error: "Invalid patch body" });
 					}
 				},
 			],
 		},
-		async (req, reply) => {
-			const { id } = req.params;
-			const body = req.body as PatchF2FBody;
-			const session = req.session as { userId: string; locationId: string };
+		async (request, reply) => {
+			const { id } = request.params as { id: string };
+			const body = request.body as PatchF2FBody;
+			const user = request.user!;
 
-			await db.execute(sql`SELECT set_config('app.current_user_id', ${session.userId}, true)`);
+			await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`);
 			await db.execute(
-				sql`SELECT set_config('app.current_location_id', ${session.locationId}, true)`,
+				sql`SELECT set_config('app.current_location_id', ${user.locationId}, true)`,
 			);
 
 			const [existing] = await db
@@ -198,22 +186,26 @@ export async function f2fStandaloneRoutes(
 				.from(faceToFaceEncounters)
 				.where(eq(faceToFaceEncounters.id, id));
 
-			if (!existing) throw fastify.httpErrors.notFound("F2F encounter not found");
+			if (!existing) {
+				return reply.code(404).send({ error: "F2F encounter not found" });
+			}
 
 			const updates: Partial<typeof faceToFaceEncounters.$inferInsert> = {};
 			if (body.f2fDate !== undefined) updates.f2fDate = body.f2fDate;
 			if (body.f2fProviderId !== undefined) updates.f2fProviderId = body.f2fProviderId;
 			if (body.f2fProviderNpi !== undefined) updates.f2fProviderNpi = body.f2fProviderNpi;
 			if (body.f2fProviderRole !== undefined) updates.f2fProviderRole = body.f2fProviderRole;
-			if (body.encounterSetting !== undefined) updates.encounterSetting = body.encounterSetting;
-			if (body.clinicalFindings !== undefined) updates.clinicalFindings = body.clinicalFindings;
+			if (body.encounterSetting !== undefined)
+				updates.encounterSetting = body.encounterSetting;
+			if (body.clinicalFindings !== undefined)
+				updates.clinicalFindings = body.clinicalFindings;
 
 			await db
 				.update(faceToFaceEncounters)
 				.set({ ...updates, updatedAt: new Date() })
 				.where(eq(faceToFaceEncounters.id, id));
 
-			const validity = await validityService.validate(id, session.userId, session.locationId);
+			const validity = await validityService.validate(id, user.id, user.locationId);
 
 			const [updated] = await db
 				.select()
@@ -224,35 +216,33 @@ export async function f2fStandaloneRoutes(
 	);
 
 	// POST /f2f/:id/validate — explicit re-validation
-	fastify.post<{ Params: { id: string } }>("/f2f/:id/validate", async (req, reply) => {
-		const { id } = req.params;
-		const session = req.session as { userId: string; locationId: string };
+	fastify.post("/f2f/:id/validate", async (request, reply) => {
+		const { id } = request.params as { id: string };
+		const user = request.user!;
 
 		try {
-			const result = await validityService.validate(id, session.userId, session.locationId);
+			const result = await validityService.validate(id, user.id, user.locationId);
 			return reply.send(result);
 		} catch (err) {
-			if (err instanceof F2FNotFoundError) throw fastify.httpErrors.notFound(err.message);
+			if (err instanceof F2FNotFoundError) {
+				return reply.code(404).send({ error: err.message });
+			}
 			throw err;
 		}
 	});
 
 	// GET /f2f/queue — supervisor/admin queue
-	fastify.get("/f2f/queue", async (req, reply) => {
-		const session = req.session as {
-			userId: string;
-			locationId: string;
-			role: string;
-		};
+	fastify.get("/f2f/queue", async (request, reply) => {
+		const user = request.user!;
 		const allowedRoles = ["supervisor", "admin", "super_admin", "compliance_officer"];
 
-		if (!allowedRoles.includes(session.role)) {
-			throw fastify.httpErrors.forbidden("Insufficient role for F2F queue");
+		if (!allowedRoles.includes(user.role)) {
+			return reply.code(403).send({ error: "Insufficient role for F2F queue" });
 		}
 
-		await db.execute(sql`SELECT set_config('app.current_user_id', ${session.userId}, true)`);
+		await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`);
 		await db.execute(
-			sql`SELECT set_config('app.current_location_id', ${session.locationId}, true)`,
+			sql`SELECT set_config('app.current_location_id', ${user.locationId}, true)`,
 		);
 
 		// Get all active periods with period_number >= 3 in this location
