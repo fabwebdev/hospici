@@ -187,6 +187,7 @@ import {
   PhysicianReviewBodySchema,
 } from "@/contexts/clinical/schemas/carePlan.schema";
 import {
+  AddendumEntrySchema,
   CreateEncounterBodySchema,
   EnhanceNarrativeBodySchema,
   GenerateNarrativeBodySchema,
@@ -196,6 +197,7 @@ import { EsasScaleSchema } from "@/contexts/clinical/schemas/esasScale.schema";
 import {
   CreateAllergyBodySchema,
   CreateMedicationBodySchema,
+  DoseSpotSsoResponseSchema,
   MedicationAdministrationSchema,
   MedicationListResponseSchema,
   MedicationResponseSchema,
@@ -204,6 +206,25 @@ import {
   PatientAllergySchema,
   RecordAdministrationBodySchema,
 } from "@/contexts/clinical/schemas/medication.schema";
+import {
+  AssignCareTeamMemberBodySchema,
+  CareTeamListResponseSchema,
+  CareTeamMemberResponseSchema,
+} from "@/contexts/clinical/schemas/careTeam.schema.js";
+import {
+  CreateDocumentBodySchema,
+  DocumentListResponseSchema,
+  DocumentResponseSchema,
+  PatchDocumentBodySchema,
+} from "@/contexts/documentation/schemas/document.schema.js";
+import {
+  CommMessageListResponseSchema,
+  CommMessageResponseSchema,
+  CommThreadListResponseSchema,
+  CommThreadResponseSchema,
+  CreateCommThreadBodySchema,
+  SendCommMessageBodySchema,
+} from "@/contexts/communication/schemas/teamComm.schema.js";
 import {
   AssignReviewBodySchema,
   BulkAcknowledgeBodySchema,
@@ -303,8 +324,29 @@ export const Validators = {
   CreateAllergyBody: TypeCompiler.Compile(CreateAllergyBodySchema),
   PatchAllergyBody: TypeCompiler.Compile(PatchAllergyBodySchema),
   PatientAllergy: TypeCompiler.Compile(PatientAllergySchema),
+  DoseSpotSsoResponse: TypeCompiler.Compile(DoseSpotSsoResponseSchema),
+
+  // Clinical — care team members
+  AssignCareTeamMemberBody: TypeCompiler.Compile(AssignCareTeamMemberBodySchema),
+  CareTeamMemberResponse: TypeCompiler.Compile(CareTeamMemberResponseSchema),
+  CareTeamListResponse: TypeCompiler.Compile(CareTeamListResponseSchema),
+
+  // Documentation — patient documents
+  CreateDocumentBody: TypeCompiler.Compile(CreateDocumentBodySchema),
+  PatchDocumentBody: TypeCompiler.Compile(PatchDocumentBodySchema),
+  DocumentResponse: TypeCompiler.Compile(DocumentResponseSchema),
+  DocumentListResponse: TypeCompiler.Compile(DocumentListResponseSchema),
+
+  // Communication — team comm threads + messages
+  CreateCommThreadBody: TypeCompiler.Compile(CreateCommThreadBodySchema),
+  CommThreadResponse: TypeCompiler.Compile(CommThreadResponseSchema),
+  CommThreadListResponse: TypeCompiler.Compile(CommThreadListResponseSchema),
+  SendCommMessageBody: TypeCompiler.Compile(SendCommMessageBodySchema),
+  CommMessageResponse: TypeCompiler.Compile(CommMessageResponseSchema),
+  CommMessageListResponse: TypeCompiler.Compile(CommMessageListResponseSchema),
 
   // Clinical — encounters + VantageChart
+  AddendumEntry: TypeCompiler.Compile(AddendumEntrySchema),
   CreateEncounterBody: TypeCompiler.Compile(CreateEncounterBodySchema),
   PatchEncounterBody: TypeCompiler.Compile(PatchEncounterBodySchema),
   GenerateNarrativeBody: TypeCompiler.Compile(GenerateNarrativeBodySchema),

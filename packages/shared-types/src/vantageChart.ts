@@ -9,7 +9,19 @@ export type VisitType =
   | "recertification"
   | "supervisory"
   | "prn"
-  | "discharge";
+  | "discharge"
+  | "social_work"
+  | "chaplain"
+  | "physician_attestation"
+  | "progress_note";
+
+export interface AddendumEntry {
+  id: string;
+  authorId: string;
+  authorName: string;
+  content: string;
+  createdAt: string;
+}
 
 export type EncounterStatus = "DRAFT" | "COMPLETED" | "SIGNED";
 export type VantageChartMethod = "TEMPLATE" | "LLM";
@@ -105,6 +117,7 @@ export interface EncounterResponse {
   vantageChartMethod?: VantageChartMethod;
   vantageChartAcceptedAt?: string;
   vantageChartTraceability?: TraceabilityEntry[];
+  addenda: AddendumEntry[];
   visitedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -189,4 +202,6 @@ export type PatchEncounterInput = {
   vantageChartMethod?: VantageChartMethod;
   vantageChartAcceptedAt?: string;
   vantageChartTraceability?: TraceabilityEntry[];
+  /** Append a single addendum to encounters.addenda — backend merges, never replaces */
+  addendum?: AddendumEntry;
 };

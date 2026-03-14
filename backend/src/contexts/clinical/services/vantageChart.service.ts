@@ -47,6 +47,7 @@ function toResponse(row: typeof encounters.$inferSelect): EncounterResponse {
     clinicianId: row.clinicianId,
     visitType: row.visitType,
     status: row.status,
+    addenda: Array.isArray(row.addenda) ? (row.addenda as EncounterResponse["addenda"]) : [],
     visitedAt: row.visitedAt.toISOString(),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -191,11 +192,24 @@ export class VantageChartService {
       if (body.vantageChartTraceability !== undefined)
         updates.vantageChartTraceability = body.vantageChartTraceability;
 
-      const [row] = await tx
-        .update(encounters)
-        .set(updates)
-        .where(and(eq(encounters.id, encounterId), eq(encounters.patientId, patientId)))
-        .returning();
+      let row: typeof encounters.$inferSelect | undefined;
+
+      if (body.addendum !== undefined) {
+        // Append addendum via JSONB array concat — never overwrites existing entries
+        const [addendumRow] = await tx
+          .update(encounters)
+          .set({ ...updates, addenda: sql`addenda || ${JSON.stringify([body.addendum])}::jsonb` })
+          .where(and(eq(encounters.id, encounterId), eq(encounters.patientId, patientId)))
+          .returning();
+        row = addendumRow;
+      } else {
+        const [updatedRow] = await tx
+          .update(encounters)
+          .set(updates)
+          .where(and(eq(encounters.id, encounterId), eq(encounters.patientId, patientId)))
+          .returning();
+        row = updatedRow;
+      }
 
       if (!row) return null;
 

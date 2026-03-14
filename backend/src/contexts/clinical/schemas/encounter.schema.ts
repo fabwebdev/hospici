@@ -78,18 +78,41 @@ export const EnhanceNarrativeResponseSchema = Type.Object(
 export type EnhanceNarrativeBody = Static<typeof EnhanceNarrativeBodySchema>;
 export type EnhanceNarrativeResponse = Static<typeof EnhanceNarrativeResponseSchema>;
 
+// ── Addendum entry (post-sign note, stored in encounters.addenda JSONB) ────────
+
+export const AddendumEntrySchema = Type.Object(
+  {
+    id: Type.String({ format: "uuid" }),
+    authorId: Type.String({ format: "uuid" }),
+    authorName: Type.String(),
+    content: Type.String({ minLength: 1 }),
+    createdAt: Type.String({ format: "date-time" }),
+  },
+  { $id: "AddendumEntry" },
+);
+
+export type AddendumEntry = Static<typeof AddendumEntrySchema>;
+
+// ── Shared visit type enum ─────────────────────────────────────────────────────
+
+export const VisitTypeEnum = {
+  routine_rn: "routine_rn",
+  admission: "admission",
+  recertification: "recertification",
+  supervisory: "supervisory",
+  prn: "prn",
+  discharge: "discharge",
+  social_work: "social_work",
+  chaplain: "chaplain",
+  physician_attestation: "physician_attestation",
+  progress_note: "progress_note",
+} as const;
+
 // ── Encounter CRUD ─────────────────────────────────────────────────────────────
 
 export const CreateEncounterBodySchema = Type.Object(
   {
-    visitType: Type.Enum({
-      routine_rn: "routine_rn",
-      admission: "admission",
-      recertification: "recertification",
-      supervisory: "supervisory",
-      prn: "prn",
-      discharge: "discharge",
-    }),
+    visitType: Type.Enum(VisitTypeEnum),
     visitedAt: Type.Optional(Type.String({ format: "date-time" })),
   },
   { $id: "CreateEncounterBody" },
@@ -103,6 +126,8 @@ export const PatchEncounterBodySchema = Type.Object(
     vantageChartMethod: Type.Optional(VantageChartMethodSchema),
     vantageChartAcceptedAt: Type.Optional(Type.String({ format: "date-time" })),
     vantageChartTraceability: Type.Optional(Type.Array(TraceabilityEntrySchema)),
+    /** Append a new addendum entry — backend merges into encounters.addenda array */
+    addendum: Type.Optional(AddendumEntrySchema),
   },
   { $id: "PatchEncounterBody" },
 );
@@ -113,20 +138,14 @@ export const EncounterResponseSchema = Type.Object(
     patientId: Type.String({ format: "uuid" }),
     locationId: Type.String({ format: "uuid" }),
     clinicianId: Type.String({ format: "uuid" }),
-    visitType: Type.Enum({
-      routine_rn: "routine_rn",
-      admission: "admission",
-      recertification: "recertification",
-      supervisory: "supervisory",
-      prn: "prn",
-      discharge: "discharge",
-    }),
+    visitType: Type.Enum(VisitTypeEnum),
     status: EncounterStatusSchema,
     data: Type.Optional(Type.Unknown()),
     vantageChartDraft: Type.Optional(Type.String()),
     vantageChartMethod: Type.Optional(VantageChartMethodSchema),
     vantageChartAcceptedAt: Type.Optional(Type.String()),
     vantageChartTraceability: Type.Optional(Type.Array(TraceabilityEntrySchema)),
+    addenda: Type.Array(AddendumEntrySchema),
     visitedAt: Type.String(),
     createdAt: Type.String(),
     updatedAt: Type.String(),

@@ -27,6 +27,10 @@ export const visitTypeEnum = pgEnum("visit_type", [
   "supervisory",
   "prn",
   "discharge",
+  "social_work",
+  "chaplain",
+  "physician_attestation",
+  "progress_note",
 ]);
 
 export const encounterStatusEnum = pgEnum("encounter_status", ["DRAFT", "COMPLETED", "SIGNED"]);
@@ -94,6 +98,9 @@ export const encounters = pgTable(
 
     /** T3-13 checklist responses: ChecklistResponse[] JSONB */
     checklistResponses: jsonb("checklist_responses").notNull().default([]),
+
+    /** Post-sign addendum entries: AddendumEntry[] JSONB (migration 0032) */
+    addenda: jsonb("addenda").notNull().default([]),
 
     visitedAt: timestamp("visited_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

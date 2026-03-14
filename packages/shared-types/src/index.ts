@@ -55,6 +55,7 @@ export type {
   VantageChartMethod,
   VantageChartInput,
   TraceabilityEntry,
+  AddendumEntry,
   EncounterResponse,
   EncounterListResponse,
   GenerateNarrativeResponse,
@@ -387,3 +388,26 @@ export type {
   CreateAuditRecordExportInput,
   AuditRecordExportDownloadResponse,
 } from "./audit-export.js";
+export type {
+  DocumentCategory,
+  DocumentStatus,
+  DocumentResponse,
+  DocumentListResponse,
+  CreateDocumentInput,
+  PatchDocumentInput,
+} from "./documents.js";
+export type {
+  CareTeamDiscipline,
+  CareTeamMemberResponse,
+  CareTeamListResponse,
+  AssignCareTeamMemberInput,
+} from "./care-team.js";
+export type {
+  CommThreadResponse,
+  CommThreadListResponse,
+  CreateCommThreadInput,
+  CommMessageResponse,
+  CommMessageListResponse,
+  SendCommMessageInput,
+} from "./team-comm.js";
+export type { DoseSpotSsoResponse } from "./medication.js";
