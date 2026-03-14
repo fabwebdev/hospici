@@ -7,6 +7,7 @@ import type {
   AllergyListResponse,
   CreateAllergyInput,
   CreateMedicationInput,
+  DoseSpotSsoResponse,
   MedicationAdministration,
   MedicationListResponse,
   MedicationResponse,
@@ -243,4 +244,16 @@ export const updateAllergyFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const cookieHeader = getRequestHeader("cookie") ?? "";
     return patchAllergy(data.patientId, data.allergyId, data.input, cookieHeader);
+  });
+
+export const getDoseSpotSsoUrlFn = createServerFn({ method: "GET" })
+  .validator((data: unknown) => data as { patientId: string })
+  .handler(async ({ data }) => {
+    const cookieHeader = getRequestHeader("cookie") ?? "";
+    const response = await fetch(
+      `${env.apiUrl}/api/v1/patients/${data.patientId}/dose-spot/sso-url`,
+      { headers: { cookie: cookieHeader } },
+    );
+    if (!response.ok) throw new Error("DoseSpot SSO unavailable");
+    return response.json() as Promise<DoseSpotSsoResponse>;
   });

@@ -287,3 +287,11 @@ export const AllergyListResponseSchema = Type.Object({
   total: Type.Integer(),
 });
 export type AllergyListResponse = Static<typeof AllergyListResponseSchema>;
+
+// ── DoseSpot SSO ───────────────────────────────────────────────────────────────
+
+export const DoseSpotSsoResponseSchema = Type.Object({
+  ssoUrl: Type.String({ format: "uri" }),
+  expiresAt: Type.String({ format: "date-time" }),
+});
+export type DoseSpotSsoResponse = Static<typeof DoseSpotSsoResponseSchema>;

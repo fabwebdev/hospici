@@ -26,7 +26,10 @@ import noePatientRoutes, { noeStandaloneRoutes } from "@/contexts/billing/routes
 import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
 import medicationRoutes from "@/contexts/clinical/routes/medication.routes.js";
+import careTeamRoutes from "@/contexts/clinical/routes/careTeam.routes.js";
 import noteReviewRoutes from "@/contexts/clinical/routes/noteReview.routes.js";
+import documentRoutes from "@/contexts/documentation/routes/document.routes.js";
+import teamCommRoutes from "@/contexts/communication/routes/teamComm.routes.js";
 import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
 import vantageChartRoutes from "@/contexts/clinical/routes/vantageChart.routes.js";
 import alertRoutes from "@/contexts/compliance/routes/alert.routes.js";
@@ -187,6 +190,9 @@ export async function buildApp() {
   await fastify.register(assessmentRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(carePlanRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(medicationRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(careTeamRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(documentRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(teamCommRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(vantageChartRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(billingRoutes, { prefix: "/api/v1/billing" });
   await fastify.register(noePatientRoutes, { prefix: "/api/v1/patients" });

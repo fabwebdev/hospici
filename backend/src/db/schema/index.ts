@@ -41,3 +41,7 @@ export * from "./qapi-events.table.js";
 export * from "./qapi-action-items.table.js";
 export * from "./review-checklist-templates.table.js";
 export * from "./review-queue-views.table.js";
+export * from "./patient-documents.table.js";
+export * from "./care-team-members.table.js";
+export * from "./team-comm-threads.table.js";
+export * from "./team-comm-messages.table.js";

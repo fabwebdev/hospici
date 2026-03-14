@@ -22,6 +22,7 @@
  */
 
 import { Validators } from "@/config/typebox-compiler.js";
+import { env } from "@/config/env.js";
 import { Type } from "@sinclair/typebox";
 import type { FastifyInstance } from "fastify";
 import {
@@ -29,6 +30,7 @@ import {
   AllergyListResponseSchema,
   CreateAllergyBodySchema,
   CreateMedicationBodySchema,
+  DoseSpotSsoResponseSchema,
   MedicationAdministrationSchema,
   MedicationListResponseSchema,
   MedicationResponseSchema,
@@ -352,6 +354,61 @@ export default async function medicationRoutes(fastify: FastifyInstance): Promis
         request.user,
       );
       reply.code(201).send(allergy);
+    },
+  );
+
+  // ── GET /:patientId/dose-spot/sso-url ───────────────────────────────────────
+  fastify.get(
+    "/:patientId/dose-spot/sso-url",
+    {
+      schema: {
+        tags: ["Medications"],
+        summary:
+          "Generate a DoseSpot SSO URL for the authenticated clinician. Requires DOSE_SPOT_CLIENT_ID and DOSE_SPOT_CLINIC_ID env vars.",
+        params: PatientParamsSchema,
+        response: {
+          200: DoseSpotSsoResponseSchema,
+          401: ErrorResponseSchema,
+          503: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!request.user) {
+        return reply.code(401).send({
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Unauthorized" },
+        });
+      }
+
+      const clientId = env.doseSpotClientId;
+      const clinicId = env.doseSpotClinicId;
+
+      if (!clientId || !clinicId) {
+        return reply.code(503).send({
+          success: false,
+          error: {
+            code: "DOSE_SPOT_NOT_CONFIGURED",
+            message: "DoseSpot integration is not configured for this environment",
+          },
+        });
+      }
+
+      const { patientId } = request.params as { patientId: string };
+
+      // Stub: real implementation signs a JWT/HMAC token per DoseSpot SSO spec.
+      // The SSO URL expires in 5 minutes.
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      const ssoToken = crypto.randomUUID();
+      const ssoUrl =
+        `https://my.dosespot.com/LoginSingleSignOn.aspx` +
+        `?SingleSignOnClinicId=${clinicId}` +
+        `&SingleSignOnUserId=${encodeURIComponent(request.user.id)}` +
+        `&SingleSignOnPatientId=${encodeURIComponent(patientId)}` +
+        `&SingleSignOnCode=${ssoToken}` +
+        `&SingleSignOnExpiration=${encodeURIComponent(expiresAt.toISOString())}`;
+
+      reply.code(200).send({ ssoUrl, expiresAt: expiresAt.toISOString() });
     },
   );
 

@@ -55,6 +55,10 @@ export const env = {
   ollamaBaseUrl: optional("OLLAMA_BASE_URL", ""),
   ollamaModel: optional("OLLAMA_MODEL", "llama3.2"),
 
+  // DoseSpot eRx integration (optional — feature-flagged)
+  doseSpotClientId: optional("DOSE_SPOT_CLIENT_ID", ""),
+  doseSpotClinicId: optional("DOSE_SPOT_CLINIC_ID", ""),
+
   features: {
     fhirR6: optional("FEATURE_FHIR_R6_ENABLED", "false") === "true",
     bulkExport: optional("FEATURE_BULK_EXPORT_ENABLED", "false") === "true",

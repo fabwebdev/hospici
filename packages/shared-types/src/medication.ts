@@ -173,3 +173,8 @@ export interface PatchAllergyInput {
   reaction?: string;
   severity?: AllergySeverity;
 }
+
+export interface DoseSpotSsoResponse {
+  ssoUrl: string;
+  expiresAt: string;
+}

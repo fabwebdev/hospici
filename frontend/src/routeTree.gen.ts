@@ -34,10 +34,16 @@ import { Route as AuthedBillingAuditImport } from './routes/_authed/billing/audi
 import { Route as AuthedAnalyticsScorecardsImport } from './routes/_authed/analytics/scorecards'
 import { Route as AuthedAnalyticsDeficiencyTrendsImport } from './routes/_authed/analytics/deficiency-trends'
 import { Route as AuthedSettingsBaaIndexImport } from './routes/_authed/settings/baa/index'
+import { Route as AuthedPatientsPatientIdIndexImport } from './routes/_authed/patients/$patientId/index'
 import { Route as AuthedHopeAssessmentsIndexImport } from './routes/_authed/hope/assessments/index'
 import { Route as AuthedSettingsBaaNewImport } from './routes/_authed/settings/baa/new'
 import { Route as AuthedSettingsBaaIdImport } from './routes/_authed/settings/baa/$id'
+import { Route as AuthedPatientsPatientIdTeamCommImport } from './routes/_authed/patients/$patientId/team-comm'
 import { Route as AuthedPatientsPatientIdOrdersImport } from './routes/_authed/patients/$patientId/orders'
+import { Route as AuthedPatientsPatientIdMedicationsImport } from './routes/_authed/patients/$patientId/medications'
+import { Route as AuthedPatientsPatientIdDoseSpotImport } from './routes/_authed/patients/$patientId/dose-spot'
+import { Route as AuthedPatientsPatientIdDocumentsImport } from './routes/_authed/patients/$patientId/documents'
+import { Route as AuthedPatientsPatientIdCareTeamImport } from './routes/_authed/patients/$patientId/care-team'
 import { Route as AuthedPatientsPatientIdAuditExportImport } from './routes/_authed/patients/$patientId/audit-export'
 import { Route as AuthedHopeAssessmentsNewImport } from './routes/_authed/hope/assessments/new'
 import { Route as AuthedHopeAssessmentsIdImport } from './routes/_authed/hope/assessments/$id'
@@ -187,6 +193,13 @@ const AuthedSettingsBaaIndexRoute = AuthedSettingsBaaIndexImport.update({
   getParentRoute: () => AuthedRoute,
 } as any)
 
+const AuthedPatientsPatientIdIndexRoute =
+  AuthedPatientsPatientIdIndexImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
+
 const AuthedHopeAssessmentsIndexRoute = AuthedHopeAssessmentsIndexImport.update(
   {
     id: '/hope/assessments/',
@@ -207,10 +220,45 @@ const AuthedSettingsBaaIdRoute = AuthedSettingsBaaIdImport.update({
   getParentRoute: () => AuthedRoute,
 } as any)
 
+const AuthedPatientsPatientIdTeamCommRoute =
+  AuthedPatientsPatientIdTeamCommImport.update({
+    id: '/team-comm',
+    path: '/team-comm',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
+
 const AuthedPatientsPatientIdOrdersRoute =
   AuthedPatientsPatientIdOrdersImport.update({
     id: '/orders',
     path: '/orders',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
+
+const AuthedPatientsPatientIdMedicationsRoute =
+  AuthedPatientsPatientIdMedicationsImport.update({
+    id: '/medications',
+    path: '/medications',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
+
+const AuthedPatientsPatientIdDoseSpotRoute =
+  AuthedPatientsPatientIdDoseSpotImport.update({
+    id: '/dose-spot',
+    path: '/dose-spot',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
+
+const AuthedPatientsPatientIdDocumentsRoute =
+  AuthedPatientsPatientIdDocumentsImport.update({
+    id: '/documents',
+    path: '/documents',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
+
+const AuthedPatientsPatientIdCareTeamRoute =
+  AuthedPatientsPatientIdCareTeamImport.update({
+    id: '/care-team',
+    path: '/care-team',
     getParentRoute: () => AuthedPatientsPatientIdRoute,
   } as any)
 
@@ -440,11 +488,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedPatientsPatientIdAuditExportImport
       parentRoute: typeof AuthedPatientsPatientIdImport
     }
+    '/_authed/patients/$patientId/care-team': {
+      id: '/_authed/patients/$patientId/care-team'
+      path: '/care-team'
+      fullPath: '/patients/$patientId/care-team'
+      preLoaderRoute: typeof AuthedPatientsPatientIdCareTeamImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
+    }
+    '/_authed/patients/$patientId/documents': {
+      id: '/_authed/patients/$patientId/documents'
+      path: '/documents'
+      fullPath: '/patients/$patientId/documents'
+      preLoaderRoute: typeof AuthedPatientsPatientIdDocumentsImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
+    }
+    '/_authed/patients/$patientId/dose-spot': {
+      id: '/_authed/patients/$patientId/dose-spot'
+      path: '/dose-spot'
+      fullPath: '/patients/$patientId/dose-spot'
+      preLoaderRoute: typeof AuthedPatientsPatientIdDoseSpotImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
+    }
+    '/_authed/patients/$patientId/medications': {
+      id: '/_authed/patients/$patientId/medications'
+      path: '/medications'
+      fullPath: '/patients/$patientId/medications'
+      preLoaderRoute: typeof AuthedPatientsPatientIdMedicationsImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
+    }
     '/_authed/patients/$patientId/orders': {
       id: '/_authed/patients/$patientId/orders'
       path: '/orders'
       fullPath: '/patients/$patientId/orders'
       preLoaderRoute: typeof AuthedPatientsPatientIdOrdersImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
+    }
+    '/_authed/patients/$patientId/team-comm': {
+      id: '/_authed/patients/$patientId/team-comm'
+      path: '/team-comm'
+      fullPath: '/patients/$patientId/team-comm'
+      preLoaderRoute: typeof AuthedPatientsPatientIdTeamCommImport
       parentRoute: typeof AuthedPatientsPatientIdImport
     }
     '/_authed/settings/baa/$id': {
@@ -467,6 +550,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/hope/assessments'
       preLoaderRoute: typeof AuthedHopeAssessmentsIndexImport
       parentRoute: typeof AuthedImport
+    }
+    '/_authed/patients/$patientId/': {
+      id: '/_authed/patients/$patientId/'
+      path: '/'
+      fullPath: '/patients/$patientId/'
+      preLoaderRoute: typeof AuthedPatientsPatientIdIndexImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
     }
     '/_authed/settings/baa/': {
       id: '/_authed/settings/baa/'
@@ -510,7 +600,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthedPatientsPatientIdRouteChildren {
   AuthedPatientsPatientIdAuditExportRoute: typeof AuthedPatientsPatientIdAuditExportRoute
+  AuthedPatientsPatientIdCareTeamRoute: typeof AuthedPatientsPatientIdCareTeamRoute
+  AuthedPatientsPatientIdDocumentsRoute: typeof AuthedPatientsPatientIdDocumentsRoute
+  AuthedPatientsPatientIdDoseSpotRoute: typeof AuthedPatientsPatientIdDoseSpotRoute
+  AuthedPatientsPatientIdMedicationsRoute: typeof AuthedPatientsPatientIdMedicationsRoute
   AuthedPatientsPatientIdOrdersRoute: typeof AuthedPatientsPatientIdOrdersRoute
+  AuthedPatientsPatientIdTeamCommRoute: typeof AuthedPatientsPatientIdTeamCommRoute
+  AuthedPatientsPatientIdIndexRoute: typeof AuthedPatientsPatientIdIndexRoute
   AuthedPatientsPatientIdF2fNewRoute: typeof AuthedPatientsPatientIdF2fNewRoute
   AuthedPatientsPatientIdIdgScheduleRoute: typeof AuthedPatientsPatientIdIdgScheduleRoute
   AuthedPatientsPatientIdVisitsIndexRoute: typeof AuthedPatientsPatientIdVisitsIndexRoute
@@ -521,7 +617,15 @@ const AuthedPatientsPatientIdRouteChildren: AuthedPatientsPatientIdRouteChildren
   {
     AuthedPatientsPatientIdAuditExportRoute:
       AuthedPatientsPatientIdAuditExportRoute,
+    AuthedPatientsPatientIdCareTeamRoute: AuthedPatientsPatientIdCareTeamRoute,
+    AuthedPatientsPatientIdDocumentsRoute:
+      AuthedPatientsPatientIdDocumentsRoute,
+    AuthedPatientsPatientIdDoseSpotRoute: AuthedPatientsPatientIdDoseSpotRoute,
+    AuthedPatientsPatientIdMedicationsRoute:
+      AuthedPatientsPatientIdMedicationsRoute,
     AuthedPatientsPatientIdOrdersRoute: AuthedPatientsPatientIdOrdersRoute,
+    AuthedPatientsPatientIdTeamCommRoute: AuthedPatientsPatientIdTeamCommRoute,
+    AuthedPatientsPatientIdIndexRoute: AuthedPatientsPatientIdIndexRoute,
     AuthedPatientsPatientIdF2fNewRoute: AuthedPatientsPatientIdF2fNewRoute,
     AuthedPatientsPatientIdIdgScheduleRoute:
       AuthedPatientsPatientIdIdgScheduleRoute,
@@ -621,10 +725,16 @@ export interface FileRoutesByFullPath {
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
   '/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
+  '/patients/$patientId/care-team': typeof AuthedPatientsPatientIdCareTeamRoute
+  '/patients/$patientId/documents': typeof AuthedPatientsPatientIdDocumentsRoute
+  '/patients/$patientId/dose-spot': typeof AuthedPatientsPatientIdDoseSpotRoute
+  '/patients/$patientId/medications': typeof AuthedPatientsPatientIdMedicationsRoute
   '/patients/$patientId/orders': typeof AuthedPatientsPatientIdOrdersRoute
+  '/patients/$patientId/team-comm': typeof AuthedPatientsPatientIdTeamCommRoute
   '/settings/baa/$id': typeof AuthedSettingsBaaIdRoute
   '/settings/baa/new': typeof AuthedSettingsBaaNewRoute
   '/hope/assessments': typeof AuthedHopeAssessmentsIndexRoute
+  '/patients/$patientId/': typeof AuthedPatientsPatientIdIndexRoute
   '/settings/baa': typeof AuthedSettingsBaaIndexRoute
   '/patients/$patientId/f2f/new': typeof AuthedPatientsPatientIdF2fNewRoute
   '/patients/$patientId/idg/schedule': typeof AuthedPatientsPatientIdIdgScheduleRoute
@@ -645,7 +755,6 @@ export interface FileRoutesByTo {
   '/hope/dashboard': typeof AuthedHopeDashboardRoute
   '/hope/submissions': typeof AuthedHopeSubmissionsRoute
   '/orders/inbox': typeof AuthedOrdersInboxRoute
-  '/patients/$patientId': typeof AuthedPatientsPatientIdRouteWithChildren
   '/alerts': typeof AuthedAlertsIndexRoute
   '/benefit-periods': typeof AuthedBenefitPeriodsIndexRoute
   '/cap': typeof AuthedCapIndexRoute
@@ -658,10 +767,16 @@ export interface FileRoutesByTo {
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
   '/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
+  '/patients/$patientId/care-team': typeof AuthedPatientsPatientIdCareTeamRoute
+  '/patients/$patientId/documents': typeof AuthedPatientsPatientIdDocumentsRoute
+  '/patients/$patientId/dose-spot': typeof AuthedPatientsPatientIdDoseSpotRoute
+  '/patients/$patientId/medications': typeof AuthedPatientsPatientIdMedicationsRoute
   '/patients/$patientId/orders': typeof AuthedPatientsPatientIdOrdersRoute
+  '/patients/$patientId/team-comm': typeof AuthedPatientsPatientIdTeamCommRoute
   '/settings/baa/$id': typeof AuthedSettingsBaaIdRoute
   '/settings/baa/new': typeof AuthedSettingsBaaNewRoute
   '/hope/assessments': typeof AuthedHopeAssessmentsIndexRoute
+  '/patients/$patientId': typeof AuthedPatientsPatientIdIndexRoute
   '/settings/baa': typeof AuthedSettingsBaaIndexRoute
   '/patients/$patientId/f2f/new': typeof AuthedPatientsPatientIdF2fNewRoute
   '/patients/$patientId/idg/schedule': typeof AuthedPatientsPatientIdIdgScheduleRoute
@@ -696,10 +811,16 @@ export interface FileRoutesById {
   '/_authed/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/_authed/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
   '/_authed/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
+  '/_authed/patients/$patientId/care-team': typeof AuthedPatientsPatientIdCareTeamRoute
+  '/_authed/patients/$patientId/documents': typeof AuthedPatientsPatientIdDocumentsRoute
+  '/_authed/patients/$patientId/dose-spot': typeof AuthedPatientsPatientIdDoseSpotRoute
+  '/_authed/patients/$patientId/medications': typeof AuthedPatientsPatientIdMedicationsRoute
   '/_authed/patients/$patientId/orders': typeof AuthedPatientsPatientIdOrdersRoute
+  '/_authed/patients/$patientId/team-comm': typeof AuthedPatientsPatientIdTeamCommRoute
   '/_authed/settings/baa/$id': typeof AuthedSettingsBaaIdRoute
   '/_authed/settings/baa/new': typeof AuthedSettingsBaaNewRoute
   '/_authed/hope/assessments/': typeof AuthedHopeAssessmentsIndexRoute
+  '/_authed/patients/$patientId/': typeof AuthedPatientsPatientIdIndexRoute
   '/_authed/settings/baa/': typeof AuthedSettingsBaaIndexRoute
   '/_authed/patients/$patientId/f2f/new': typeof AuthedPatientsPatientIdF2fNewRoute
   '/_authed/patients/$patientId/idg/schedule': typeof AuthedPatientsPatientIdIdgScheduleRoute
@@ -735,10 +856,16 @@ export interface FileRouteTypes {
     | '/hope/assessments/$id'
     | '/hope/assessments/new'
     | '/patients/$patientId/audit-export'
+    | '/patients/$patientId/care-team'
+    | '/patients/$patientId/documents'
+    | '/patients/$patientId/dose-spot'
+    | '/patients/$patientId/medications'
     | '/patients/$patientId/orders'
+    | '/patients/$patientId/team-comm'
     | '/settings/baa/$id'
     | '/settings/baa/new'
     | '/hope/assessments'
+    | '/patients/$patientId/'
     | '/settings/baa'
     | '/patients/$patientId/f2f/new'
     | '/patients/$patientId/idg/schedule'
@@ -758,7 +885,6 @@ export interface FileRouteTypes {
     | '/hope/dashboard'
     | '/hope/submissions'
     | '/orders/inbox'
-    | '/patients/$patientId'
     | '/alerts'
     | '/benefit-periods'
     | '/cap'
@@ -771,10 +897,16 @@ export interface FileRouteTypes {
     | '/hope/assessments/$id'
     | '/hope/assessments/new'
     | '/patients/$patientId/audit-export'
+    | '/patients/$patientId/care-team'
+    | '/patients/$patientId/documents'
+    | '/patients/$patientId/dose-spot'
+    | '/patients/$patientId/medications'
     | '/patients/$patientId/orders'
+    | '/patients/$patientId/team-comm'
     | '/settings/baa/$id'
     | '/settings/baa/new'
     | '/hope/assessments'
+    | '/patients/$patientId'
     | '/settings/baa'
     | '/patients/$patientId/f2f/new'
     | '/patients/$patientId/idg/schedule'
@@ -807,10 +939,16 @@ export interface FileRouteTypes {
     | '/_authed/hope/assessments/$id'
     | '/_authed/hope/assessments/new'
     | '/_authed/patients/$patientId/audit-export'
+    | '/_authed/patients/$patientId/care-team'
+    | '/_authed/patients/$patientId/documents'
+    | '/_authed/patients/$patientId/dose-spot'
+    | '/_authed/patients/$patientId/medications'
     | '/_authed/patients/$patientId/orders'
+    | '/_authed/patients/$patientId/team-comm'
     | '/_authed/settings/baa/$id'
     | '/_authed/settings/baa/new'
     | '/_authed/hope/assessments/'
+    | '/_authed/patients/$patientId/'
     | '/_authed/settings/baa/'
     | '/_authed/patients/$patientId/f2f/new'
     | '/_authed/patients/$patientId/idg/schedule'
@@ -923,7 +1061,13 @@ export const routeTree = rootRoute
       "parent": "/_authed",
       "children": [
         "/_authed/patients/$patientId/audit-export",
+        "/_authed/patients/$patientId/care-team",
+        "/_authed/patients/$patientId/documents",
+        "/_authed/patients/$patientId/dose-spot",
+        "/_authed/patients/$patientId/medications",
         "/_authed/patients/$patientId/orders",
+        "/_authed/patients/$patientId/team-comm",
+        "/_authed/patients/$patientId/",
         "/_authed/patients/$patientId/f2f/new",
         "/_authed/patients/$patientId/idg/schedule",
         "/_authed/patients/$patientId/visits/",
@@ -978,8 +1122,28 @@ export const routeTree = rootRoute
       "filePath": "_authed/patients/$patientId/audit-export.tsx",
       "parent": "/_authed/patients/$patientId"
     },
+    "/_authed/patients/$patientId/care-team": {
+      "filePath": "_authed/patients/$patientId/care-team.tsx",
+      "parent": "/_authed/patients/$patientId"
+    },
+    "/_authed/patients/$patientId/documents": {
+      "filePath": "_authed/patients/$patientId/documents.tsx",
+      "parent": "/_authed/patients/$patientId"
+    },
+    "/_authed/patients/$patientId/dose-spot": {
+      "filePath": "_authed/patients/$patientId/dose-spot.tsx",
+      "parent": "/_authed/patients/$patientId"
+    },
+    "/_authed/patients/$patientId/medications": {
+      "filePath": "_authed/patients/$patientId/medications.tsx",
+      "parent": "/_authed/patients/$patientId"
+    },
     "/_authed/patients/$patientId/orders": {
       "filePath": "_authed/patients/$patientId/orders.tsx",
+      "parent": "/_authed/patients/$patientId"
+    },
+    "/_authed/patients/$patientId/team-comm": {
+      "filePath": "_authed/patients/$patientId/team-comm.tsx",
       "parent": "/_authed/patients/$patientId"
     },
     "/_authed/settings/baa/$id": {
@@ -993,6 +1157,10 @@ export const routeTree = rootRoute
     "/_authed/hope/assessments/": {
       "filePath": "_authed/hope/assessments/index.tsx",
       "parent": "/_authed"
+    },
+    "/_authed/patients/$patientId/": {
+      "filePath": "_authed/patients/$patientId/index.tsx",
+      "parent": "/_authed/patients/$patientId"
     },
     "/_authed/settings/baa/": {
       "filePath": "_authed/settings/baa/index.tsx",
