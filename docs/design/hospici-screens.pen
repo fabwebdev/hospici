@@ -4395,6 +4395,65 @@
                                       "fontWeight": "normal"
                                     }
                                   ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "t4mn5",
+                                  "name": "metaRow2",
+                                  "gap": 16,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "WDCzb",
+                                      "name": "addrTxt",
+                                      "fill": "#64748B",
+                                      "content": "4821 Maple Grove Dr, Palm Valley, CA 92374",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "nXolc",
+                                      "name": "sep4",
+                                      "fill": "#CBD5E1",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "Hhn04",
+                                      "name": "contactTxt",
+                                      "fill": "#64748B",
+                                      "content": "Contact: David Thornton (Son) · (760) 555-0183",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "50lmY",
+                                      "name": "sep5",
+                                      "fill": "#CBD5E1",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "KM8sl",
+                                      "name": "dxTxt",
+                                      "fill": "#64748B",
+                                      "content": "Dx: Malignant neoplasm of bronchus, stage IV",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
                                 }
                               ]
                             }
