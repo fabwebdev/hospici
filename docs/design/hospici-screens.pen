@@ -70158,7 +70158,7 @@
                           "type": "text",
                           "id": "dQVLg",
                           "fill": "#FFFFFF",
-                          "content": "1",
+                          "content": "Status",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -70192,7 +70192,7 @@
                           "type": "text",
                           "id": "cuEBe",
                           "fill": "#FFFFFF",
-                          "content": "2",
+                          "content": "Pain",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -70226,7 +70226,7 @@
                           "type": "text",
                           "id": "s5hla",
                           "fill": "#FFFFFF",
-                          "content": "3",
+                          "content": "Symptoms",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -70260,7 +70260,7 @@
                           "type": "text",
                           "id": "JJK57",
                           "fill": "#FFFFFF",
-                          "content": "4",
+                          "content": "Interventions",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -70269,22 +70269,32 @@
                     },
                     {
                       "type": "frame",
-                      "id": "q3ozV",
+                      "id": "E4BHf",
                       "name": "s5p",
                       "height": 28,
                       "fill": "#16A34A",
                       "cornerRadius": 14,
+                      "gap": 4,
                       "padding": [
                         0,
-                        14
+                        12
                       ],
                       "alignItems": "center",
                       "children": [
                         {
+                          "type": "icon_font",
+                          "id": "5w2uI",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
                           "type": "text",
-                          "id": "LjzhZ",
+                          "id": "yqetf",
                           "fill": "#FFFFFF",
-                          "content": "5  Psychosocial",
+                          "content": "Psychosocial",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -72013,7 +72023,7 @@
                           "type": "text",
                           "id": "cq4cH",
                           "fill": "#FFFFFF",
-                          "content": "1",
+                          "content": "Status",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -72047,7 +72057,7 @@
                           "type": "text",
                           "id": "APqnF",
                           "fill": "#FFFFFF",
-                          "content": "2",
+                          "content": "Pain",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -72081,7 +72091,7 @@
                           "type": "text",
                           "id": "oSTQa",
                           "fill": "#FFFFFF",
-                          "content": "3",
+                          "content": "Symptoms",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -72115,7 +72125,7 @@
                           "type": "text",
                           "id": "HnfQ1",
                           "fill": "#FFFFFF",
-                          "content": "4",
+                          "content": "Interventions",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -72124,22 +72134,32 @@
                     },
                     {
                       "type": "frame",
-                      "id": "AdSZG",
+                      "id": "CbL3M",
                       "name": "s5p",
                       "height": 28,
                       "fill": "#16A34A",
                       "cornerRadius": 14,
+                      "gap": 4,
                       "padding": [
                         0,
-                        14
+                        12
                       ],
                       "alignItems": "center",
                       "children": [
                         {
+                          "type": "icon_font",
+                          "id": "ksNTH",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
                           "type": "text",
-                          "id": "FzA2F",
+                          "id": "SAxJa",
                           "fill": "#FFFFFF",
-                          "content": "5  Psychosocial",
+                          "content": "Psychosocial",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -72148,26 +72168,35 @@
                     },
                     {
                       "type": "frame",
-                      "id": "FeVPQ",
+                      "id": "zEeIt",
                       "name": "s6p",
                       "height": 28,
                       "fill": "#16A34A",
                       "cornerRadius": 14,
+                      "gap": 4,
                       "padding": [
                         0,
                         12
                       ],
-                      "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
+                          "type": "icon_font",
+                          "id": "RSLA4",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
                           "type": "text",
-                          "id": "KvCeq",
+                          "id": "p6AXY",
                           "fill": "#FFFFFF",
-                          "content": "6 · Care Plan",
+                          "content": "Care Plan",
                           "fontFamily": "Inter",
                           "fontSize": 12,
-                          "fontWeight": "500"
+                          "fontWeight": "600"
                         }
                       ]
                     },
@@ -73982,7 +74011,7 @@
                           "type": "text",
                           "id": "cL3Ub",
                           "fill": "#FFFFFF",
-                          "content": "1",
+                          "content": "Status",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -74016,7 +74045,7 @@
                           "type": "text",
                           "id": "efvRL",
                           "fill": "#FFFFFF",
-                          "content": "2",
+                          "content": "Pain",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -74050,7 +74079,7 @@
                           "type": "text",
                           "id": "dobo0",
                           "fill": "#FFFFFF",
-                          "content": "3",
+                          "content": "Symptoms",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -74084,7 +74113,7 @@
                           "type": "text",
                           "id": "OAQp3",
                           "fill": "#FFFFFF",
-                          "content": "4",
+                          "content": "Interventions",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -74093,22 +74122,32 @@
                     },
                     {
                       "type": "frame",
-                      "id": "qprN4",
+                      "id": "DRtsw",
                       "name": "s5p",
                       "height": 28,
                       "fill": "#16A34A",
                       "cornerRadius": 14,
+                      "gap": 4,
                       "padding": [
                         0,
-                        14
+                        12
                       ],
                       "alignItems": "center",
                       "children": [
                         {
+                          "type": "icon_font",
+                          "id": "o03Xu",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
                           "type": "text",
-                          "id": "PR33q",
+                          "id": "QfYx6",
                           "fill": "#FFFFFF",
-                          "content": "5  Psychosocial",
+                          "content": "Psychosocial",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -74117,51 +74156,69 @@
                     },
                     {
                       "type": "frame",
-                      "id": "oWzwW",
+                      "id": "9I9CI",
                       "name": "s6p",
                       "height": 28,
                       "fill": "#16A34A",
                       "cornerRadius": 14,
+                      "gap": 4,
                       "padding": [
                         0,
                         12
                       ],
-                      "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
+                          "type": "icon_font",
+                          "id": "MoIy2",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
                           "type": "text",
-                          "id": "ZHVQo",
+                          "id": "AP6CZ",
                           "fill": "#FFFFFF",
-                          "content": "6 · Care Plan",
+                          "content": "Care Plan",
                           "fontFamily": "Inter",
                           "fontSize": 12,
-                          "fontWeight": "500"
+                          "fontWeight": "600"
                         }
                       ]
                     },
                     {
                       "type": "frame",
-                      "id": "CeCPY",
+                      "id": "8u0WT",
                       "name": "s7p",
                       "height": 28,
                       "fill": "#16A34A",
                       "cornerRadius": 14,
+                      "gap": 4,
                       "padding": [
                         0,
                         12
                       ],
-                      "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
+                          "type": "icon_font",
+                          "id": "6KCfJ",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
                           "type": "text",
-                          "id": "gaRBV",
+                          "id": "bk71i",
                           "fill": "#FFFFFF",
-                          "content": "7 · Safety",
+                          "content": "Safety",
                           "fontFamily": "Inter",
                           "fontSize": 12,
-                          "fontWeight": "500"
+                          "fontWeight": "600"
                         }
                       ]
                     },
@@ -75930,7 +75987,7 @@
                           "type": "text",
                           "id": "gMxkR",
                           "fill": "#FFFFFF",
-                          "content": "1",
+                          "content": "Status",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -75964,7 +76021,7 @@
                           "type": "text",
                           "id": "FiM4N",
                           "fill": "#FFFFFF",
-                          "content": "2",
+                          "content": "Pain",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -75998,7 +76055,7 @@
                           "type": "text",
                           "id": "Vnf3J",
                           "fill": "#FFFFFF",
-                          "content": "3",
+                          "content": "Symptoms",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -76032,7 +76089,7 @@
                           "type": "text",
                           "id": "MsExk",
                           "fill": "#FFFFFF",
-                          "content": "4",
+                          "content": "Interventions",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -76041,22 +76098,32 @@
                     },
                     {
                       "type": "frame",
-                      "id": "xBvkz",
+                      "id": "juVVt",
                       "name": "s5p",
                       "height": 28,
                       "fill": "#16A34A",
                       "cornerRadius": 14,
+                      "gap": 4,
                       "padding": [
                         0,
-                        14
+                        12
                       ],
                       "alignItems": "center",
                       "children": [
                         {
+                          "type": "icon_font",
+                          "id": "x0Ij5",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
                           "type": "text",
-                          "id": "dAeMV",
+                          "id": "xEqF8",
                           "fill": "#FFFFFF",
-                          "content": "5  Psychosocial",
+                          "content": "Psychosocial",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "600"
@@ -76065,76 +76132,103 @@
                     },
                     {
                       "type": "frame",
-                      "id": "JWwjS",
+                      "id": "MRE9b",
                       "name": "s6p",
                       "height": 28,
                       "fill": "#16A34A",
                       "cornerRadius": 14,
+                      "gap": 4,
                       "padding": [
                         0,
                         12
                       ],
-                      "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
+                          "type": "icon_font",
+                          "id": "LOso8",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
                           "type": "text",
-                          "id": "FvAzR",
+                          "id": "x6iui",
                           "fill": "#FFFFFF",
-                          "content": "6 · Care Plan",
+                          "content": "Care Plan",
                           "fontFamily": "Inter",
                           "fontSize": 12,
-                          "fontWeight": "500"
+                          "fontWeight": "600"
                         }
                       ]
                     },
                     {
                       "type": "frame",
-                      "id": "gX3xo",
+                      "id": "qVPW1",
                       "name": "s7p",
                       "height": 28,
                       "fill": "#16A34A",
                       "cornerRadius": 14,
+                      "gap": 4,
                       "padding": [
                         0,
                         12
                       ],
-                      "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
+                          "type": "icon_font",
+                          "id": "C8UZ9",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
                           "type": "text",
-                          "id": "zCmtw",
+                          "id": "BchVI",
                           "fill": "#FFFFFF",
-                          "content": "7 · Safety",
+                          "content": "Safety",
                           "fontFamily": "Inter",
                           "fontSize": 12,
-                          "fontWeight": "500"
+                          "fontWeight": "600"
                         }
                       ]
                     },
                     {
                       "type": "frame",
-                      "id": "w8FWr",
+                      "id": "0MTSp",
                       "name": "s8p",
                       "height": 28,
                       "fill": "#16A34A",
                       "cornerRadius": 14,
+                      "gap": 4,
                       "padding": [
                         0,
                         12
                       ],
-                      "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
+                          "type": "icon_font",
+                          "id": "RZFeH",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
                           "type": "text",
-                          "id": "JrPMN",
+                          "id": "xvqj7",
                           "fill": "#FFFFFF",
-                          "content": "8 · Changes",
+                          "content": "Changes",
                           "fontFamily": "Inter",
                           "fontSize": 12,
-                          "fontWeight": "500"
+                          "fontWeight": "600"
                         }
                       ]
                     },
