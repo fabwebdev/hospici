@@ -4447,11 +4447,11 @@
                                       "type": "text",
                                       "id": "KM8sl",
                                       "name": "dxTxt",
-                                      "fill": "#64748B",
+                                      "fill": "#B91C1C",
                                       "content": "Dx: Malignant neoplasm of bronchus, stage IV",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
-                                      "fontWeight": "normal"
+                                      "fontWeight": "500"
                                     }
                                   ]
                                 }
