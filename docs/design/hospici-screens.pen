@@ -5734,6 +5734,12 @@
                               "id": "amoYp",
                               "name": "ctMember3",
                               "width": "fill_container",
+                              "stroke": {
+                                "thickness": {
+                                  "bottom": 1
+                                },
+                                "fill": "#F1F5F9"
+                              },
                               "gap": 10,
                               "padding": [
                                 10,
@@ -5788,6 +5794,73 @@
                                       "name": "ctM3Role",
                                       "fill": "#64748B",
                                       "content": "Chaplain",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 11,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "lWU8h",
+                              "name": "ctMember4",
+                              "width": "fill_container",
+                              "gap": 10,
+                              "padding": [
+                                10,
+                                16
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "b9925",
+                                  "name": "ctM4Avatar",
+                                  "width": 32,
+                                  "height": 32,
+                                  "fill": "#F5F3FF",
+                                  "cornerRadius": 16,
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "qmkZe",
+                                      "name": "ctM4AvatarTxt",
+                                      "fill": "#6D28D9",
+                                      "content": "JO",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 11,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "uU6C9",
+                                  "name": "ctM4Info",
+                                  "width": "fill_container",
+                                  "layout": "vertical",
+                                  "gap": 2,
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "TADxX",
+                                      "name": "ctM4Name",
+                                      "fill": "#0F172A",
+                                      "content": "Dr. James Okafor, MD",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 13,
+                                      "fontWeight": "500"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "bno2k",
+                                      "name": "ctM4Role",
+                                      "fill": "#64748B",
+                                      "content": "Hospice Physician",
                                       "fontFamily": "Inter",
                                       "fontSize": 11,
                                       "fontWeight": "normal"
