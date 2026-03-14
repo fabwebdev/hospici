@@ -1,0 +1,435 @@
+The Patient Detail screen looks excellent and is complete. Here's what was built:                                            
+                                                                                                                               
+  04 Patient Detail — consistent with the existing Login, Dashboard, and Patient List screens:                                 
+                                                                                                                               
+  - Patient Banner — avatar initials, name (Space Grotesk 22pt), status badges (Admitted/green, HOSPICE/blue, IDG Overdue/red),
+   meta row with MRN · DOB · Admit Date · Primary Clinician, and action buttons (Print, Add Note, New Order)                   
+  - Tab bar — Overview (active, blue underline), Clinical Notes, Orders, Medications, Care Team, Documents, IDG
+  - Left column (wider):
+    - Vital Signs — 4 tiles: Pain Score, Blood Pressure, Heart Rate, O2 Saturation
+    - Recent Visit Notes — 2 entries with type badge, clinician, date, and note body
+    - Active Diagnoses — 3 ICD-10 coded entries with color-coded severity dots
+  - Right column:
+    - Care Team — 3 members with role badges
+    - Upcoming Visits — 2 visits with calendar date blocks
+    - IDG Conference — amber alert card showing 18-day overdue status with a "Schedule IDG Now" CTA (hospice CMS compliance
+  requirement)
+
+The 05 Patient Detail - Encounter screen is complete. Here's what was built:
+                                                                                                                                                                                             
+  - Nav + sidebar + patient banner — copied from the existing Patient Detail screen for consistency
+  - Tab bar — all 14 tabs present, "Encounter" active (blue underline + bold text)                                                                                                           
+  - Encounters card with:                                    
+    - Header: "Encounters" title + Calendar, + New External Encounter, + New Encounter buttons                                                                                               
+    - Table header row with sort (↕) and filter icons on each column
+    - 4 data rows matching the reference:
+        - Row 1: Routine (RN) — 02/20/2026 08:40 — in-progress
+      - Row 2: PRN (RN) + PRN badge — 02/20/2026 08:00 — in-progress
+      - Row 3 & 4: Coordination (RN) — 07:44 / 07:41 — in-progress
+    - Author column as blue hyperlinks
+    - Ellipsis ⋯ action icons per row
+
+The 06 Patient Detail - Documents:                                                                                                                                          
+  - Full tab bar with Documents tab active                                                                                                                                                   
+  - Filter bar: 7 document-type chip filters (General ✓ and Encounters ✓ active in green, others inactive), date range input, Print/Save, Fax, and Upload Documents buttons                  
+  - Table with 6 rows matching the reference:                                                                                                                                                
+    - FS (selected/blue bg, checked) → Face Sheet             
+    - CC → Coord of Care
+    - CP → Care Plan
+    - ML × 2 → Med List / Med List with signatures
+    - ENC → Routine (RN) encounter with author ID
+  - Color-coded type badges (FS=blue, CC=cyan, CP=violet, ML=green, ENC=orange)
+
+  "Primary Clinician" → "CM" rename:
+  - Updated Primary: Sarah Lee, RN → CM: Sarah Lee, RN in all 3 screens (Patient Detail Overview, Encounter, Documents)
+  - Updated Care Team card role from RN Case Manager · Primary → RN Case Manager (CM) · Primary
+
+The Screen 07 — Patient Detail: Medications tab active                                                                                                                                         
+                                                                                                                                                                                             
+  Left column (main content):                                                                                                                                                                
+  - Filter bar — search input, filter button, EPCS Active chip (blue), Add Medication primary button                                                                                         
+  - Active Medications table (7 meds) with columns: Medication + generic/indication, Dose/Route, Frequency, Prescriber, Started, Status badge
+    - Rows: Morphine Sulfate ER, Lorazepam (CIV warning), Haloperidol, Scopolamine, Metoprolol, Furosemide (amber "Hold" row highlight)
+    - MAR Export action in card header
+  - PRN Medications card — Morphine Sulfate Liquid + Midazolam, with Dose/Route, Max Freq, and Indication columns
+
+  Right column (enhanced features):
+  - Drug Interactions (amber warning card) — 2 interactions flagged: Morphine+Lorazepam (CNS depression), Haloperidol+Metoprolol (QTc prolongation), each with severity badges
+  - Pharmacy card — Hospice Pharmacy Partners, phone number, last dispensed, next refill date
+  - Medication Summary — 4-quadrant stats: 7 Active (green), 1 On Hold (amber), 2 PRN (blue), 5 D/C'd (gray)
+
+The 08 Patient Detail - Dose Spot screen:
+
+  Status Bar — DoseSpot branding with Connected + Patient Enrolled badges, last sync time, "Open in DoseSpot" and "New Prescription" primary CTA.
+
+  Active Prescriptions table (left column):
+  - Columns: RX#, Medication, Qty/Days, Refills, Prescriber, Last Filled, Status, Actions
+  - 4 rows with meaningful states: Morphine (Active), Lorazepam (Pending/yellow), Haloperidol (Active with "Schedule II EPCS" in blue), Methadone (Review/orange with warning icon — "Needs
+  Auth")
+
+  Refill Requests card — 2 pending refills (Morphine, Haloperidol) each with inline Approve/Deny buttons and a bulk "Approve All" action.
+
+  EPCS & Prescriber card (right column) — Dr. Sarah Chen with avatar, NPI/DEA, DEA verified ✓, 2FA authenticated ✓, token expiry date, prescriber schedule (II–V), and an amber urgency
+  strip: "Sch. II auth expires in 3h 22m".
+
+  Preferred Pharmacy card — Hospice Pharmacy Partners with phone, address, fax, ePrescribe: Yes.
+
+  Quick Actions card — New Prescription (blue CTA), Request Refill, Cancel Prescription, Change Pharmacy, Prior Auth Request (orange), Export Rx History.
+
+The 09 Patient Detail — Care Team screen is complete. Here's what was built:
+                                                                                                                                                                                             
+  Left panel — 6 team member cards, each with:                
+  - Role-colored left stripe (blue=RN, green=Physician, purple=SW, amber=Chaplain, pink=Aide, teal=PT)                                                                                       
+  - Initials avatar + name + role badge + online status                                                                                                                                      
+  - Contact info, last/next visit dates                                                                                                                                                      
+  - Visit frequency compliance line (e.g. "3×/wk ✅ 3 completed")
+  - IDG attendance count (11/12, 12/12, 9/12…) + Message button
+
+  Right panel — 4 contextual widgets:
+  - On Call Tonight — Patricia Hayes with call CTA
+  - Next IDG Meeting — Mar 15 with 2-day amber countdown badge
+  - This Week's Visits — color-coded progress bars per discipline (RN/Aide/SW)
+  - Team Activity — recent actions log + "View all messages →"
+  - ⚠️  Attention Required — amber card surfacing aide supervision due in 7 days, IDG confirmation pending, and Maria S.'s 9/12 IDG attendance flag
+
+  Enhanced features delivered: online status indicator, per-discipline visit compliance, IDG attendance tracking, secure message CTAs per member, on-call overlay, compliance warning
+  aggregation in the right rail.
+
+  The Screen 10 — Patient Detail: Team Comm                                                                                                                                                      
+  
+  Thread List (left, 280px)                                                                                                                                                                  
+  - "Patient Messages" header + blue "+ New Message" button   
+  - Filter chips: All (active) · Unread · 3 · Urgent · @Mentions
+  - 5 role-color-coded threads with name, timestamp, preview text, and unread indicator on Patricia's thread
+
+  Message Pane (center, fill)
+  - Active thread header with linked encounter badge (#ENC-1042), Flag + overflow buttons
+  - Clinical message bubbles: Dr. Chen (green/MD), Patricia RN (blue, right-aligned/own), Maria LCSW (purple)
+  - Inline reference badges for Order ORD-2891 and Encounter ENC-1042
+  - Teal system event strip: "VantageChart updated: Pain score 7 → 3"
+  - Compose bar: @ Mention · Attach · Template · ⚠ Urgent buttons + text input + Send
+  - HIPAA audit footer: "Messages are audit-logged per HIPAA §164.312"
+
+  Context Panel (right, 260px)
+  - Team Presence — Patricia & Maria (● Online), Dr. Chen (◐ Away 14 min), Rev. Walsh (○ Offline) + "2 online" badge
+  - Flagged Messages — Dr. Chen's advance directive flag with amber callout + "View thread →"
+  - Patient Alerts — amber card: IDG overdue 2 days, HOPE window 8 days
+  - Quick Reference — Last encounter, active orders, Pain score 3/10 ↓ (green), Next visit, Next IDG (amber), Benefit Period Day 42/90 chip
+
+The 10 Patient Detail - Orders screen:
+
+  Screen analysis:                                            
+  - ✅ Nav + Sidebar — matches all other patient screens exactly (dark sidebar, session timer)                                                                                               
+  - ✅ Patient header — Margaret Thornton, MRN monospace, Admitted + HOSPICE chips, Print / Create Order buttons                                                                             
+  - ✅ Tab bar — Orders tab active (blue underline + bold), all 10 tabs present                                                                                                              
+  - ✅ Urgent amber banner — "1 verbal order expires in 1h 12m" with View Order CTA
+  - ✅ Summary stats row — 4 cards: Pending Signature (blue/3), Signed (green/12), Expired (red/1), Verbal Active (amber/2)
+  - ✅ Filter pills — All Orders (active), Verbal, DME, Freq Change, Medication
+  - ✅ 4 order cards (left column):
+    - VERBAL + EXPIRING badge — red border, countdown timer row in red
+    - DME — purple badge, PENDING SIGNATURE
+    - MEDICATION — green ✓ SIGNED badge, physician name in green
+    - FREQ CHANGE — teal badge, PENDING SIGNATURE
+  - ✅ Right panel (3 cards):
+    - Physician Signing Queue — 3 items with urgency countdown (1h 12m in red, 22h, 46h)
+    - Order Breakdown — type breakdown with colored values (Verbal/DME/Freq/Medication totaling 16)
+    - F2F Order (clinical teal) — Period 3 linkage note
+    - Recent Activity feed — 3 entries with colored status dots
+
+  Enhanced features delivered:
+  - Verbal order 72h countdown timer with destructive styling
+  - Physician signing queue surfacing urgency in the right panel
+  - Type-coded badges (amber=VERBAL, purple=DME, teal=FREQ, green=MEDICATION)
+  - F2F linkage card connecting to T3-2b data
+  - Order breakdown stats with per-type color coding (matching the design system's clinical palette)
+
+The 12 — Patient Detail screen: Benefit Period                                                                                                                                                 
+                                                                                                                                                                                             
+  - Patient banner — Margaret Thornton with full demographics, LOC badge, and action buttons                                                                                                 
+  - Tab bar — all 14 tabs with "Benefit Period" active (blue underline)                                                                                                                      
+  - Amber alert banner — "Recertification due in 19 days — Apr 1, 2026" with F2F warning and "Initiate Recert" CTA
+  - Left column:
+    - Benefit Period Timeline — 4 horizontal segments (P1 closed/gray → P2 current/blue with live progress bar → P3 upcoming/amber "F2F Required" badge → P4 upcoming/faded) with election
+  date chip
+    - Current Period card — 8-field grid spanning start/end, days elapsed, days remaining (amber), recert due (amber countdown), recert status, physician, admission type
+    - F2F Documentation card — amber-bordered, shows requirement (Period 3+), open window, close deadline (Apr 1), provider slot unassigned, 42 CFR §418.22 citation footer, "Assign
+  Provider" button
+  - Right column:
+    - Period Summary — 5 key stats: period number, total hospice days, billing risk (green "Clear"), NOE status (green "Filed"), transfer history
+    - Period History — P1 closed row + P2 active row (highlighted blue)
+    - Compliance Checklist — 4 items: NOE ✓, P1 Recert ✓, P2 Recert ⚠ due in 19d, F2F ⚠ provider unassigned
+
+The 13 Patient Detail - IDG Screen:                                                           
+                                                                                                                                                                     
+  Top content area:                                                                                                                                                  
+  - Red overdue banner — "IDG Overdue — 18 days since last meeting / 42 CFR §418.56 requires review every 15 days" with a red "Schedule IDG Now" CTA — the hard-block
+   compliance enforcement prominent at top                                                                                                                           
+                                                                                                                                                                     
+  Left column:                                                
+  - IDG Meeting History table — DATE / STATUS / ATTENDEES / SIGNED BY columns, 3 prior signed meetings (Dec 25 → Jan 9 → Feb 23), monospace dates, green "Signed"
+  chips, "+ New Meeting" button
+  - Live Meeting Workbench (blue border, "IN PROGRESS" badge) — 4 color-coded discipline cards in a row:
+    - 🔵 RN (Sarah L.) — Status Update + Goals Reviewed toggle (green/on) + Concerns
+    - 🟢 SW (M. Torres) — Psychosocial Update + Goals toggle + Concerns
+    - 🟣 MD (Dr. Patel) — Medical Summary + Goals toggle
+    - 🟡 Chaplain (Rev. Kim) — Spiritual Care with amber input area + Spiritual needs addressed toggle (gray/off)
+    - Footer: auto-save indicator + Discard + "Close Meeting & Generate Note" (primary blue)
+
+  Right column:
+  - IDG Compliance card — Large 18 day counter in JetBrains Mono red, CMS rule / Last IDG / Deadline rows, "OVERDUE" chip
+  - Required Attendees (42 CFR §418.56) — RN ✅ Confirmed, MD ✅ Confirmed, SW ⏱ Pending, Chaplain/PT Optional
+  - Quick Actions — red "Schedule IDG Meeting" + "View All IDG History"
+
+The 14 Patient Detail Screen - Clinical Notes
+
+  Note List Panel (left, 360px)
+  - Header with filter chips: All / Progress / Nursing / MD / SW / Chaplain
+  - Search bar with Sort control
+  - 5 note items with type icons, color-coded status chips (Signed/Draft), author, date, and preview text
+  - Active note highlighted with blue left border
+
+  Note Detail Panel (right)
+  - Note header: title, Signed chip, Addendum / Print / Co-sign actions
+  - Meta row: author, timestamp, linked encounter
+  - VantageChart — embedded clinical trends widget with:
+    - 3 sparkline tracks: Pain Scale (red ↓), Weight (green ↓), Blood Pressure (blue, stable)
+    - 7d / 30d / 90d time range toggle
+    - Color-coded delta chips and current values
+    - Date axis (Feb 17 → Mar 10)
+  - Note Content in SOAP format with colored section markers (S·O·A·P)
+  - Signature block: electronic signature details, Co-signer, Audit Trail + Add Addendum buttons
+Note List Panel
+  - Count badges on all filter chips — All (26), Progress (8), Nursing (7), MD (2 in amber = pending attestation), SW (4), Chaplain (3)
+  - Date range filter — "Mar 1 – Mar 10" picker with calendar icon + Clear
+  - Pending Attestation strip — amber warning: "2 notes pending MD co-sign · affects billing" with Review button
+  - Late entry flag — amber clock on MD Attestation note: "Late entry — signed 2 days after visit"
+
+  Note Detail Panel
+  - Required Notes Tracker — amber compliance banner: RN Visit (4 days overdue, red dot), SW Note (due today, amber), MD Attestation (2 pending, amber) + View All
+  - Voice Dictation button — sky blue "Dictate" button with mic icon in note content header
+  - Linked Dx/Orders row — ICD chips (C25.9, Z51.5) + linked Order #8234 at top of note body
+  - VantageChart expanded — now 5 sparklines: Pain, Weight, BP, SpO₂ (+2% ↑), Temperature (stable) with event markers (Decline noted, Rx change) on the timeline
+  - Addendum History — purple "1 addendum" badge, addendum entry with author avatar, purple Addendum chip, timestamp, and full addendum text
+
+The 15 HOPE screen — Patient Detail: HOPE:                                                        
+                                                                                                                                                                     
+  Left Panel — Assessment History (360px)                                                                                                                            
+  - Header with "5 assessments" badge + blue "+ Start Assessment" CTA                                                                                                
+  - Filter chips: All / Admission / Follow-up / Discharge     
+  - 5 assessment items with color-coded left stripes:                                                                                                                
+    - Admission (Feb 1) — Score 24/70 — Signed (blue)         
+    - Follow-up #2 (Feb 15) — Score 18/70 — Signed (purple)
+    - Follow-up #3 (Mar 1) — Score 14/70 — Signed (purple)
+    - Follow-up #4 (Mar 10) — Score 11/70 — In Progress (amber active item)
+    - Discharge HOPE — Not Started (gray)
+  - Trend summary: Score 24 → 11 (54% improvement) with ↓ green indicator
+
+  Right Panel — Assessment Detail
+  - HOPE CMS compliance banner — 42 CFR §418.54, window open Mar 10–24, 14 days remaining
+  - Assessment header — "Follow-up #4 HOPE Assessment" · In Progress chip · Save Draft + Submit Assessment actions
+  - VantageChart — 5 symptom sparklines: Pain (red), Dyspnea (blue), Nausea (orange), Anxiety (purple), Well-being (green) across 4 assessment dates
+  - HOPE Items scoring grid — 7 symptoms with color-coded progress bars, JetBrains Mono score badges, and delta chips:
+    - Pain 3/10 ↓5 · Dyspnea 3/10 ↓3 · Nausea 1/10 ↓2 · Constipation 2/10 ↓1 · Anxiety 2/10 ↓3 · Tiredness 4/10 →0 (amber) · Well-being 7/10 ↑3
+    - PPS Score 40% (Stable)
+  - Submit block — clinician audit trail + Save Draft + Submit Assessment CTA
+
+The 16 screen Recommended additional features:
+
+  ┌───────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │              Feature              │                                             Why it matters                                              │
+  ├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Caregiver HOPE items              │ CMS requires separate caregiver well-being assessment (anxiety, burden, grief readiness)                │
+  ├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Non-response tracking             │ CMS rules require documenting when items can't be collected (unresponsive, refused, cognitively unable) │
+  ├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ QRDA III / HOPE XML export        │ Required for submitting to CMS CASPER quality reporting — one-click structured export                   │
+  ├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ HUV window pre-alert              │ Push notification 7 days before each mandatory window opens — prevent missed submissions                │
+  ├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ National benchmark overlays       │ Show how this patient's symptom scores compare to the national HOPE cohort average                      │
+  ├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Missed window audit log           │ If an HUV window closes without a submission, create a timestamped compliance incident                  │
+  ├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Goals of Care alignment flag      │ Surface when current symptoms diverge from documented comfort goals (e.g. pain 4/10 when goal is ≤2)    │
+  ├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Auto-population from recent notes │ Pre-fill HOPE items from the last signed encounter's vitals and SOAP assessment                         │
+  ├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ MD co-signature workflow          │ Some payers require physician attestation on HOPE submissions — add routing queue                       │
+  ├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Functional trajectory alert       │ If PPS drops ≥10 points between assessments, surface a clinical alert + recertification flag            │
+  └───────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  The highest-priority ones for CMS compliance are non-response tracking and QRDA III export — those are required for actual quality reporting submission. The
+  caregiver HOPE section is also mandatory per the final HOPE rule.
+
+  Want me to build any of these into the screen next?
+
+The 17 Patient Detail — Patient Info screen:
+
+  Left column (700px):
+  - Demographics card — Full Name, DOB (Age 84), SSN (masked ***-**-4521 with eye-off toggle), Gender, Race/Ethnicity, Marital Status, Preferred Language, Religion, MRN in JetBrains Mono. Edit button in header.
+  - Contact Information card — Home address with map-pin icon, phone numbers (Home/Mobile) with type badges, Emergency Contacts section with two color-coded avatar cards (Robert Thornton Jr. / Son / Primary badge, Linda Mitchell / Daughter), clickable phone numbers in blue mono.
+  - Advance Directives card — "On File" green badge in header. DNR/POLST (red "DNR — Do Not Resuscitate" chip), Healthcare Proxy (Robert Jr., signed Jan 14 2024), Living Will (green "✓ Filed" chip), Organ Donation (gray "Not a donor").
+
+  Right column (444px):
+  - VantageChart — 4 sparkline tracks with colored path lines on tinted backgrounds:
+    - Pain Scale 3/10 (red, ↓4 green delta)
+    - Weight 118 lbs (green, ↓3 red delta — decline flag)
+    - Blood Pressure 118/72 (blue, →0 stable)
+    - SpO₂ 94% (purple, ↑2% green)
+    - 7d/30d/90d toggle, Feb 17 → Mar 10 date axis
+  - Insurance / Payer card — "Verified" teal badge. Primary: Medicare Part A (Hospice Benefit), Member ID in mono, Auth "✓ Active through Apr 30". Secondary: AARP Supplement Plan G, Member ID + Group in mono.
+  - Functional Status card — PPS 40% amber tile + FAST Stage 6a orange tile side-by-side. Table rows: Ambulation (Wheelchair dependent / yellow), Fall Risk (⚠ High / Morse 60 / red), Cognitive Status (Impaired / MMSE 12/30 / orange).
+  - Allergies & Alerts card — "3 Active" red badge. Three allergy rows with colored dot indicators and severity chips: Penicillin (SEVERE / red), Sulfonamides (MODERATE / amber), Latex (MILD / gray).
+
+Screen 17 Patient Detail — Patient Info is complete. Here's what was built:
+                                                                                          
+  Left column:
+  - Demographics — Full Name, DOB (Age 84), SSN masked with eye-off toggle, Gender, Race/Ethnicity, Marital Status, Language, Religion, MRN (JetBrains Mono). Edit   
+  button in header.
+  - Contact Information — Home address, Home + Mobile phone numbers with type badges, two Emergency Contact cards (Robert Jr. / Son / Primary, Linda Mitchell /      
+  Daughter) with avatar initials and blue clickable numbers.                                                                                                       
+  - Advance Directives — "On File" green header badge. DNR/POLST (red chip), Healthcare Proxy (with signatory + date), Living Will (green ✓ Filed), Organ Donation 
+  (not a donor).
+
+  Right column:
+  - VantageChart — 4 sparkline tracks (Pain 3/10 ↓4, Weight 118 lbs ↓3, BP 118/72 stable, SpO₂ 94% ↑2%) with 7d/30d/90d toggle and date axis.
+  - Insurance / Payer — Primary Medicare Part A (active auth through Apr 30) + Secondary AARP Supplement Plan G, both with Member IDs in mono.
+  - Functional Status — PPS 40% + FAST Stage 6a dual tiles; Ambulation / Fall Risk (⚠ High Morse 60) / Cognitive Status rows.
+  - Allergies & Alerts — 3 color-coded severity cards: Penicillin SEVERE, Sulfonamides MODERATE, Latex MILD.
+
+What Firenote reveals that we're missing or need to fix:                                                                                                           
+                                                                                                                                                                     
+  ---                                                                                                                                                                
+  🔴 CMS-Required Gaps                                                                                                                                               
+                                                             
+  ┌─────────────────────────┬─────────────────────────┬────────────────────────┬────────────────────────────────────────────────────────────────────────────────┐
+  │          Field          │        Firenote         │          Ours          │                                    CMS Rule                                    │
+  ├─────────────────────────┼─────────────────────────┼────────────────────────┼────────────────────────────────────────────────────────────────────────────────┤
+  │ Race as standalone      │ Race (HOPE A1010)       │ Combined "Race /       │ HOPE item A1010 — must be a discrete, separately coded field for CMS           │
+  │ field                   │                         │ Ethnicity"             │ submission                                                                     │
+  ├─────────────────────────┼─────────────────────────┼────────────────────────┼────────────────────────────────────────────────────────────────────────────────┤
+  │ Ethnicity as standalone │ Ethnicity (HOPE A1005)  │ Merged with Race       │ HOPE item A1005 — separate field required                                      │
+  │  field                  │                         │                        │                                                                                │
+  ├─────────────────────────┼─────────────────────────┼────────────────────────┼────────────────────────────────────────────────────────────────────────────────┤
+  │ Language labeled to     │ Language (HOPE A1110A)  │ "Preferred Language"   │ HOPE item A1110A feeds quality reporting directly                              │
+  │ HOPE                    │                         │ (unlabeled)            │                                                                                │
+  ├─────────────────────────┼─────────────────────────┼────────────────────────┼────────────────────────────────────────────────────────────────────────────────┤
+  │ "Patient declines to    │ Shown on Ethnicity      │ Not present            │ CMS HOPE rules require documenting non-response — flagged as critical in our   │
+  │ respond" option         │ dropdown                │                        │ HOPE screen analysis                                                           │
+  ├─────────────────────────┼─────────────────────────┼────────────────────────┼────────────────────────────────────────────────────────────────────────────────┤
+  │ CAHPS Opt-Out           │ Opt Out of Posthumous   │ Not present anywhere   │ 42 CFR §418.310 — families receive CAHPS Hospice Survey post-death; opt-out    │
+  │                         │ Survey (CAHPS)          │                        │ must be captured at admission and stored on the patient record                 │
+  └─────────────────────────┴─────────────────────────┴────────────────────────┴────────────────────────────────────────────────────────────────────────────────┘
+
+  ---
+  🟡 Clinical Completeness Gaps
+
+  ┌──────────────────────────────────────────────────────────┬────────────────┬──────────────────────────┬─────────────────────────────────────────────┐
+  │                          Field                           │    Firenote    │           Ours           │                  Priority                   │
+  ├──────────────────────────────────────────────────────────┼────────────────┼──────────────────────────┼─────────────────────────────────────────────┤
+  │ Name split (First / MI / Last / Suffix / Preferred Name) │ Yes            │ Single "Full Name" field │ Medium — affects billing, identity matching │
+  ├──────────────────────────────────────────────────────────┼────────────────┼──────────────────────────┼─────────────────────────────────────────────┤
+  │ DME Provider                                             │ On General tab │ Not on Patient Info      │ Medium — frequently referenced in orders    │
+  ├──────────────────────────────────────────────────────────┼────────────────┼──────────────────────────┼─────────────────────────────────────────────┤
+  │ Migrated from another EMR flag                           │ Checkbox       │ Not present              │ Low — operational                           │
+  └──────────────────────────────────────────────────────────┴────────────────┴──────────────────────────┴─────────────────────────────────────────────┘
+
+  ---
+  🟢 Things We Have That Firenote Doesn't Show Here
+
+  - Emergency Contacts with role/relationship
+  - Advance Directives (DNR, POLST, Living Will, Healthcare Proxy)
+  - Functional Status (PPS, FAST, Fall Risk)
+  - Allergies with severity grading
+  - VantageChart clinical trends
+  - Insurance/Payer details inline
+
+  ---
+  What I recommend we fix in the design
+
+  Must fix (CMS):
+  1. Split Race and Ethnicity into separate rows, each labeled with their HOPE item code (A1010, A1005)
+  2. Add "Patient declines / Unable to respond" notation affordance to Race, Ethnicity, Language fields
+  3. Add a CAHPS Opt-Out toggle prominently in the Demographics card
+  4. Label Language field as Language (HOPE A1110A)
+
+  Should fix (completeness):
+  5. Split Full Name into First / MI / Last / Suffix / Preferred Name fields
+
+  Want me to update the Patient Info screen with these fixes now?
+
+  Here's a full gap audit beyond what we just fixed, split by priority:
+
+  ---
+  🔴 CMS-Required — Missing from Patient Info
+
+  ┌──────────────────────────────────────────────────────────┬─────────────────┬──────────────────────────────────────────────────────────────────────┐
+  │                         Missing                          │    CMS Rule     │                                Impact                                │
+  ├──────────────────────────────────────────────────────────┼─────────────────┼──────────────────────────────────────────────────────────────────────┤
+  │ Primary Terminal Diagnosis with ICD-10 code              │ 42 CFR §418.22  │ Drives 6-month prognosis, required on election                       │
+  ├──────────────────────────────────────────────────────────┼─────────────────┼──────────────────────────────────────────────────────────────────────┤
+  │ Related diagnoses (contributing to terminal prognosis)   │ 42 CFR §418.22  │ Billing — hospice covers these                                       │
+  ├──────────────────────────────────────────────────────────┼─────────────────┼──────────────────────────────────────────────────────────────────────┤
+  │ Unrelated diagnoses                                      │ 42 CFR §418.22  │ Billing — hospice does NOT cover these, payer disputes hinge on this │
+  ├──────────────────────────────────────────────────────────┼─────────────────┼──────────────────────────────────────────────────────────────────────┤
+  │ Certifying Physician (who signed the terminal prognosis) │ 42 CFR §418.22  │ Required at admission and each recert                                │
+  ├──────────────────────────────────────────────────────────┼─────────────────┼──────────────────────────────────────────────────────────────────────┤
+  │ Attending Physician (patient's chosen attending)         │ 42 CFR §418.56  │ Patient has right to designate one                                   │
+  ├──────────────────────────────────────────────────────────┼─────────────────┼──────────────────────────────────────────────────────────────────────┤
+  │ Hospice Election Date                                    │ 42 CFR §418.24  │ Anchor date for all benefit period math                              │
+  ├──────────────────────────────────────────────────────────┼─────────────────┼──────────────────────────────────────────────────────────────────────┤
+  │ Level of Care (Routine / Continuous / GIP / Respite)     │ 42 CFR §418.302 │ Drives billing codes — wrong LOC = claim denial                      │
+  ├──────────────────────────────────────────────────────────┼─────────────────┼──────────────────────────────────────────────────────────────────────┤
+  │ NOE Filing Status                                        │ 42 CFR §418.24  │ Must be filed within 5 days of admission                             │
+  ├──────────────────────────────────────────────────────────┼─────────────────┼──────────────────────────────────────────────────────────────────────┤
+  │ Prognosis statement / 6-month documentation              │ 42 CFR §418.22  │ Required for enrollment and recert                                   │
+  └──────────────────────────────────────────────────────────┴─────────────────┴──────────────────────────────────────────────────────────────────────┘
+
+  ---
+  🟡 Clinical Completeness — Missing
+
+  ┌─────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │             Missing             │                                                         Notes                                                         │
+  ├─────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Alert Tags                      │ Firenote has a full "Alert Tags" section — clinical/admin flags visible everywhere (fall risk, isolation, MRSA, etc.) │
+  ├─────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ DME Provider                    │ Already noted — appears on Firenote's General tab                                                                     │
+  ├─────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Service Location / Care Setting │ Where care is delivered (private home, SNF, ALF, inpatient) — affects billing codes                                   │
+  ├─────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Referring Provider              │ Who sent the patient to hospice                                                                                       │
+  ├─────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Bereavement Coordinator         │ 42 CFR §418.64 requires assignment at admission                                                                       │
+  ├─────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Volunteer Services flag         │ CMS requires ≥5% of total care hours be volunteer (42 CFR §418.78) — needs tracking                                   │
+  └─────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  ---
+  🔵 Screens Not Built Yet (from Firenote's sidebar)
+
+  ┌───────────────────────────────────────────────┬──────────────┐
+  │                 Firenote Tab                  │    Status    │
+  ├───────────────────────────────────────────────┼──────────────┤
+  │ Locations / Service Setting                   │ ❌ Not built │
+  ├───────────────────────────────────────────────┼──────────────┤
+  │ Patient History (prior admissions, transfers) │ ❌ Not built │
+  ├───────────────────────────────────────────────┼──────────────┤
+  │ Alert Tags                                    │ ❌ Not built │
+  ├───────────────────────────────────────────────┼──────────────┤
+  │ Patient Forms (consent, election, NOE)        │ ❌ Not built │
+  ├───────────────────────────────────────────────┼──────────────┤
+  │ Patient Portal (family access toggle)         │ ❌ Not built │
+  ├───────────────────────────────────────────────┼──────────────┤
+  │ Transfer                                      │ ❌ Not built │
+  └───────────────────────────────────────────────┴──────────────┘
+
+  ---
+  What I recommend next
+
+  Highest impact on the current screen — add a Clinical / Hospice Enrollment card to the left column with:
+  - Terminal Diagnosis (primary + related + unrelated, ICD-10 coded)
+  - Certifying Physician + Attending Physician
+  - Election Date, LOC, NOE status
+
+  That single card would close the biggest CMS gap. Want me to build it now?
