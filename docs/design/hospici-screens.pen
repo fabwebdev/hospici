@@ -4339,6 +4339,31 @@
                                           "fontWeight": "700"
                                         }
                                       ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "7TYPZ",
+                                      "name": "locBadge",
+                                      "height": 22,
+                                      "fill": "#CFFAFE",
+                                      "cornerRadius": 3,
+                                      "padding": [
+                                        0,
+                                        8
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "dXEXo",
+                                          "name": "locBadgeTxt",
+                                          "fill": "#0E7490",
+                                          "content": "RHC",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
                                     }
                                   ]
                                 },
@@ -4457,26 +4482,6 @@
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
-                                    },
-                                    {
-                                      "type": "text",
-                                      "id": "50lmY",
-                                      "name": "sep5",
-                                      "fill": "#CBD5E1",
-                                      "content": "·",
-                                      "fontFamily": "Inter",
-                                      "fontSize": 12,
-                                      "fontWeight": "normal"
-                                    },
-                                    {
-                                      "type": "text",
-                                      "id": "KM8sl",
-                                      "name": "dxTxt",
-                                      "fill": "#B91C1C",
-                                      "content": "Dx: Malignant neoplasm of bronchus, stage IV",
-                                      "fontFamily": "Inter",
-                                      "fontSize": 12,
-                                      "fontWeight": "500"
                                     }
                                   ]
                                 },
@@ -4534,6 +4539,26 @@
                                     },
                                     {
                                       "type": "text",
+                                      "id": "KM8sl",
+                                      "name": "dxTxt",
+                                      "fill": "#B91C1C",
+                                      "content": "Dx: Malignant neoplasm of bronchus, stage IV",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "500"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "97gnC",
+                                      "name": "metaSep2",
+                                      "fill": "#CBD5E1",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
                                       "id": "bYswP",
                                       "name": "bpLbl",
                                       "fill": "#64748B",
@@ -4543,14 +4568,29 @@
                                       "fontWeight": "normal"
                                     },
                                     {
-                                      "type": "text",
-                                      "id": "CvEWO",
-                                      "name": "bpVal",
-                                      "fill": "#374151",
-                                      "content": "Period #2  (Ends May 12, 2026)",
-                                      "fontFamily": "Inter",
-                                      "fontSize": 12,
-                                      "fontWeight": "500"
+                                      "type": "frame",
+                                      "id": "2U2bq",
+                                      "name": "bpBadge",
+                                      "height": 18,
+                                      "fill": "#EFF6FF",
+                                      "cornerRadius": 3,
+                                      "padding": [
+                                        0,
+                                        7
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "z0CSJ",
+                                          "name": "bpBadgeTxt",
+                                          "fill": "#1D4ED8",
+                                          "content": "#2 (Ends 05/12/2026)",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
                                     }
                                   ]
                                 }
