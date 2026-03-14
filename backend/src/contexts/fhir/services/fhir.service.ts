@@ -9,6 +9,7 @@
  * SMART scope enforcement happens at route layer before calling these methods.
  */
 
+import { env } from "@/config/env.js";
 import { db } from "@/db/client.js";
 import { painAssessments } from "@/db/schema/pain-assessments.table.js";
 import { patients } from "@/db/schema/patients.table.js";
@@ -345,7 +346,7 @@ export async function searchPatients(
       type: "searchset",
       total: total,
       entry: filteredPatients.map((p) => ({
-        fullUrl: `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/fhir/r4/Patient/${p.id}`,
+        fullUrl: `${env.betterAuthUrl}/fhir/r4/Patient/${p.id}`,
         resource: p,
         search: { mode: "match" },
       })),
@@ -357,13 +358,13 @@ export async function searchPatients(
       if (page > 1) {
         bundle.link.push({
           relation: "previous",
-          url: `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/fhir/r4/Patient?_page=${page - 1}&_count=${pageSize}`,
+          url: `${env.betterAuthUrl}/fhir/r4/Patient?_page=${page - 1}&_count=${pageSize}`,
         });
       }
       if (filteredPatients.length === pageSize && total > page * pageSize) {
         bundle.link.push({
           relation: "next",
-          url: `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/fhir/r4/Patient?_page=${page + 1}&_count=${pageSize}`,
+          url: `${env.betterAuthUrl}/fhir/r4/Patient?_page=${page + 1}&_count=${pageSize}`,
         });
       }
     }
@@ -481,7 +482,7 @@ export async function searchObservations(
       type: "searchset",
       total: total,
       entry: observations.map((o) => ({
-        fullUrl: `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/fhir/r4/Observation/${o.id}`,
+        fullUrl: `${env.betterAuthUrl}/fhir/r4/Observation/${o.id}`,
         resource: o,
         search: { mode: "match" },
       })),
@@ -493,13 +494,13 @@ export async function searchObservations(
       if (page > 1) {
         bundle.link.push({
           relation: "previous",
-          url: `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/fhir/r4/Observation?_page=${page - 1}&_count=${pageSize}`,
+          url: `${env.betterAuthUrl}/fhir/r4/Observation?_page=${page - 1}&_count=${pageSize}`,
         });
       }
       if (observations.length === pageSize && total > page * pageSize) {
         bundle.link.push({
           relation: "next",
-          url: `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/fhir/r4/Observation?_page=${page + 1}&_count=${pageSize}`,
+          url: `${env.betterAuthUrl}/fhir/r4/Observation?_page=${page + 1}&_count=${pageSize}`,
         });
       }
     }

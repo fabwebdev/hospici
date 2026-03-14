@@ -1,6 +1,7 @@
 // contexts/vendors/services/vendor.service.ts
 // T3-8: Vendor Governance + BAA Registry
 
+import { AuditService } from "@/contexts/identity/services/audit.service.js";
 import { db } from "@/db/client.js";
 import { vendorReviews } from "@/db/schema/vendor-reviews.table.js";
 import { vendors } from "@/db/schema/vendors.table.js";
@@ -111,6 +112,8 @@ export class VendorService {
   static async createVendor(
     locationId: string,
     body: CreateVendorBody,
+    userId: string,
+    userRole: string,
   ): Promise<VendorResponse> {
     const [row] = await db
       .insert(vendors)
@@ -138,7 +141,15 @@ export class VendorService {
       })
       .returning();
     // biome-ignore lint/style/noNonNullAssertion: insert always returns a row
-    return mapVendor(row!);
+    const vendor = mapVendor(row!);
+    await AuditService.log("create", userId, null, {
+      userRole,
+      locationId,
+      resourceType: "vendor",
+      resourceId: vendor.id,
+      details: { vendorName: body.vendorName, baaStatus: body.baaStatus },
+    });
+    return vendor;
   }
 
   static async getVendor(id: string): Promise<VendorDetailResponse | null> {
@@ -162,6 +173,9 @@ export class VendorService {
   static async updateVendor(
     id: string,
     body: UpdateVendorBody,
+    userId: string,
+    userRole: string,
+    locationId: string,
   ): Promise<VendorResponse | null> {
     const updates: Partial<typeof vendors.$inferInsert> = { updatedAt: new Date() };
 
@@ -193,7 +207,15 @@ export class VendorService {
       .set(updates)
       .where(eq(vendors.id, id))
       .returning();
-    return row ? mapVendor(row) : null;
+    if (!row) return null;
+    await AuditService.log("update", userId, null, {
+      userRole,
+      locationId,
+      resourceType: "vendor",
+      resourceId: id,
+      details: { changedFields: Object.keys(updates).filter((k) => k !== "updatedAt") },
+    });
+    return mapVendor(row);
   }
 
   static async addReview(
@@ -224,7 +246,15 @@ export class VendorService {
     }
 
     // biome-ignore lint/style/noNonNullAssertion: insert always returns a row
-    return mapReview(row!);
+    const review = mapReview(row!);
+    await AuditService.log("create", userId, null, {
+      userRole: "compliance_officer",
+      locationId,
+      resourceType: "vendor_review",
+      resourceId: review.id,
+      details: { vendorId, outcome: body.outcome, baaStatusAtReview: body.baaStatusAtReview },
+    });
+    return review;
   }
 
   static async getExpiring(

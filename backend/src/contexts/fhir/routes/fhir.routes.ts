@@ -21,6 +21,7 @@
  *   handler       → FHIR service
  */
 
+import { env } from "@/config/env.js";
 import { Type } from "@sinclair/typebox";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
@@ -377,7 +378,7 @@ export default async function fhirRoutes(fastify: FastifyInstance): Promise<void
         },
         implementation: {
           description: "Hospici Hospice EHR FHIR R4 Endpoint",
-          url: `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/fhir/r4`,
+          url: `${env.betterAuthUrl}/fhir/r4`,
         },
         fhirVersion: "4.0.1",
         format: ["json"],
@@ -403,11 +404,11 @@ export default async function fhirRoutes(fastify: FastifyInstance): Promise<void
                   extension: [
                     {
                       url: "authorize",
-                      valueUri: `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/api/v1/auth/authorize`,
+                      valueUri: `${env.betterAuthUrl}/api/v1/auth/authorize`,
                     },
                     {
                       url: "token",
-                      valueUri: `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/api/v1/auth/token`,
+                      valueUri: `${env.betterAuthUrl}/api/v1/auth/token`,
                     },
                   ],
                 },

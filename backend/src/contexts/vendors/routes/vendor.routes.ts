@@ -82,7 +82,7 @@ export async function vendorRoutes(app: FastifyInstance): Promise<void> {
           .code(403)
           .send({ error: "Forbidden: compliance_officer or super_admin required" });
       }
-      const vendor = await VendorService.createVendor(req.user.locationId, req.body as never);
+      const vendor = await VendorService.createVendor(req.user.locationId, req.body as never, req.user.id, req.user.role);
       return reply.code(201).send(vendor);
     },
   );
@@ -185,7 +185,7 @@ export async function vendorRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(403).send({ error: "Forbidden" });
       }
       const { id } = req.params as { id: string };
-      const vendor = await VendorService.updateVendor(id, req.body as never);
+      const vendor = await VendorService.updateVendor(id, req.body as never, req.user.id, req.user.role, req.user.locationId);
       if (!vendor) {
         return reply.code(404).send({ error: "Vendor not found" });
       }

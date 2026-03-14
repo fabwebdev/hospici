@@ -49,6 +49,12 @@ export const env = {
 
   iqiesApiUrl: optional("IQIES_API_URL", "https://iqies.cms.gov/api"),
 
+  anthropicApiKey: optional("ANTHROPIC_API_KEY", ""),
+  geminiApiKey: optional("GEMINI_API_KEY", ""),
+  openaiApiKey: optional("OPENAI_API_KEY", ""),
+  ollamaBaseUrl: optional("OLLAMA_BASE_URL", ""),
+  ollamaModel: optional("OLLAMA_MODEL", "llama3.2"),
+
   features: {
     fhirR6: optional("FEATURE_FHIR_R6_ENABLED", "false") === "true",
     bulkExport: optional("FEATURE_BULK_EXPORT_ENABLED", "false") === "true",

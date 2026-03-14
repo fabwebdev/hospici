@@ -1,0 +1,187 @@
+# Hospici Learned Rules
+# Auto-managed by hospici-review skill.
+# DO NOT edit manually — use /review --rules to inspect, git revert to undo changes.
+# Bootstrap rules are in references/bootstrap-rules.md and loaded on first run.
+#
+# Format per rule:
+#   id, status, severity, category, title, pattern, why, fix,
+#   example_bad, example_good, first_seen, last_triggered, trigger_count, archived_date
+#
+# Categories: phi | auth | drizzle | fastify | audit | perf | security | standards
+# Severity:   critical | warning | info
+# Status:     active | archived
+
+rules:
+
+- id: std-009
+  status: active
+  severity: critical
+  category: standards
+  title: "Direct process.env access in LLM service"
+  confidence: 0.95
+  category_weight: 1.0
+  pattern: |
+    process.env.ANTHROPIC_API_KEY (or any API key) accessed directly outside src/config/env.ts.
+    All env vars must go through the validated config module so missing vars fail at startup.
+  why: |
+    In Hospici, missing ANTHROPIC_API_KEY fails silently at LLM call time, not at startup.
+    A clinician clicking "Enhance Note" gets a runtime crash instead of a startup warning.
+    More importantly, env vars that bypass env.ts bypass validation entirely.
+  fix: |
+    Add anthropicApiKey to backend/src/config/env.ts validation schema.
+    Reference env.anthropicApiKey in vantageChart.llm.ts instead of process.env.ANTHROPIC_API_KEY.
+  example_bad: |
+    const claudeApiKey = process.env.ANTHROPIC_API_KEY;
+  example_good: |
+    import { env } from "@/config/env.js";
+    const claudeApiKey = env.anthropicApiKey;
+  first_seen:
+    file: "backend/src/contexts/clinical/services/vantageChart.llm.ts"
+    line: 44
+    date: "2025-03-14"
+  last_triggered: "2026-03-14"
+  trigger_count: 2
+  merge_candidates: ["std-001"]
+  conflicts_with: []
+  regulatory_ref: null
+  archived_date: null
+
+- id: std-010
+  status: active
+  severity: critical
+  category: standards
+  title: "process.env.BETTER_AUTH_URL in FHIR service bypasses config module"
+  confidence: 0.95
+  category_weight: 1.0
+  pattern: |
+    process.env.BETTER_AUTH_URL used directly in FHIR bundle URL construction.
+    Falls back to 'http://localhost:3000' if not set, silently generating invalid FHIR bundles in prod.
+  why: |
+    FHIR bundle fullUrl and pagination links embed the server base URL.
+    If BETTER_AUTH_URL is missing in production, all FHIR bundle links point to localhost —
+    breaking any FHIR client or CMS interoperability integration silently.
+  fix: |
+    Add betterAuthUrl to env.ts. Replace all process.env.BETTER_AUTH_URL references
+    in fhir.service.ts and fhir.routes.ts with env.betterAuthUrl.
+  example_bad: |
+    fullUrl: `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/fhir/r4/Patient/${p.id}`
+  example_good: |
+    fullUrl: `${env.betterAuthUrl}/fhir/r4/Patient/${p.id}`
+  first_seen:
+    file: "backend/src/contexts/fhir/services/fhir.service.ts"
+    line: 348
+    date: "2025-03-14"
+  last_triggered: "2026-03-14"
+  trigger_count: 2
+  merge_candidates: ["std-001", "std-009"]
+  conflicts_with: []
+  regulatory_ref: null
+  archived_date: null
+
+- id: phi-011
+  status: active
+  severity: warning
+  category: phi
+  title: "Pino redact paths incomplete — missing 8 PHI_FIELDS"
+  confidence: 0.92
+  category_weight: 3.0
+  pattern: |
+    logging.config.ts phiRedactPaths does not cover all fields in PHI_FIELDS (phi-encryption.service.ts).
+    Missing: faxNumber, mrn, socialSecurityNumber, accountNumber, certificateLicenseNumber,
+    vehicleId, deviceId, url, ipAddress.
+    If these appear in req.body, req.query, or res.body they reach log aggregators unredacted.
+  why: |
+    PHI_FIELDS is the canonical list of all 18 HIPAA Safe Harbor identifiers in this codebase.
+    Any field in PHI_FIELDS that is not in phiRedactPaths is a potential HIPAA log-level breach.
+    phiRedactPaths must be a superset of PHI_FIELDS at all times.
+  fix: |
+    In logging.config.ts, add redact paths for all missing PHI_FIELDS.
+    Also add req.query.* variants and consider res.body.* for response logging.
+    Enforce by adding a test that PHI_FIELDS.forEach(f => expect(phiRedactPaths).toContain(`req.body.${f}`)).
+  example_bad: |
+    // logging.config.ts only has 10 of 18 PHI fields
+    export const phiRedactPaths = ["req.body.firstName", ...]  // missing mrn, faxNumber, etc.
+  example_good: |
+    // All PHI_FIELDS covered + query string variants
+    export const phiRedactPaths = PHI_FIELDS entries mapped to req.body.*, req.query.*
+  first_seen:
+    file: "backend/src/config/logging.config.ts"
+    line: 1
+    date: "2025-03-14"
+  last_triggered: "2026-03-14"
+  trigger_count: 2
+  merge_candidates: []
+  conflicts_with: []
+  regulatory_ref: null
+  archived_date: null
+
+- id: drizzle-011
+  status: active
+  severity: critical
+  category: drizzle
+  title: "Live destructive migrations without rollback files"
+  confidence: 0.90
+  category_weight: 2.0
+  pattern: |
+    Migration files containing uncommented DROP TABLE, DROP COLUMN, or ALTER COLUMN DROP DEFAULT
+    with no corresponding rollback file in migrations/rollbacks/.
+    Hospici pattern: destructive ops exist live in 0016, 0017, 0019, 0020 migrations.
+  why: |
+    Production EHR with patient billing data. A failed migration mid-deployment with no rollback
+    script means manual intervention on live patient data. CMS ADR responses and billing
+    continuity depend on schema stability.
+  fix: |
+    For every migration with live destructive ops, create a paired rollback file.
+    Template: migrations/rollbacks/XXXX_rollback.sql with inverse operations.
+    Add a CI check that fails if a destructive migration has no rollback counterpart.
+  first_seen:
+    file: "backend/database/migrations/drizzle/0017_noe_notr_workbench.sql"
+    line: 12
+    date: "2025-03-14"
+  last_triggered: "2026-03-14"
+  trigger_count: 2
+  merge_candidates: []
+  conflicts_with: []
+  regulatory_ref: null
+  archived_date: null
+
+- id: biome-006
+  status: active
+  severity: warning
+  category: biome
+  title: "console.log/error in seed scripts — Biome noConsole violation"
+  confidence: 0.88
+  category_weight: 0.8
+  pattern: |
+    console.log / console.error in backend/src/seeds/*.ts files.
+    Biome noConsole is set to 'error' in biome.json — these fail the Biome gate.
+  why: |
+    Seed scripts run in CI and dev. console.error("Seed error:", err) can serialize
+    DB error objects that may contain connection strings or query context.
+    Biome will block CI on these files.
+  fix: |
+    Replace console.* with process.stdout.write() for seed scripts, or import the
+    pino logger. Either satisfies Biome's noConsole rule.
+  example_bad: |
+    console.log(`Seeded template: ${tmpl.discipline}`)
+    console.error("Seed error:", err)
+  example_good: |
+    process.stdout.write(`Seeded template: ${tmpl.discipline}\n`)
+    process.stderr.write(`Seed error: ${err instanceof Error ? err.message : String(err)}\n`)
+  first_seen:
+    file: "backend/src/seeds/checklist-templates-seed.ts"
+    line: 107
+    date: "2025-03-14"
+  last_triggered: "2026-03-14"
+  trigger_count: 2
+  merge_candidates: []
+  conflicts_with: []
+  regulatory_ref: null
+  archived_date: null
+
+meta:
+  initialized: true
+  last_run: "2026-03-14"
+  total_rules_ever: 5
+  active_rules: 5
+  archived_rules: 0
