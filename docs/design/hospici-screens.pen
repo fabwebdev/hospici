@@ -4314,6 +4314,31 @@
                                           "fontWeight": "600"
                                         }
                                       ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "kiUHA",
+                                      "name": "dnrBadge",
+                                      "height": 22,
+                                      "fill": "#DC2626",
+                                      "cornerRadius": 3,
+                                      "padding": [
+                                        0,
+                                        8
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "etaLD",
+                                          "name": "dnrBadgeTxt",
+                                          "fill": "#FFFFFF",
+                                          "content": "DNR",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 10,
+                                          "fontWeight": "700"
+                                        }
+                                      ]
                                     }
                                   ]
                                 },
@@ -4449,6 +4474,80 @@
                                       "name": "dxTxt",
                                       "fill": "#B91C1C",
                                       "content": "Dx: Malignant neoplasm of bronchus, stage IV",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "500"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "N8mo2",
+                                  "name": "metaRow3",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "1TVHu",
+                                      "name": "recertLbl",
+                                      "fill": "#64748B",
+                                      "content": "ReCert:",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "BSqAk",
+                                      "name": "recertBadge",
+                                      "height": 18,
+                                      "fill": "#DCFCE7",
+                                      "cornerRadius": 3,
+                                      "padding": [
+                                        0,
+                                        7
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "siF6Q",
+                                          "name": "recertBadgeTxt",
+                                          "fill": "#166534",
+                                          "content": "Complete",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "s212U",
+                                      "name": "metaSep",
+                                      "fill": "#CBD5E1",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "bYswP",
+                                      "name": "bpLbl",
+                                      "fill": "#64748B",
+                                      "content": "Benefit Period:",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "CvEWO",
+                                      "name": "bpVal",
+                                      "fill": "#374151",
+                                      "content": "Period #2  (Ends May 12, 2026)",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
                                       "fontWeight": "500"
@@ -4638,6 +4737,29 @@
                     },
                     {
                       "type": "frame",
+                      "id": "V374S",
+                      "name": "tabTeamComm",
+                      "height": 44,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "tyLfp",
+                          "name": "tcTxt",
+                          "fill": "#64748B",
+                          "content": "Team Comm",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
                       "id": "DwECk",
                       "name": "tabPatientInfo",
                       "height": 44,
@@ -4653,6 +4775,29 @@
                           "name": "tabPatInfoTxt",
                           "fill": "#64748B",
                           "content": "Patient Info",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "XsYUj",
+                      "name": "tabEncounter",
+                      "height": 44,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "oiiwR",
+                          "name": "encTxt",
+                          "fill": "#64748B",
+                          "content": "Encounter",
                           "fontFamily": "Inter",
                           "fontSize": 13,
                           "fontWeight": "normal"
