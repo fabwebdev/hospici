@@ -70308,8 +70308,8 @@
                         {
                           "type": "text",
                           "id": "ythPS",
-                          "fill": "#64748B",
-                          "content": "6",
+                          "fill": "#FFFFFF",
+                          "content": "6 · Care Plan",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -70333,7 +70333,7 @@
                           "type": "text",
                           "id": "uL15n",
                           "fill": "#64748B",
-                          "content": "7",
+                          "content": "7 · Safety",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -70357,7 +70357,7 @@
                           "type": "text",
                           "id": "L6ltt",
                           "fill": "#64748B",
-                          "content": "8",
+                          "content": "8 · Changes",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -70381,7 +70381,7 @@
                           "type": "text",
                           "id": "kzsAz",
                           "fill": "#64748B",
-                          "content": "9",
+                          "content": "9 · Review",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -71149,7 +71149,7 @@
                               "type": "text",
                               "id": "0ejbC",
                               "fill": "#94A3B8",
-                              "content": "4 of 9 steps",
+                              "content": "5 of 9 steps",
                               "fontFamily": "Inter",
                               "fontSize": 12,
                               "fontWeight": "normal"
@@ -71191,7 +71191,7 @@
                                   "x": 0,
                                   "y": 0,
                                   "startAngle": 90,
-                                  "sweepAngle": 160,
+                                  "sweepAngle": 200,
                                   "fill": "#00000000",
                                   "width": 80,
                                   "height": 80,
@@ -71206,7 +71206,7 @@
                                   "x": 16,
                                   "y": 30,
                                   "fill": "#0F172A",
-                                  "content": "44%",
+                                  "content": "56%",
                                   "fontFamily": "JetBrains Mono",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -71346,18 +71346,18 @@
                                       "id": "Q3zop",
                                       "width": 14,
                                       "height": 14,
-                                      "iconFontName": "circle",
+                                      "iconFontName": "circle-check",
                                       "iconFontFamily": "lucide",
-                                      "fill": "#2563EB"
+                                      "fill": "#16A34A"
                                     },
                                     {
                                       "type": "text",
                                       "id": "VCRfS",
-                                      "fill": "#2563EB",
+                                      "fill": "#374151",
                                       "content": "Psychosocial",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
-                                      "fontWeight": "500"
+                                      "fontWeight": "normal"
                                     }
                                   ]
                                 },
@@ -71376,16 +71376,16 @@
                                       "height": 14,
                                       "iconFontName": "circle",
                                       "iconFontFamily": "lucide",
-                                      "fill": "#CBD5E1"
+                                      "fill": "#2563EB"
                                     },
                                     {
                                       "type": "text",
                                       "id": "btY8j",
-                                      "fill": "#94A3B8",
-                                      "content": "Care Plan + 3 more…",
+                                      "fill": "#2563EB",
+                                      "content": "Care Plan",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
-                                      "fontWeight": "normal"
+                                      "fontWeight": "500"
                                     }
                                   ]
                                 }
@@ -72163,8 +72163,8 @@
                         {
                           "type": "text",
                           "id": "KvCeq",
-                          "fill": "#64748B",
-                          "content": "6",
+                          "fill": "#FFFFFF",
+                          "content": "6 · Care Plan",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -72188,8 +72188,8 @@
                         {
                           "type": "text",
                           "id": "dtaA6",
-                          "fill": "#64748B",
-                          "content": "7",
+                          "fill": "#FFFFFF",
+                          "content": "7 · Safety",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -72213,7 +72213,7 @@
                           "type": "text",
                           "id": "DPrZp",
                           "fill": "#64748B",
-                          "content": "8",
+                          "content": "8 · Changes",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -72237,7 +72237,7 @@
                           "type": "text",
                           "id": "fU5VV",
                           "fill": "#64748B",
-                          "content": "9",
+                          "content": "9 · Review",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -73090,7 +73090,7 @@
                               "type": "text",
                               "id": "TpMC4",
                               "fill": "#94A3B8",
-                              "content": "4 of 9 steps",
+                              "content": "6 of 9 steps",
                               "fontFamily": "Inter",
                               "fontSize": 12,
                               "fontWeight": "normal"
@@ -73132,7 +73132,7 @@
                                   "x": 0,
                                   "y": 0,
                                   "startAngle": 90,
-                                  "sweepAngle": 160,
+                                  "sweepAngle": 240,
                                   "fill": "#00000000",
                                   "width": 80,
                                   "height": 80,
@@ -73147,7 +73147,7 @@
                                   "x": 16,
                                   "y": 30,
                                   "fill": "#0F172A",
-                                  "content": "44%",
+                                  "content": "67%",
                                   "fontFamily": "JetBrains Mono",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -73277,7 +73277,7 @@
                                 {
                                   "type": "frame",
                                   "id": "EgPvq",
-                                  "name": "r5r5",
+                                  "name": "r5r6new",
                                   "width": "fill_container",
                                   "gap": 8,
                                   "alignItems": "center",
@@ -73287,18 +73287,18 @@
                                       "id": "9PCRi",
                                       "width": 14,
                                       "height": 14,
-                                      "iconFontName": "circle",
+                                      "iconFontName": "circle-check",
                                       "iconFontFamily": "lucide",
-                                      "fill": "#2563EB"
+                                      "fill": "#16A34A"
                                     },
                                     {
                                       "type": "text",
                                       "id": "lckMv",
-                                      "fill": "#2563EB",
+                                      "fill": "#374151",
                                       "content": "Psychosocial",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
-                                      "fontWeight": "500"
+                                      "fontWeight": "normal"
                                     }
                                   ]
                                 },
@@ -73315,18 +73315,46 @@
                                       "id": "u13Le",
                                       "width": 14,
                                       "height": 14,
-                                      "iconFontName": "circle",
+                                      "iconFontName": "circle-check",
                                       "iconFontFamily": "lucide",
-                                      "fill": "#CBD5E1"
+                                      "fill": "#16A34A"
                                     },
                                     {
                                       "type": "text",
                                       "id": "DXh7S",
-                                      "fill": "#94A3B8",
-                                      "content": "Care Plan + 3 more…",
+                                      "fill": "#374151",
+                                      "content": "Care Plan",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "Okm21",
+                                  "name": "r5r7",
+                                  "width": "fill_container",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon_font",
+                                      "id": "eBn65",
+                                      "width": 14,
+                                      "height": 14,
+                                      "iconFontName": "circle",
+                                      "iconFontFamily": "lucide",
+                                      "fill": "#2563EB"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "hCu27",
+                                      "fill": "#2563EB",
+                                      "content": "Safety",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "500"
                                     }
                                   ]
                                 }
@@ -74104,8 +74132,8 @@
                         {
                           "type": "text",
                           "id": "ZHVQo",
-                          "fill": "#64748B",
-                          "content": "6",
+                          "fill": "#FFFFFF",
+                          "content": "6 · Care Plan",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -74129,8 +74157,8 @@
                         {
                           "type": "text",
                           "id": "gaRBV",
-                          "fill": "#64748B",
-                          "content": "7",
+                          "fill": "#FFFFFF",
+                          "content": "7 · Safety",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -74154,8 +74182,8 @@
                         {
                           "type": "text",
                           "id": "XA2So",
-                          "fill": "#64748B",
-                          "content": "8",
+                          "fill": "#FFFFFF",
+                          "content": "8 · Changes",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -74179,7 +74207,7 @@
                           "type": "text",
                           "id": "ffwbt",
                           "fill": "#64748B",
-                          "content": "9",
+                          "content": "9 · Review",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -75038,7 +75066,7 @@
                               "type": "text",
                               "id": "mjNrE",
                               "fill": "#94A3B8",
-                              "content": "4 of 9 steps",
+                              "content": "7 of 9 steps",
                               "fontFamily": "Inter",
                               "fontSize": 12,
                               "fontWeight": "normal"
@@ -75080,7 +75108,7 @@
                                   "x": 0,
                                   "y": 0,
                                   "startAngle": 90,
-                                  "sweepAngle": 160,
+                                  "sweepAngle": 280,
                                   "fill": "#00000000",
                                   "width": 80,
                                   "height": 80,
@@ -75095,7 +75123,7 @@
                                   "x": 16,
                                   "y": 30,
                                   "fill": "#0F172A",
-                                  "content": "44%",
+                                  "content": "78%",
                                   "fontFamily": "JetBrains Mono",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -75235,18 +75263,18 @@
                                       "id": "uJquR",
                                       "width": 14,
                                       "height": 14,
-                                      "iconFontName": "circle",
+                                      "iconFontName": "circle-check",
                                       "iconFontFamily": "lucide",
-                                      "fill": "#2563EB"
+                                      "fill": "#16A34A"
                                     },
                                     {
                                       "type": "text",
                                       "id": "95BPP",
-                                      "fill": "#2563EB",
+                                      "fill": "#374151",
                                       "content": "Psychosocial",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
-                                      "fontWeight": "500"
+                                      "fontWeight": "normal"
                                     }
                                   ]
                                 },
@@ -75265,16 +75293,16 @@
                                       "height": 14,
                                       "iconFontName": "circle",
                                       "iconFontFamily": "lucide",
-                                      "fill": "#CBD5E1"
+                                      "fill": "#2563EB"
                                     },
                                     {
                                       "type": "text",
                                       "id": "SY3fi",
-                                      "fill": "#94A3B8",
-                                      "content": "Care Plan + 3 more…",
+                                      "fill": "#2563EB",
+                                      "content": "Plan Changes",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
-                                      "fontWeight": "normal"
+                                      "fontWeight": "500"
                                     }
                                   ]
                                 }
@@ -76052,8 +76080,8 @@
                         {
                           "type": "text",
                           "id": "FvAzR",
-                          "fill": "#64748B",
-                          "content": "6",
+                          "fill": "#FFFFFF",
+                          "content": "6 · Care Plan",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -76077,8 +76105,8 @@
                         {
                           "type": "text",
                           "id": "zCmtw",
-                          "fill": "#64748B",
-                          "content": "7",
+                          "fill": "#FFFFFF",
+                          "content": "7 · Safety",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -76102,8 +76130,8 @@
                         {
                           "type": "text",
                           "id": "JrPMN",
-                          "fill": "#64748B",
-                          "content": "8",
+                          "fill": "#FFFFFF",
+                          "content": "8 · Changes",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -76127,8 +76155,8 @@
                         {
                           "type": "text",
                           "id": "hpaPU",
-                          "fill": "#64748B",
-                          "content": "9",
+                          "fill": "#FFFFFF",
+                          "content": "9 · Review",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "500"
@@ -76783,7 +76811,7 @@
                               "type": "text",
                               "id": "oiJnL",
                               "fill": "#94A3B8",
-                              "content": "4 of 9 steps",
+                              "content": "9 of 9 steps",
                               "fontFamily": "Inter",
                               "fontSize": 12,
                               "fontWeight": "normal"
@@ -76825,7 +76853,6 @@
                                   "x": 0,
                                   "y": 0,
                                   "startAngle": 90,
-                                  "sweepAngle": 160,
                                   "fill": "#00000000",
                                   "width": 80,
                                   "height": 80,
@@ -76840,7 +76867,7 @@
                                   "x": 16,
                                   "y": 30,
                                   "fill": "#0F172A",
-                                  "content": "44%",
+                                  "content": "100%",
                                   "fontFamily": "JetBrains Mono",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -76980,18 +77007,18 @@
                                       "id": "uIO6b",
                                       "width": 14,
                                       "height": 14,
-                                      "iconFontName": "circle",
+                                      "iconFontName": "circle-check",
                                       "iconFontFamily": "lucide",
-                                      "fill": "#2563EB"
+                                      "fill": "#16A34A"
                                     },
                                     {
                                       "type": "text",
                                       "id": "xMyr3",
-                                      "fill": "#2563EB",
+                                      "fill": "#374151",
                                       "content": "Psychosocial",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
-                                      "fontWeight": "500"
+                                      "fontWeight": "normal"
                                     }
                                   ]
                                 },
@@ -77008,15 +77035,15 @@
                                       "id": "qCmqT",
                                       "width": 14,
                                       "height": 14,
-                                      "iconFontName": "circle",
+                                      "iconFontName": "circle-check",
                                       "iconFontFamily": "lucide",
-                                      "fill": "#CBD5E1"
+                                      "fill": "#16A34A"
                                     },
                                     {
                                       "type": "text",
                                       "id": "aeK8R",
-                                      "fill": "#94A3B8",
-                                      "content": "Care Plan + 3 more…",
+                                      "fill": "#374151",
+                                      "content": "Review & Submit",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
