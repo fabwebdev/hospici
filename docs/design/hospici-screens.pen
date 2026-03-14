@@ -4358,7 +4358,7 @@
                                           "id": "dXEXo",
                                           "name": "locBadgeTxt",
                                           "fill": "#0E7490",
-                                          "content": "RHC",
+                                          "content": "LOC: Routine",
                                           "fontFamily": "Inter",
                                           "fontSize": 10,
                                           "fontWeight": "600"
