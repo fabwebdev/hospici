@@ -4638,6 +4638,29 @@
                     },
                     {
                       "type": "frame",
+                      "id": "DwECk",
+                      "name": "tabPatientInfo",
+                      "height": 44,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "E4enM",
+                          "name": "tabPatInfoTxt",
+                          "fill": "#64748B",
+                          "content": "Patient Info",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
                       "id": "ebZmm",
                       "name": "tab2Notes",
                       "height": 44,
@@ -4653,6 +4676,29 @@
                           "name": "tab2Txt",
                           "fill": "#64748B",
                           "content": "Clinical Notes",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FWK2P",
+                      "name": "tabHOPE",
+                      "height": 44,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "DfiTi",
+                          "name": "tabHOPETxt",
+                          "fill": "#64748B",
+                          "content": "HOPE",
                           "fontFamily": "Inter",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -4745,6 +4791,75 @@
                           "name": "tab6Txt",
                           "fill": "#64748B",
                           "content": "Documents",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "YZNRf",
+                      "name": "tabCarePlan",
+                      "height": 44,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "gx4Wc",
+                          "name": "tabCarePlanTxt",
+                          "fill": "#64748B",
+                          "content": "Care Plan",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "uV2Yx",
+                      "name": "tabDoseSpot",
+                      "height": 44,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pseq5",
+                          "name": "tabDoseSpotTxt",
+                          "fill": "#64748B",
+                          "content": "Dose Spot",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "TquX1",
+                      "name": "tabBenefitPeriod",
+                      "height": 44,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "qflNA",
+                          "name": "tabBenPeriodTxt",
+                          "fill": "#64748B",
+                          "content": "Benefit Period",
                           "fontFamily": "Inter",
                           "fontSize": 13,
                           "fontWeight": "normal"
