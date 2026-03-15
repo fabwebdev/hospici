@@ -3,8 +3,18 @@
  * Rule: TypeCompiler.Compile() must be called once per schema, at module level only.
  */
 
-import { Type } from "@sinclair/typebox";
+import { FormatRegistry, Type } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
+
+// Register string formats used in auth schemas
+if (!FormatRegistry.Has("email")) {
+  FormatRegistry.Set("email", (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+}
+if (!FormatRegistry.Has("uuid")) {
+  FormatRegistry.Set("uuid", (v) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v),
+  );
+}
 
 const LoginInputSchema = Type.Object({
   email: Type.String({ format: "email", minLength: 3, maxLength: 254 }),

@@ -1,0 +1,60 @@
+// seeds/dev-user-seed.ts
+// Creates a dev user for local development using Better Auth's internal API.
+// Run: pnpm --filter @hospici/backend tsx -r dotenv/config src/seeds/dev-user-seed.ts
+
+import { randomUUID } from "node:crypto";
+import { db } from "../db/client.js";
+import { sql } from "drizzle-orm";
+import { auth } from "../config/auth.config.js";
+
+const DEV_EMAIL = "dev@hospici.dev";
+const DEV_PASSWORD = "DevPassword1234!";
+const DEV_NAME = "Dr. Dev Smith";
+const DEV_LOCATION_ID = "a1a1a1a1-0000-0000-0000-000000000001";
+
+async function main() {
+  // Check if user already exists
+  const existing = await db.execute<{ id: string }>(
+    sql`SELECT id FROM users WHERE email = ${DEV_EMAIL} LIMIT 1`,
+  );
+
+  if (existing.rows.length > 0) {
+    console.log(`Dev user already exists: ${DEV_EMAIL} (id: ${existing.rows[0]!.id})`);
+    console.log(`Credentials: ${DEV_EMAIL} / ${DEV_PASSWORD}`);
+    process.exit(0);
+  }
+
+  // Resolve the context to access the password hasher
+  const ctx = await auth.$context;
+  const hashedPassword = await ctx.password.hash(DEV_PASSWORD);
+  const userId = randomUUID();
+  const accountId = randomUUID();
+
+  const abacJson = JSON.stringify({
+    locationIds: [DEV_LOCATION_ID],
+    role: "super_admin",
+    permissions: ["*"],
+  });
+
+  await db.execute(
+    sql`INSERT INTO users (id, name, email, email_verified, abac_attributes, is_active, two_factor_enabled)
+        VALUES (${userId}, ${DEV_NAME}, ${DEV_EMAIL}, true, ${abacJson}::jsonb, true, false)`,
+  );
+
+  await db.execute(
+    sql`INSERT INTO accounts (id, account_id, provider_id, user_id, password)
+        VALUES (${accountId}, ${userId}, 'credential', ${userId}, ${hashedPassword})`,
+  );
+
+  console.log("Dev user created successfully!");
+  console.log(`  Email:    ${DEV_EMAIL}`);
+  console.log(`  Password: ${DEV_PASSWORD}`);
+  console.log(`  User ID:  ${userId}`);
+  console.log(`  Role:     super_admin`);
+  process.exit(0);
+}
+
+main().catch((err) => {
+  console.error("Failed to create dev user:", err);
+  process.exit(1);
+});

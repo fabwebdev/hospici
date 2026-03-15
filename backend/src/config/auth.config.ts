@@ -7,6 +7,7 @@
  *   §164.312(e)(1) — Transmission security: httpOnly cookie, SameSite=Strict
  */
 
+import { randomUUID } from "node:crypto";
 import { env } from "@/config/env.js";
 import { db } from "@/db/client.js";
 import { accounts, sessions, twoFactors, users, verifications } from "@/db/schema/index.js";
@@ -16,7 +17,9 @@ import { twoFactor } from "better-auth/plugins";
 
 export const auth = betterAuth({
   baseURL: env.betterAuthUrl,
+  basePath: "/api/v1/auth",
   secret: env.betterAuthSecret,
+  trustedOrigins: ["http://localhost:5173", "http://localhost:3000"],
 
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -57,6 +60,7 @@ export const auth = betterAuth({
   advanced: {
     useSecureCookies: env.isProd,
     cookiePrefix: "hospici",
+    generateId: () => randomUUID(),
     defaultCookieAttributes: {
       httpOnly: true,
       sameSite: "strict",

@@ -6,13 +6,14 @@
  */
 
 import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+// Note: uuid import still needed for userId foreign key columns
 import { users } from "./users.table.js";
 
 // ── Sessions ─────────────────────────────────────────────────────────────────
 export const sessions = pgTable(
   "sessions",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: text("id").primaryKey(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     token: text("token").notNull().unique(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -31,7 +32,7 @@ export const sessions = pgTable(
 export const accounts = pgTable(
   "accounts",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: text("id").primaryKey(),
     accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
     userId: uuid("user_id")
@@ -55,7 +56,7 @@ export const accounts = pgTable(
 export const verifications = pgTable(
   "verifications",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
@@ -71,7 +72,7 @@ export const verifications = pgTable(
 export const twoFactors = pgTable(
   "two_factors",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: text("id").primaryKey(),
     secret: text("secret").notNull(),
     backupCodes: text("backup_codes").notNull(),
     userId: uuid("user_id")

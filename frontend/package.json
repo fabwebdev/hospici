@@ -32,12 +32,14 @@
     "socket.io-client": "^4.8.0"
   },
   "devDependencies": {
-    "@types/diff": "^7.0.0",
     "@biomejs/biome": "^1.9.0",
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/diff": "^7.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "openapi-typescript": "^7.4.0",
+    "tailwindcss": "^4.2.1",
     "typescript": "^5.7.0",
     "vinxi": "^0.5.0",
     "vitest": "^2.1.0"

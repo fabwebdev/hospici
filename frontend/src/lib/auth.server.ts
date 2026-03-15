@@ -12,7 +12,13 @@ import { createAuthClient } from "better-auth/client";
 import { twoFactorClient } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
-  baseURL: `${env.apiUrl}/api/v1/auth`,
+  baseURL: env.apiUrl,
+  basePath: "/api/v1/auth",
+  fetchOptions: {
+    headers: {
+      Origin: env.apiUrl,
+    },
+  },
   plugins: [twoFactorClient()],
 });
 

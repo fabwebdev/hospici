@@ -1,3 +1,4 @@
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "@tanstack/react-start/config";
 import { resolve } from "node:path";
 
@@ -11,6 +12,7 @@ export default defineConfig({
     port: 5173,
   },
   vite: {
+    plugins: [tailwindcss()],
     resolve: {
       alias: {
         "@": resolve(import.meta.dirname, "./src"),
@@ -18,9 +20,6 @@ export default defineConfig({
     },
   },
   routers: {
-    api: {
-      entry: "./src/api.ts",
-    },
     ssr: {
       entry: "./src/entry-server.tsx",
     },

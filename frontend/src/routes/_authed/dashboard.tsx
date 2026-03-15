@@ -1,69 +1,312 @@
 // routes/_authed/dashboard.tsx
-// Main dashboard view
+// Main dashboard — design from hospici-screens.pen "02 Dashboard"
+// Two-column layout: left (alerts + schedule), right (stats + quick actions)
 
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/dashboard")({
   component: DashboardPage,
 });
 
 function DashboardPage() {
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+    <div className="flex-1 bg-[#F1F5F9] overflow-y-auto">
+      <div className="p-7 space-y-6 max-w-full">
+        {/* Page header */}
+        <div className="flex items-center justify-between">
+          <h1
+            className="text-[22px] font-semibold text-[#0F172A]"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
+            Dashboard
+          </h1>
+          <span className="text-[13px] text-[#64748B]">{today}</span>
+        </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Active Patients</h3>
-          <p className="mt-2 text-3xl font-bold text-blue-600">127</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Pending NOEs</h3>
-          <p className="mt-2 text-3xl font-bold text-yellow-600">3</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">IDG Due</h3>
-          <p className="mt-2 text-3xl font-bold text-red-600">2</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Cap Utilization</h3>
-          <p className="mt-2 text-3xl font-bold text-green-600">72%</p>
-        </div>
-      </div>
+        {/* Two-column layout */}
+        <div className="flex gap-6">
+          {/* Left column — alerts + schedule */}
+          <div className="flex-1 space-y-4">
+            <AlertsCard />
+            <ScheduleCard />
+          </div>
 
-      {/* Alerts Section */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b">
-          <h2 className="text-lg font-medium text-gray-900">Compliance Alerts</h2>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center p-4 bg-red-50 border border-red-200 rounded-md">
-              <div className="flex-shrink-0">
-                <span className="text-red-400">⚠️</span>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">IDG Overdue</h3>
-                <p className="text-sm text-red-700">
-                  Patient John Doe - IDG meeting is 2 days overdue
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-              <div className="flex-shrink-0">
-                <span className="text-yellow-400">⏰</span>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-yellow-800">NOE Deadline</h3>
-                <p className="text-sm text-yellow-700">
-                  Patient Jane Smith - NOE must be filed by tomorrow
-                </p>
-              </div>
-            </div>
+          {/* Right column — stats + quick actions */}
+          <div className="w-[300px] shrink-0 space-y-4">
+            <StatsCard label="My Patients" value="24" sub="Active at Palm Valley · 3 requiring attention" />
+            <LastNoteCard />
+            <QuickActionsCard />
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Alerts Card ──────────────────────────────────────────────────────────────
+
+function AlertsCard() {
+  const alerts = [
+    {
+      severity: "critical" as const,
+      title: "IDG Overdue — Margaret T. (#MRN-00291)",
+      sub: "18 days since last IDG · Legal block active",
+      meta: "Triggered Mar 11 · IDG §418.56 hard block",
+      badge: "–18d",
+    },
+    {
+      severity: "warning" as const,
+      title: "NOE Filing Due — Robert A. (#MRN-00344)",
+      sub: "2 business days remaining · WARNING",
+      meta: "Election Jan 3 · 5-business-day window closes Mar 15",
+      badge: "2d",
+    },
+    {
+      severity: "warning" as const,
+      title: "HOPE Window Closing — Dorothy K. (#MRN-00388)",
+      sub: "3 days to submit HOPE assessment · WARNING",
+      meta: "Admit date Nov 20 · HOPE-A window closes Mar 16",
+      badge: "3d",
+    },
+    {
+      severity: "warning" as const,
+      title: "Cap Utilization at 87% — Palm Valley",
+      sub: "Projected year-end 103% · Review high-LOS patients",
+      badge: "87%",
+    },
+    {
+      severity: "critical" as const,
+      title: "Benefit Period Expiring — Eleanor M. (#MRN-00419)",
+      sub: "Period 2 ends Mar 17 · Recertification or discharge required",
+      badge: "4d",
+    },
+  ];
+
+  const critCount = alerts.filter((a) => a.severity === "critical").length;
+  const warnCount = alerts.filter((a) => a.severity === "warning").length;
+
+  return (
+    <div className="bg-white border border-[#E2E8F0] p-5 space-y-3">
+      {/* Header */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <span
+            className="text-sm font-semibold text-[#0F172A]"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
+            Compliance Alerts
+          </span>
+          <Link to="/alerts" className="text-xs text-[#2563EB]">
+            View all →
+          </Link>
+        </div>
+        <div className="flex gap-2">
+          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 text-xs bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5]">
+            {critCount} critical
+          </span>
+          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 text-xs bg-[#FFFBEB] text-[#D97706] border border-[#FCD34D]">
+            {warnCount} warning
+          </span>
+        </div>
+      </div>
+
+      {/* Alert rows */}
+      {alerts.map((alert) => {
+        const isCrit = alert.severity === "critical";
+        return (
+          <div
+            key={alert.title}
+            className={`flex items-center gap-3 p-3 border ${
+              isCrit ? "bg-[#FEF2F2] border-[#FCA5A5]" : "bg-[#FFFBEB] border-[#FCD34D]"
+            }`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full shrink-0 ${isCrit ? "bg-[#DC2626]" : "bg-[#D97706]"}`}
+            />
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <p
+                className={`text-[13px] font-medium ${isCrit ? "text-[#991B1B]" : "text-[#92400E]"}`}
+              >
+                {alert.title}
+              </p>
+              <p className={`text-[11px] ${isCrit ? "text-[#DC2626]" : "text-[#D97706]"}`}>
+                {alert.sub}
+              </p>
+              {alert.meta && <p className="text-[11px] text-[#94A3B8]">{alert.meta}</p>}
+            </div>
+            <span
+              className={`text-sm font-semibold shrink-0 ${isCrit ? "text-[#DC2626]" : "text-[#D97706]"}`}
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              {alert.badge}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Schedule Card ────────────────────────────────────────────────────────────
+
+function ScheduleCard() {
+  const schedule = [
+    { time: "09:00", type: "Routine Visit", typeColor: "text-[#1D4ED8]", typeBg: "bg-[#EFF6FF]", name: "Margaret T." },
+    { time: "11:30", type: "IDG Meeting", typeColor: "text-[#166534]", typeBg: "bg-[#F0FDF4]", name: "Team — Conference Room B" },
+    { time: "14:00", type: "Crisis Visit", typeColor: "text-[#9A3412]", typeBg: "bg-[#FFF7ED]", name: "Robert A." },
+  ];
+
+  return (
+    <div className="bg-white border border-[#E2E8F0] p-5 space-y-0">
+      <h3
+        className="text-sm font-semibold text-[#0F172A]"
+        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+      >
+        Today&apos;s Schedule
+      </h3>
+      <p className="text-xs text-[#64748B] mt-1">3 encounters scheduled · 1 IDG meeting</p>
+
+      {schedule.map((item, i) => (
+        <div
+          key={item.time}
+          className={`flex items-center gap-3 py-3.5 ${
+            i < schedule.length - 1 ? "border-b border-[#F1F5F9]" : ""
+          }`}
+        >
+          <span
+            className="text-xs text-[#64748B] w-10 shrink-0"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {item.time}
+          </span>
+          <span className={`text-[11px] ${item.typeColor} ${item.typeBg} h-[22px] px-2 inline-flex items-center`}>
+            {item.type}
+          </span>
+          <span className="text-[13px] font-medium text-[#0F172A]">{item.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Stats Card ───────────────────────────────────────────────────────────────
+
+function StatsCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="bg-white border border-[#E2E8F0] p-5 space-y-1">
+      <p className="text-xs font-medium text-[#64748B]">{label}</p>
+      <p
+        className="text-[40px] font-semibold text-[#2563EB] leading-tight"
+        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+      >
+        {value}
+      </p>
+      <p className="text-xs text-[#94A3B8]">{sub}</p>
+    </div>
+  );
+}
+
+// ── Last Note Card ───────────────────────────────────────────────────────────
+
+function LastNoteCard() {
+  return (
+    <div className="bg-white border border-[#E2E8F0] p-5 space-y-1">
+      <p className="text-xs font-medium text-[#64748B]">Last Signed Note</p>
+      <p
+        className="text-[13px] text-[#0F172A]"
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}
+      >
+        Today 07:14 AM
+      </p>
+      <p className="text-xs text-[#94A3B8]">Routine Visit · Dorothy K.</p>
+    </div>
+  );
+}
+
+// ── Quick Actions Card ───────────────────────────────────────────────────────
+
+function QuickActionsCard() {
+  return (
+    <div className="bg-white border border-[#E2E8F0] p-5 space-y-2.5">
+      <h3
+        className="text-sm font-semibold text-[#0F172A]"
+        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+      >
+        Quick Actions
+      </h3>
+
+      {/* Clinical section */}
+      <div className="pt-1 pb-0.5">
+        <span className="text-[10px] font-semibold text-[#94A3B8] tracking-wide">CLINICAL</span>
+      </div>
+
+      <Link
+        to="/patients/new"
+        className="flex items-center gap-2.5 h-[42px] px-3.5 bg-[#2563EB] text-white text-[13px] font-medium w-full"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <title>New Admission</title>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v-2M12 11a4 4 0 100-8 4 4 0 000 8zM19 8v6M22 11h-6" />
+        </svg>
+        New Admission
+      </Link>
+
+      <button
+        type="button"
+        className="flex items-center gap-2.5 h-[42px] px-3.5 bg-white border border-[#E2E8F0] text-[13px] text-[#374151] w-full"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <title>Start Visit Note</title>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+        </svg>
+        Start Visit Note
+      </button>
+
+      <button
+        type="button"
+        className="flex items-center gap-2.5 h-[42px] px-3.5 bg-[#F0FDFA] border border-[#99F6E4] text-[13px] text-[#0D9488] font-medium w-full"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <title>VantageChart</title>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2 2-2 2M21 3l-2 2 2 2M13 15l2 2-2 2M21 15l-2 2 2 2" />
+        </svg>
+        VantageChart™
+      </button>
+
+      {/* Compliance section */}
+      <div className="pt-2 pb-0.5">
+        <span className="text-[10px] font-semibold text-[#94A3B8] tracking-wide">COMPLIANCE</span>
+      </div>
+
+      <Link
+        to="/filings"
+        className="flex items-center gap-2.5 h-[42px] px-3.5 bg-white border border-[#E2E8F0] text-[13px] text-[#374151] w-full"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <title>File NOE</title>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+        </svg>
+        File NOE
+      </Link>
+
+      <button
+        type="button"
+        className="flex items-center gap-2.5 h-[42px] px-3.5 bg-white border border-[#E2E8F0] text-[13px] text-[#374151] w-full"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <title>Schedule IDG</title>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+        </svg>
+        Schedule IDG
+      </button>
     </div>
   );
 }

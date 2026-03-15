@@ -5,12 +5,15 @@
  */
 
 function required(key: string): string {
+  if (typeof process === "undefined" || !process.env) return "";
   const value = process.env[key];
-  if (!value) throw new Error(`Missing server env var: ${key}`);
-  return value;
+  if (!value && typeof window === "undefined") {
+    throw new Error(`Missing server env var: ${key}`);
+  }
+  return value ?? "";
 }
 
 export const env = {
-  apiUrl: process.env.HOSPICI_API_URL ?? "http://localhost:3000",
+  apiUrl: (typeof process !== "undefined" ? process.env.HOSPICI_API_URL : undefined) ?? "http://localhost:3000",
   betterAuthSecret: required("BETTER_AUTH_SECRET"),
 } as const;

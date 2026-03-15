@@ -149,7 +149,7 @@ function AuthedLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F8FAFC]">
       {expiresInSeconds !== null && (
         <SessionExpiryModal
           secondsRemaining={expiresInSeconds}
@@ -157,61 +157,141 @@ function AuthedLayout() {
           onLogout={handleLogoutNow}
         />
       )}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <span className="text-xl font-bold text-blue-600">Hospici</span>
-              <div className="ml-10 flex space-x-4">
-                <Link to="/dashboard" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  Dashboard
-                </Link>
-                <Link to="/patients" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  Patients
-                </Link>
-                <Link to="/alerts" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  Alerts
-                </Link>
-                <Link to="/hope/dashboard" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  HOPE
-                </Link>
-                {/* TODO T2-4: replace with <Link> once route is implemented */}
-                <a href="/scheduling/idg" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  IDG
-                </a>
-                <Link to="/filings" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  Filings
-                </Link>
-                <Link to="/signatures" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  Signatures
-                </Link>
-                <Link to="/cap" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  Cap
-                </Link>
-                <Link to="/billing/audit" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  Billing Audit
-                </Link>
-                <Link to="/chart-audit" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  Chart Audit
-                </Link>
-                <Link to="/qapi" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  QAPI
-                </Link>
-                <Link to="/analytics/scorecards" className="px-3 py-2 text-gray-700 hover:text-blue-600">
-                  Scorecards
-                </Link>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <AlertBanner />
-              <span className="text-sm text-gray-500">Dr. Smith</span>
+
+      {/* Top bar */}
+      <header className="shrink-0 flex items-center gap-3 h-14 px-6 bg-white border-b border-[#E2E8F0]">
+        <div className="w-6 h-6 bg-[#2563EB] rounded shrink-0" />
+        <span
+          className="text-base font-semibold text-[#0F172A]"
+          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+        >
+          Hospici
+        </span>
+        <div className="w-px h-5 bg-[#E2E8F0]" />
+        <button
+          type="button"
+          className="flex items-center gap-1.5 h-8 px-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#374151]"
+        >
+          Palm Valley Hospice
+          <svg className="w-3.5 h-3.5 text-[#64748B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <title>Select location</title>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div className="flex-1" />
+        <AlertBanner />
+        <div className="flex items-center justify-center w-8 h-8 bg-[#2563EB] text-white text-xs font-semibold rounded-full">
+          SL
+        </div>
+        <span className="inline-flex items-center h-[22px] px-2 bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-medium text-[#1D4ED8]">
+          RN
+        </span>
+      </header>
+
+      {/* Body: sidebar + content */}
+      <div className="flex flex-1 min-h-0">
+        {/* Sidebar */}
+        <nav className="w-64 shrink-0 bg-[#0F172A] flex flex-col overflow-y-auto">
+          <div className="py-3 flex-1 flex flex-col">
+            <SidebarLink to="/dashboard" icon="layout-dashboard" label="Dashboard" active />
+
+            <SidebarSection label="PATIENTS" />
+            <SidebarLink to="/patients" icon="users" label="Patients" />
+
+            <SidebarSection label="CLINICAL" />
+            <SidebarLink to="/patients" icon="file-text" label="Encounters" />
+            <SidebarLink to="/patients" icon="sparkles" label="VantageChart™" />
+
+            <SidebarSection label="COMPLIANCE" />
+            <SidebarLink to="/alerts" icon="calendar-check" label="IDG Meetings" />
+
+            <div className="flex-1" />
+
+            {/* Session timer */}
+            <div className="flex items-center gap-2 h-12 px-4 bg-[#0D1526] border-t border-[#1E293B]">
+              <svg className="w-3.5 h-3.5 text-[#64748B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <title>Session timer</title>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2M12 2a10 10 0 100 20 10 10 0 000-20z" />
+              </svg>
+              <span className="text-xs text-[#64748B]">
+                Session: {expiresInSeconds !== null ? formatTimer(expiresInSeconds) : "28:42"}
+              </span>
             </div>
           </div>
-        </div>
-      </nav>
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <Outlet />
-      </main>
+        </nav>
+
+        {/* Main content */}
+        <main className="flex-1 min-h-0 overflow-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
+}
+
+// ── Sidebar components ───────────────────────────────────────────────────────
+
+function SidebarSection({ label }: { label: string }) {
+  return (
+    <div className="px-4 pt-3.5 pb-1">
+      <span className="text-[10px] font-semibold text-[#475569] tracking-wide">{label}</span>
+    </div>
+  );
+}
+
+function SidebarLink({
+  to,
+  icon,
+  label,
+  active,
+}: {
+  to: string;
+  icon: string;
+  label: string;
+  active?: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`flex items-center gap-2.5 h-9 px-4 text-[13px] ${
+        active
+          ? "bg-[#1E3A5F] text-white font-medium"
+          : "text-[#94A3B8] hover:text-white hover:bg-[#1E293B]"
+      }`}
+    >
+      <SidebarIcon name={icon} />
+      {label}
+    </Link>
+  );
+}
+
+function SidebarIcon({ name }: { name: string }) {
+  const iconPaths: Record<string, string> = {
+    "layout-dashboard": "M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z",
+    users: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v-2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75",
+    "file-text": "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8",
+    sparkles: "M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2 2-2 2M21 3l-2 2 2 2M13 15l2 2-2 2M21 15l-2 2 2 2",
+    "calendar-check": "M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11",
+  };
+
+  return (
+    <svg
+      className="w-3.5 h-3.5 shrink-0"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <title>{name}</title>
+      <path d={iconPaths[name] ?? "M12 2a10 10 0 100 20 10 10 0 000-20z"} />
+    </svg>
+  );
+}
+
+function formatTimer(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
