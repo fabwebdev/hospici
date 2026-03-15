@@ -7,9 +7,11 @@ import { env } from "@/lib/env.server.js";
 import type {
   AssignCareTeamMemberInput,
   CareTeamMemberResponse,
+  CreateAllergyInput,
   CreateConditionBody,
   CreateNOEInput,
   NOEResponse,
+  PatientAllergy,
   PatientConditionResponse,
   PatientResponse,
 } from "@hospici/shared-types";
@@ -141,4 +143,27 @@ export const createNOEFn = createServerFn({ method: "POST" })
   .validator((data: unknown) => data as { patientId: string; body: CreateNOEInput })
   .handler(async ({ data }) => {
     return fetchCreateNOE(data.patientId, data.body, getRequestHeader("cookie") ?? "");
+  });
+
+export async function fetchCreateAllergy(
+  patientId: string,
+  body: CreateAllergyInput,
+  cookieHeader: string,
+): Promise<PatientAllergy> {
+  const res = await fetch(`${env.apiUrl}/api/v1/patients/${patientId}/allergies`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: cookieHeader },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
+    throw new Error(err.error?.message ?? "Failed to add allergy");
+  }
+  return (await res.json()) as PatientAllergy;
+}
+
+export const addAllergyFn = createServerFn({ method: "POST" })
+  .validator((data: unknown) => data as { patientId: string; body: CreateAllergyInput })
+  .handler(async ({ data }) => {
+    return fetchCreateAllergy(data.patientId, data.body, getRequestHeader("cookie") ?? "");
   });

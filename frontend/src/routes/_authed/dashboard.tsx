@@ -7,6 +7,7 @@ import { getMyDashboardFn } from "@/functions/dashboard.functions.js";
 import { getPatientsFn } from "@/functions/patient.functions.js";
 import { patientKeys } from "@/lib/query/keys.js";
 import type { RouterContext } from "@/routes/__root.js";
+import { AlertType } from "@hospici/shared-types";
 import type {
   Alert,
   AlertListResponse,
@@ -95,6 +96,41 @@ function DashboardPage() {
     (a) => a.status !== "resolved" && (a.severity === "critical" || a.daysRemaining <= 3),
   ).length;
 
+  // Patients requiring attention — derived from alerts, grouped by patient
+  const patientsRequiringAttention = useMemo(() => {
+    const ATTENTION_TYPES = new Set<string>([
+      AlertType.IDG_OVERDUE,
+      AlertType.HOPE_WINDOW_CLOSING,
+      AlertType.BENEFIT_PERIOD_EXPIRING,
+      AlertType.RECERT_DUE,
+      AlertType.RECERT_AT_RISK,
+      AlertType.RECERT_PAST_DUE,
+    ]);
+    const unresolved = (alertData?.data ?? []).filter(
+      (a) => a.status !== "resolved" && ATTENTION_TYPES.has(a.type),
+    );
+    const byPatient = new Map<
+      string,
+      { patientName: string; patientId: string; reasons: { label: string; isCrit: boolean }[] }
+    >();
+    for (const alert of unresolved) {
+      if (!byPatient.has(alert.patientId)) {
+        byPatient.set(alert.patientId, {
+          patientId: alert.patientId,
+          patientName: alert.patientName,
+          reasons: [],
+        });
+      }
+      const entry = byPatient.get(alert.patientId);
+      if (!entry) continue;
+      const label = ATTENTION_LABELS[alert.type] ?? alert.type;
+      if (!entry.reasons.some((r) => r.label === label)) {
+        entry.reasons.push({ label, isCrit: alert.severity === "critical" });
+      }
+    }
+    return [...byPatient.values()].slice(0, 7);
+  }, [alertData]);
+
   return (
     <div className="flex-1 bg-[#F1F5F9] overflow-y-auto">
       <div className="py-7 px-8 space-y-6 max-w-full">
@@ -111,10 +147,11 @@ function DashboardPage() {
 
         {/* Two-column layout */}
         <div className="flex gap-6">
-          {/* Left column — alerts + schedule */}
+          {/* Left column — alerts + schedule + attention */}
           <div className="flex-1 space-y-4">
             <AlertsCard alerts={alerts} critCount={critCount} warnCount={warnCount} />
             <ScheduleCard items={schedule} />
+            <PatientsRequiringAttentionCard patients={patientsRequiringAttention} />
           </div>
 
           {/* Right column — stats + quick actions */}
@@ -132,6 +169,17 @@ function DashboardPage() {
     </div>
   );
 }
+
+// ── Attention label map ──────────────────────────────────────────────────────
+
+const ATTENTION_LABELS: Partial<Record<string, string>> = {
+  [AlertType.IDG_OVERDUE]: "IDG Overdue",
+  [AlertType.HOPE_WINDOW_CLOSING]: "HOPE Window Closing",
+  [AlertType.BENEFIT_PERIOD_EXPIRING]: "Benefit Period Expiring",
+  [AlertType.RECERT_DUE]: "Recert Due",
+  [AlertType.RECERT_AT_RISK]: "Recert At Risk",
+  [AlertType.RECERT_PAST_DUE]: "Recert Past Due",
+};
 
 // ── Alerts Card ──────────────────────────────────────────────────────────────
 
@@ -193,8 +241,10 @@ function AlertsCard({
         return (
           <div
             key={alert.id}
-            className={`flex items-center gap-3 p-3 border ${
-              isCrit ? "bg-[#FEF2F2] border-[#FCA5A5]" : "bg-[#FFFBEB] border-[#FCD34D]"
+            className={`flex items-center gap-3 p-3 border-l-4 border border-l-transparent ${
+              isCrit
+                ? "bg-[#FEF2F2] border-[#FCA5A5] border-l-[#DC2626]"
+                : "bg-[#FFFBEB] border-[#FCD34D] border-l-[#D97706]"
             }`}
           >
             <div
@@ -351,6 +401,75 @@ function LastNoteCard({ note }: { note: MyDashboardResponse["lastSignedNote"] })
   );
 }
 
+// ── Patients Requiring Attention Card ────────────────────────────────────────
+
+function PatientsRequiringAttentionCard({
+  patients,
+}: {
+  patients: {
+    patientId: string;
+    patientName: string;
+    reasons: { label: string; isCrit: boolean }[];
+  }[];
+}) {
+  if (patients.length === 0) return null;
+
+  return (
+    <div className="bg-white border border-[#E2E8F0] p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <span
+          className="text-sm font-semibold text-[#0F172A]"
+          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+        >
+          Patients Requiring Attention
+        </span>
+        <Link to="/alerts" className="text-xs text-[#2563EB]">
+          View all →
+        </Link>
+      </div>
+
+      <div className="space-y-0">
+        {patients.map((pt, i) => (
+          <Link
+            key={pt.patientId}
+            to="/patients/$patientId"
+            params={{ patientId: pt.patientId }}
+            className={`flex items-center gap-3 py-3 ${
+              i < patients.length - 1 ? "border-b border-[#F1F5F9]" : ""
+            } hover:bg-[#F8FAFC] -mx-2 px-2`}
+          >
+            <div className="flex-1 min-w-0 space-y-1">
+              <p className="text-[13px] font-medium text-[#0F172A] truncate">{pt.patientName}</p>
+              <div className="flex flex-wrap gap-1">
+                {pt.reasons.map((r) => (
+                  <span
+                    key={r.label}
+                    className={`text-[10px] font-medium px-1.5 py-0.5 inline-flex items-center ${
+                      r.isCrit ? "bg-[#FEE2E2] text-[#991B1B]" : "bg-[#FFFBEB] text-[#92400E]"
+                    }`}
+                  >
+                    {r.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <svg
+              className="w-3.5 h-3.5 text-[#94A3B8] shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <title>Go to patient</title>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+            </svg>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Quick Actions Card ───────────────────────────────────────────────────────
 
 function QuickActionsCard() {
@@ -406,11 +525,7 @@ function QuickActionsCard() {
             strokeLinejoin="round"
             d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
           />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M14 2v6h6M16 13H8M16 17H8M10 9H8"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
         </svg>
         Start Visit Note
       </button>
