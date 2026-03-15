@@ -406,8 +406,14 @@ function FilingRow({
 
   return (
     <tr className="hover:bg-gray-50 border-b">
-      <td className="px-4 py-3 text-sm text-gray-900 font-medium font-mono">
-        {item.patientId.slice(0, 8)}…
+      <td className="px-4 py-3 text-sm font-medium font-mono">
+        <Link
+          to="/patients/$patientId"
+          params={{ patientId: item.patientId }}
+          className="text-[#2563EB] hover:underline"
+        >
+          {item.patientId.slice(0, 8)}…
+        </Link>
       </td>
       <td className="px-4 py-3">
         <span

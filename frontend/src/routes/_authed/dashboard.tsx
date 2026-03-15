@@ -508,8 +508,8 @@ function QuickActionsCard() {
         New Admission
       </Link>
 
-      <button
-        type="button"
+      <Link
+        to="/patients"
         className="flex items-center gap-2.5 h-[42px] px-3.5 bg-white border border-[#E2E8F0] text-[13px] text-[#374151] w-full"
       >
         <svg
@@ -528,10 +528,10 @@ function QuickActionsCard() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
         </svg>
         Start Visit Note
-      </button>
+      </Link>
 
-      <button
-        type="button"
+      <Link
+        to="/patients"
         className="flex items-center gap-2.5 h-[42px] px-3.5 bg-[#F0FDFA] border border-[#99F6E4] text-[13px] text-[#0D9488] font-medium w-full"
       >
         <svg
@@ -549,7 +549,7 @@ function QuickActionsCard() {
           />
         </svg>
         VantageChart™
-      </button>
+      </Link>
 
       {/* Compliance section */}
       <div className="pt-2 pb-0.5">
@@ -577,8 +577,8 @@ function QuickActionsCard() {
         File NOE
       </Link>
 
-      <button
-        type="button"
+      <Link
+        to="/alerts"
         className="flex items-center gap-2.5 h-[42px] px-3.5 bg-white border border-[#E2E8F0] text-[13px] text-[#374151] w-full"
       >
         <svg
@@ -596,7 +596,7 @@ function QuickActionsCard() {
           />
         </svg>
         Schedule IDG
-      </button>
+      </Link>
     </div>
   );
 }

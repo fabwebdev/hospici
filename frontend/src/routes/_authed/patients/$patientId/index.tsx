@@ -259,9 +259,11 @@ function VisitNotesCard({ patientId }: { patientId: string }) {
               : narrative || "No note content.";
           const isLast = i === encounters.length - 1;
           return (
-            <div
+            <Link
               key={enc.id}
-              className={`flex flex-col gap-2 px-4 py-3${!isLast ? " border-b border-gray-50" : ""}`}
+              to="/patients/$patientId/clinical-notes"
+              params={{ patientId }}
+              className={`flex flex-col gap-2 px-4 py-3 hover:bg-gray-50${!isLast ? " border-b border-gray-50" : ""}`}
             >
               <div className="flex items-center gap-2">
                 <span
@@ -279,7 +281,7 @@ function VisitNotesCard({ patientId }: { patientId: string }) {
                 </span>
               </div>
               <p className="text-xs text-gray-600 leading-relaxed">{preview}</p>
-            </div>
+            </Link>
           );
         })
       )}
