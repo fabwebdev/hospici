@@ -520,67 +520,73 @@ function PatientOverviewPage() {
   const primaryAddress = patient.address?.[0];
 
   return (
-    <div className="p-8 space-y-6">
-      <TrajectoryPanel patientId={patientId} />
-      <HOPEPanel patientId={patientId} />
-      <F2FPanel patientId={patientId} />
-      <CarePlanPanel patientId={patientId} />
+    <div className="p-6 space-y-6">
+      {/* ── Two-column summary ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Left: demographics + enrollment */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Demographics</h2>
+            <dl className="space-y-3">
+              <div>
+                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Birth</dt>
+                <dd className="mt-1 text-sm text-gray-900">{patient.birthDate}</dd>
+              </div>
+              {patient.gender && (
+                <div>
+                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</dt>
+                  <dd className="mt-1 text-sm text-gray-900 capitalize">{patient.gender}</dd>
+                </div>
+              )}
+              {primaryAddress && (
+                <div>
+                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Address</dt>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    {primaryAddress.line.join(", ")}, {primaryAddress.city}, {primaryAddress.state} {primaryAddress.postalCode}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Demographics */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Demographics</h2>
-          <dl className="space-y-3">
-            <div>
-              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Birth</dt>
-              <dd className="mt-1 text-sm text-gray-900">{patient.birthDate}</dd>
-            </div>
-            {patient.gender && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Enrollment</h2>
+            <dl className="space-y-3">
               <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</dt>
-                <dd className="mt-1 text-sm text-gray-900 capitalize">{patient.gender}</dd>
+                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Admission Date</dt>
+                <dd className="mt-1 text-sm text-gray-900">{patient.admissionDate ?? "—"}</dd>
               </div>
-            )}
-            {primaryAddress && (
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Address</dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {primaryAddress.line.join(", ")}, {primaryAddress.city}, {primaryAddress.state} {primaryAddress.postalCode}
-                </dd>
-              </div>
-            )}
-          </dl>
+              {patient.dischargeDate && (
+                <div>
+                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Discharge Date</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{patient.dischargeDate}</dd>
+                </div>
+              )}
+              {patient.identifier.length > 0 && (
+                <div>
+                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Identifiers</dt>
+                  <dd className="mt-1 text-sm text-gray-900 space-y-1">
+                    {patient.identifier.map((id) => (
+                      <div key={`${id.system}:${id.value}`}>
+                        <span className="text-gray-500">{id.system}:</span> {id.value}
+                      </div>
+                    ))}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </div>
         </div>
 
-        {/* Enrollment */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Enrollment</h2>
-          <dl className="space-y-3">
-            <div>
-              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Admission Date</dt>
-              <dd className="mt-1 text-sm text-gray-900">{patient.admissionDate ?? "—"}</dd>
-            </div>
-            {patient.dischargeDate && (
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Discharge Date</dt>
-                <dd className="mt-1 text-sm text-gray-900">{patient.dischargeDate}</dd>
-              </div>
-            )}
-            {patient.identifier.length > 0 && (
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Identifiers</dt>
-                <dd className="mt-1 text-sm text-gray-900 space-y-1">
-                  {patient.identifier.map((id) => (
-                    <div key={`${id.system}:${id.value}`}>
-                      <span className="text-gray-500">{id.system}:</span> {id.value}
-                    </div>
-                  ))}
-                </dd>
-              </div>
-            )}
-          </dl>
+        {/* Right: HOPE status + F2F */}
+        <div className="space-y-6">
+          <HOPEPanel patientId={patientId} />
+          <F2FPanel patientId={patientId} />
         </div>
       </div>
+
+      {/* ── Full-width: care plan ────────────────────────────────────── */}
+      <CarePlanPanel patientId={patientId} />
     </div>
   );
 }
