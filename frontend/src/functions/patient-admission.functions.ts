@@ -79,8 +79,13 @@ export async function fetchCreateCondition(
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
-    throw new Error(err.error?.message ?? "Failed to add condition");
+    const err = (await res.json().catch(() => ({}))) as {
+      error?: { message?: string; details?: { path: string; message: string }[] };
+    };
+    const details = err.error?.details?.map((d) => `${d.path}: ${d.message}`).join("; ");
+    throw new Error(
+      details ? `${err.error?.message}: ${details}` : (err.error?.message ?? "Failed to add condition"),
+    );
   }
   return (await res.json()) as PatientConditionResponse;
 }

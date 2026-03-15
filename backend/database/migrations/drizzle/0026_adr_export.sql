@@ -79,7 +79,7 @@ CREATE POLICY audit_record_exports_location_insert
       WHERE id = current_setting('app.current_user_id', true)::uuid
     )
     AND (
-      SELECT role FROM users
+      SELECT abac_attributes->>'role' FROM users
       WHERE id = current_setting('app.current_user_id', true)::uuid
     ) IN ('compliance_officer', 'super_admin')
   );
@@ -94,7 +94,7 @@ CREATE POLICY audit_record_exports_location_update
       WHERE id = current_setting('app.current_user_id', true)::uuid
     )
     AND (
-      SELECT role FROM users
+      SELECT abac_attributes->>'role' FROM users
       WHERE id = current_setting('app.current_user_id', true)::uuid
     ) IN ('compliance_officer', 'super_admin')
   );

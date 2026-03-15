@@ -1,0 +1,6 @@
+http://localhost:5173/login and try:
+
+  - Email: dev@hospici.dev
+  - Password: DevPassword1234!
+
+

@@ -888,15 +888,25 @@ function ClinicalStep({
   const secRef = useRef<HTMLInputElement>(null);
   const allergyRef = useRef<HTMLInputElement>(null);
 
-  // Parse "C34.90 — Malignant neoplasm…" into { icd10Code, description }
+  // Parse "C34.90 — Malignant neoplasm…" or "C34.90 Malignant neoplasm…" into { icd10Code, description }
   function parseDx(raw: string): DiagnosisEntry | null {
     const trimmed = raw.trim();
     if (!trimmed) return null;
-    const sep = trimmed.indexOf(" — ");
-    if (sep > 0) {
+    // Preferred format: "CODE — Description"
+    const dashSep = trimmed.indexOf(" — ");
+    if (dashSep > 0) {
       return {
-        icd10Code: trimmed.slice(0, sep).trim(),
-        description: trimmed.slice(sep + 3).trim(),
+        icd10Code: trimmed.slice(0, dashSep).trim(),
+        description: trimmed.slice(dashSep + 3).trim(),
+        isTerminal: false,
+      };
+    }
+    // Fallback: first space-delimited token is the code (ICD-10 codes never contain spaces)
+    const spaceSep = trimmed.indexOf(" ");
+    if (spaceSep > 0) {
+      return {
+        icd10Code: trimmed.slice(0, spaceSep).trim(),
+        description: trimmed.slice(spaceSep).trim(),
         isTerminal: false,
       };
     }
