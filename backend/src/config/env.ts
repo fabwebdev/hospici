@@ -17,7 +17,7 @@ function optional(key: string, fallback: string): string {
 export const env = {
   nodeEnv: optional("NODE_ENV", "development"),
   port: Number(optional("PORT", "3000")),
-  host: optional("HOST", "0.0.0.0"),
+  host: optional("HOST", "::"),
   logLevel: optional("LOG_LEVEL", "info"),
 
   databaseUrl: required("DATABASE_URL"),

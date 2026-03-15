@@ -33,14 +33,7 @@ function LoginPage() {
     onSuccess: (result) => {
       if (result.success) {
         setStatusMsg("Authenticated. Loading session...");
-        router.invalidate().then(
-          () => {
-            void router.navigate({ to: "/dashboard" });
-          },
-          (err) => {
-            setStatusMsg(`Session load failed: ${err instanceof Error ? err.message : String(err)}`);
-          },
-        );
+        void router.navigate({ to: "/dashboard" });
       } else {
         setStatusMsg(null);
       }

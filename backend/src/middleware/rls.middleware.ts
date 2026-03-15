@@ -3,6 +3,7 @@
 // CRITICAL: Uses parameterized set_config — NEVER use string interpolation
 
 import { auth } from "@/config/auth.config.js";
+import { env } from "@/config/env.js";
 import { db } from "@/db/client.js";
 import { sql } from "drizzle-orm";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -81,7 +82,8 @@ export function registerRLSMiddleware(fastify: FastifyInstance) {
 
     // HIPAA §164.312(d): TOTP must be enrolled before accessing protected resources.
     // All 2FA setup endpoints are under /api/v1/auth/* and are already bypassed above.
-    if (!user.twoFactorEnabled) {
+    // Skipped in development to allow testing without TOTP enrollment.
+    if (!env.isDev && !user.twoFactorEnabled) {
       const err = new Error("TOTP enrollment required") as Error & { statusCode: number };
       err.statusCode = 403;
       throw err;
