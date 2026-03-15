@@ -143,11 +143,11 @@ function VantageChartPage() {
   }, [context]);
 
   // Mutations
-  const enhanceMutation = useMutation({
+  const enhanceMutation = useMutation<EnhanceNarrativeResponse, Error>({
     mutationFn: () =>
       enhanceWithLLMFn({
         data: { patientId, encounterId, draft: preview?.draft ?? "" },
-      }),
+      }) as Promise<EnhanceNarrativeResponse>,
     onSuccess: (data) => {
       setEnhancedNote(data);
       setShowEnhanced(true);

@@ -27,6 +27,8 @@ import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
 import medicationRoutes from "@/contexts/clinical/routes/medication.routes.js";
 import careTeamRoutes from "@/contexts/clinical/routes/careTeam.routes.js";
+import patientConditionsRoutes from "@/contexts/clinical/routes/patient-conditions.routes.js";
+import patientInsuranceRoutes from "@/contexts/clinical/routes/patient-insurance.routes.js";
 import noteReviewRoutes from "@/contexts/clinical/routes/noteReview.routes.js";
 import documentRoutes from "@/contexts/documentation/routes/document.routes.js";
 import teamCommRoutes from "@/contexts/communication/routes/teamComm.routes.js";
@@ -191,6 +193,8 @@ export async function buildApp() {
   await fastify.register(carePlanRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(medicationRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(careTeamRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(patientConditionsRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(patientInsuranceRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(documentRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(teamCommRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(vantageChartRoutes, { prefix: "/api/v1/patients" });

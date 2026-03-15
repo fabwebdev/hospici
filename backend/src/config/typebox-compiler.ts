@@ -212,6 +212,18 @@ import {
   CareTeamMemberResponseSchema,
 } from "@/contexts/clinical/schemas/careTeam.schema.js";
 import {
+  ConditionListResponseSchema,
+  CreateConditionBodySchema,
+  PatchConditionBodySchema,
+  PatientConditionResponseSchema,
+} from "@/contexts/clinical/schemas/patient-conditions.schema.js";
+import {
+  CreateInsuranceBodySchema,
+  InsuranceListResponseSchema,
+  PatchInsuranceBodySchema,
+  PatientInsuranceResponseSchema,
+} from "@/contexts/clinical/schemas/patient-insurance.schema.js";
+import {
   CreateDocumentBodySchema,
   DocumentListResponseSchema,
   DocumentResponseSchema,
@@ -330,6 +342,18 @@ export const Validators = {
   AssignCareTeamMemberBody: TypeCompiler.Compile(AssignCareTeamMemberBodySchema),
   CareTeamMemberResponse: TypeCompiler.Compile(CareTeamMemberResponseSchema),
   CareTeamListResponse: TypeCompiler.Compile(CareTeamListResponseSchema),
+
+  // Clinical — patient conditions (diagnoses)
+  CreateConditionBody: TypeCompiler.Compile(CreateConditionBodySchema),
+  PatchConditionBody: TypeCompiler.Compile(PatchConditionBodySchema),
+  PatientConditionResponse: TypeCompiler.Compile(PatientConditionResponseSchema),
+  ConditionListResponse: TypeCompiler.Compile(ConditionListResponseSchema),
+
+  // Clinical — patient insurance (coverage)
+  CreateInsuranceBody: TypeCompiler.Compile(CreateInsuranceBodySchema),
+  PatchInsuranceBody: TypeCompiler.Compile(PatchInsuranceBodySchema),
+  PatientInsuranceResponse: TypeCompiler.Compile(PatientInsuranceResponseSchema),
+  InsuranceListResponse: TypeCompiler.Compile(InsuranceListResponseSchema),
 
   // Documentation — patient documents
   CreateDocumentBody: TypeCompiler.Compile(CreateDocumentBodySchema),

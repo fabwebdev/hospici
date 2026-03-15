@@ -2,9 +2,7 @@
 // Client-side entry point
 
 import { StartClient } from "@tanstack/react-start/client";
-import { hydrateRoot } from "react-dom/client";
 import { getRouter } from "./router";
+import { hydrateRoot } from "react-dom/client";
 
-const router = getRouter();
-
-hydrateRoot(document, <StartClient router={router} />);
+hydrateRoot(document, <StartClient router={getRouter()} />);

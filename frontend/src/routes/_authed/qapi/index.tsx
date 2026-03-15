@@ -67,7 +67,7 @@ function RaiseEventModal({
   const [description, setDescription] = useState(prefill?.description ?? "");
   const [rca, setRca] = useState("");
 
-  const createMut = useMutation({
+  const createMut = useMutation<QAPIEvent, Error>({
     mutationFn: () =>
       createQAPIEventFn({
         data: {
@@ -77,7 +77,7 @@ function RaiseEventModal({
           rootCauseAnalysis: rca || undefined,
           linkedTrendContext: prefill?.linkedTrendContext,
         },
-      }),
+      }) as Promise<QAPIEvent>,
     onSuccess: (event) => {
       onCreated(event);
       onClose();
@@ -449,7 +449,7 @@ function QAPIWorkspace() {
         <div className="space-y-2">
           <h2 className="text-sm font-semibold text-gray-700">Quality Outliers</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {outliersQuery.data.data.map((outlier, i) => (
+            {outliersQuery.data.data.map((outlier: QualityOutlier, i: number) => (
               <div
                 key={`${outlier.subjectId}-${i}`}
                 className="bg-amber-50 border border-amber-200 rounded-lg p-3"
@@ -500,7 +500,7 @@ function QAPIWorkspace() {
         <p className="text-sm text-gray-400">No QAPI events found.</p>
       ) : (
         <div className="space-y-2">
-          {eventsQuery.data?.data.map((event) => (
+          {eventsQuery.data?.data.map((event: QAPIEvent) => (
             <button
               key={event.id}
               type="button"

@@ -10,12 +10,13 @@ export interface RouterContext {
   queryClient: QueryClient;
   session: {
     userId: string;
-    email: string;
     role: string;
     locationId: string;
     locationIds: string[];
     permissions: string[];
     breakGlass: boolean;
+    twoFactorEnabled: boolean;
+    expiresAt: number;
   } | null;
 }
 

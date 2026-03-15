@@ -17,8 +17,9 @@ function NewHOPEAssessmentPage() {
     assessmentType: "01",
   });
 
-  const createMutation = useMutation({
-    mutationFn: (input: CreateHOPEAssessmentInput) => createHOPEAssessmentFn({ data: input }),
+  const createMutation = useMutation<{ id: string }, Error, CreateHOPEAssessmentInput>({
+    mutationFn: (input: CreateHOPEAssessmentInput) =>
+      createHOPEAssessmentFn({ data: input }) as Promise<{ id: string }>,
     onSuccess: (assessment) => {
       void navigate({ to: "/hope/assessments/$id", params: { id: assessment.id } });
     },

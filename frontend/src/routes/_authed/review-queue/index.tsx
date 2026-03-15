@@ -445,13 +445,13 @@ function ReviewQueuePage() {
             <h1 className="text-2xl font-bold text-gray-900">Note Review Queue</h1>
             <p className="text-sm text-gray-500 mt-1">{data?.total ?? 0} items in queue</p>
           </div>
-          {allItems.filter((i) => i.reviewStatus === "PENDING").length > 0 && (
+          {allItems.filter((i: ReviewQueueItem) => i.reviewStatus === "PENDING").length > 0 && (
             <button
               type="button"
               onClick={() => {
                 const pendingIds = allItems
-                  .filter((i) => i.reviewStatus === "PENDING")
-                  .map((i) => i.encounterId);
+                  .filter((i: ReviewQueueItem) => i.reviewStatus === "PENDING")
+                  .map((i: ReviewQueueItem) => i.encounterId);
                 bulkAcknowledgeFn({ data: { encounterIds: pendingIds } }).then(() => {
                   queryClient.invalidateQueries({ queryKey: ["review-queue"] });
                   showToast(`${pendingIds.length} items acknowledged`);
@@ -459,7 +459,7 @@ function ReviewQueuePage() {
               }}
               className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Acknowledge All Pending ({allItems.filter((i) => i.reviewStatus === "PENDING").length}
+              Acknowledge All Pending ({allItems.filter((i: ReviewQueueItem) => i.reviewStatus === "PENDING").length}
               )
             </button>
           )}

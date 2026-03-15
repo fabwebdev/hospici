@@ -17,7 +17,7 @@ import type {
   QAPIListQueryType,
   QAPIPatchBodyType,
 } from "../schemas/qapi.schema.js";
-import { and, count, desc, eq, gte, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 
 // ── Custom errors ─────────────────────────────────────────────────────────────
 
@@ -169,7 +169,93 @@ export class QAPIService {
       db.select({ c: count() }).from(qapiEvents).where(where),
     ]);
 
-    const data = await Promise.all(rows.map(buildEventResponse));
+    // Batch action items and user names — 2 queries instead of 2N
+    const eventIds = rows.map((r) => r.id);
+    const uniqueUserIds = [...new Set(rows.map((r) => r.reportedById))];
+
+    type ActionItemRow = {
+      id: string;
+      eventId: string;
+      locationId: string;
+      action: string;
+      assignedToId: string;
+      assignedToName: string | null;
+      dueDate: string;
+      completedAt: Date | null;
+      completedById: string | null;
+      createdAt: Date;
+    };
+    type UserNameRow = { id: string; name: string | null };
+
+    let allActionItemRows: ActionItemRow[] = [];
+    let userNameRows: UserNameRow[] = [];
+
+    if (eventIds.length > 0) {
+      [allActionItemRows, userNameRows] = await Promise.all([
+        db
+          .select({
+            id: qapiActionItems.id,
+            eventId: qapiActionItems.eventId,
+            locationId: qapiActionItems.locationId,
+            action: qapiActionItems.action,
+            assignedToId: qapiActionItems.assignedToId,
+            assignedToName: users.name,
+            dueDate: qapiActionItems.dueDate,
+            completedAt: qapiActionItems.completedAt,
+            completedById: qapiActionItems.completedById,
+            createdAt: qapiActionItems.createdAt,
+          })
+          .from(qapiActionItems)
+          .leftJoin(users, eq(qapiActionItems.assignedToId, users.id))
+          .where(inArray(qapiActionItems.eventId, eventIds))
+          .orderBy(asc(qapiActionItems.createdAt)),
+        db
+          .select({ id: users.id, name: users.name })
+          .from(users)
+          .where(inArray(users.id, uniqueUserIds)),
+      ]);
+    }
+
+    const actionItemsByEvent = new Map<string, ActionItemRow[]>();
+    for (const item of allActionItemRows) {
+      const list = actionItemsByEvent.get(item.eventId) ?? [];
+      list.push(item);
+      actionItemsByEvent.set(item.eventId, list);
+    }
+    const userNameMap = new Map<string, string>(
+      userNameRows.map((u) => [u.id, u.name ?? "Unknown"]),
+    );
+
+    const data: QAPIEventResponseType[] = rows.map((eventRow) => ({
+      id: eventRow.id,
+      locationId: eventRow.locationId,
+      eventType: eventRow.eventType,
+      patientId: eventRow.patientId ?? null,
+      reportedById: eventRow.reportedById,
+      reportedByName: userNameMap.get(eventRow.reportedById) ?? "Unknown",
+      occurredAt: eventRow.occurredAt.toISOString(),
+      description: eventRow.description,
+      rootCauseAnalysis: eventRow.rootCauseAnalysis ?? null,
+      linkedTrendContext: eventRow.linkedTrendContext ?? null,
+      status: eventRow.status,
+      closedAt: eventRow.closedAt?.toISOString() ?? null,
+      closedById: eventRow.closedById ?? null,
+      closureEvidence: eventRow.closureEvidence ?? null,
+      actionItems: (actionItemsByEvent.get(eventRow.id) ?? []).map((a) => ({
+        id: a.id,
+        eventId: a.eventId,
+        locationId: a.locationId,
+        action: a.action,
+        assignedToId: a.assignedToId,
+        assignedToName: a.assignedToName ?? "Unknown",
+        dueDate: a.dueDate,
+        completedAt: a.completedAt?.toISOString() ?? null,
+        completedById: a.completedById ?? null,
+        createdAt: a.createdAt.toISOString(),
+      })),
+      createdAt: eventRow.createdAt.toISOString(),
+      updatedAt: eventRow.updatedAt.toISOString(),
+    }));
     return { data, total: Number(countRow?.c ?? 0) };
   }
 

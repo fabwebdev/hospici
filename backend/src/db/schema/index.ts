@@ -45,3 +45,5 @@ export * from "./patient-documents.table.js";
 export * from "./care-team-members.table.js";
 export * from "./team-comm-threads.table.js";
 export * from "./team-comm-messages.table.js";
+export * from "./patient-conditions.table.js";
+export * from "./patient-insurance.table.js";

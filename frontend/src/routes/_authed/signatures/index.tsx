@@ -211,7 +211,7 @@ function SignatureWorkbenchPage() {
             No {activeTab === "all" ? "outstanding" : activeTab} signature requests
           </div>
         ) : (
-          items.map((item) => (
+          items.map((item: OutstandingSignatureItem) => (
             <SignatureCard
               key={item.id}
               item={item}

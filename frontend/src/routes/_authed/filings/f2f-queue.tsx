@@ -104,7 +104,7 @@ function F2FQueue() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {items.map((item) => (
+              {items.map((item: F2FQueueItem) => (
                 <F2FQueueRow key={`${item.patientId}-${item.periodNumber}`} item={item} />
               ))}
             </tbody>

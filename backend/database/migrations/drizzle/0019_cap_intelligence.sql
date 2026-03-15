@@ -77,6 +77,11 @@ CREATE POLICY cap_patient_contributions_location_insert ON cap_patient_contribut
     OR current_setting('app.current_role', true) IN ('super_admin', 'admin')
   );
 
--- DOWN
+-- ──────────────────────────────────────────────────────────────────────────────
+-- DOWN (rollback — run manually to reverse this migration)
+-- ⚠️  The alert_type_enum values added above (CAP_THRESHOLD_70, CAP_THRESHOLD_80,
+--    CAP_THRESHOLD_90, CAP_PROJECTED_OVERAGE) cannot be removed from the enum
+--    in PostgreSQL without dropping/recreating the type. They remain after rollback.
+-- ──────────────────────────────────────────────────────────────────────────────
 DROP TABLE IF EXISTS cap_patient_contributions;
 DROP TABLE IF EXISTS cap_snapshots;

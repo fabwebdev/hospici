@@ -15,7 +15,7 @@ import { logAudit } from "@/contexts/identity/services/audit.service.js";
 import { db } from "@/db/client.js";
 import { teamCommMessages } from "@/db/schema/team-comm-messages.table.js";
 import { teamCommThreads } from "@/db/schema/team-comm-threads.table.js";
-import { and, asc, count, desc, eq, max, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, max, sql } from "drizzle-orm";
 import type { FastifyRequest } from "fastify";
 import type {
   CommMessageListResponse,
@@ -72,45 +72,58 @@ export async function listThreads(
       .from(teamCommThreads)
       .where(eq(teamCommThreads.patientId, patientId));
 
-    // For each thread, fetch the last message and message count
-    // Executed via a single aggregation query per thread — acceptable for typical team sizes
-    const threads: CommThreadResponse[] = await Promise.all(
-      threadRows.map(async (thread) => {
-        const [aggResult] = await tx
-          .select({
-            messageCount: count(teamCommMessages.id),
-            lastMessageAt: max(teamCommMessages.sentAt),
-          })
-          .from(teamCommMessages)
-          .where(eq(teamCommMessages.threadId, thread.id));
+    // Bulk fetch message counts and last-message preview for all threads in two queries
+    // instead of 2N per-thread queries.
+    const threadIds = threadRows.map((t) => t.id);
 
-        // Fetch the body of the most recent message
-        let lastMessageBody: string | undefined;
-        if (aggResult?.lastMessageAt) {
-          const [lastMsg] = await tx
-            .select({ body: teamCommMessages.body })
+    const [msgAggRows, lastMsgRows] = threadIds.length > 0
+      ? await Promise.all([
+          // One query: COUNT + MAX(sent_at) per thread
+          tx
+            .select({
+              threadId: teamCommMessages.threadId,
+              messageCount: count(teamCommMessages.id),
+              lastMessageAt: max(teamCommMessages.sentAt),
+            })
             .from(teamCommMessages)
-            .where(eq(teamCommMessages.threadId, thread.id))
-            .orderBy(desc(teamCommMessages.sentAt))
-            .limit(1);
-          lastMessageBody = lastMsg?.body;
-        }
+            .where(inArray(teamCommMessages.threadId, threadIds))
+            .groupBy(teamCommMessages.threadId),
+          // One query: last message body per thread using DISTINCT ON
+          tx.execute(sql`
+            SELECT DISTINCT ON (thread_id) thread_id, body
+            FROM ${teamCommMessages}
+            WHERE thread_id = ANY(${threadIds}::uuid[])
+            ORDER BY thread_id, sent_at DESC
+          `),
+        ])
+      : [[], { rows: [] }] as const;
 
-        const base: CommThreadResponse = {
-          id: thread.id,
-          patientId: thread.patientId,
-          locationId: thread.locationId,
-          subject: thread.subject,
-          createdAt: thread.createdAt.toISOString(),
-          messageCount: Number(aggResult?.messageCount ?? 0),
-        };
-        if (thread.createdByUserId != null) base.createdByUserId = thread.createdByUserId;
-        if (aggResult?.lastMessageAt != null)
-          base.lastMessageAt = aggResult.lastMessageAt.toISOString();
-        if (lastMessageBody != null) base.lastMessageBody = lastMessageBody;
-        return base;
-      }),
+    type AggRow = { thread_id: string; messageCount: number; lastMessageAt: Date | null };
+    type LastMsgRow = { thread_id: string; body: string };
+
+    const aggMap = new Map<string, { messageCount: number; lastMessageAt: Date | null }>(
+      msgAggRows.map((r) => [r.threadId, { messageCount: Number(r.messageCount), lastMessageAt: r.lastMessageAt }]),
     );
+    const lastMsgMap = new Map<string, string>(
+      (lastMsgRows.rows as LastMsgRow[]).map((r) => [r.thread_id, r.body]),
+    );
+
+    const threads: CommThreadResponse[] = threadRows.map((thread) => {
+      const agg = aggMap.get(thread.id);
+      const base: CommThreadResponse = {
+        id: thread.id,
+        patientId: thread.patientId,
+        locationId: thread.locationId,
+        subject: thread.subject,
+        createdAt: thread.createdAt.toISOString(),
+        messageCount: agg?.messageCount ?? 0,
+      };
+      if (thread.createdByUserId != null) base.createdByUserId = thread.createdByUserId;
+      if (agg?.lastMessageAt != null) base.lastMessageAt = agg.lastMessageAt.toISOString();
+      const lastBody = lastMsgMap.get(thread.id);
+      if (lastBody != null) base.lastMessageBody = lastBody;
+      return base;
+    });
 
     await logAudit(
       "view",

@@ -239,11 +239,34 @@ export class NoteReviewService {
       return query;
     });
 
-    const items = await Promise.all(
-      rows.map(async (enc) => {
-        const patientName = await getPatientDisplayName(enc.patientId);
-        return rowToQueueItem(enc, patientName);
-      }),
+    // Batch patient name lookups: 1 DB query + parallel decrypts instead of N serial queries
+    const uniquePatientIds = [...new Set(rows.map((r) => r.patientId))];
+    const patientNameMap = new Map<string, string>();
+    if (uniquePatientIds.length > 0) {
+      const patientRows = await db
+        .select({ id: patients.id, data: patients.data })
+        .from(patients)
+        .where(inArray(patients.id, uniquePatientIds));
+      await Promise.all(
+        patientRows.map(async (pat) => {
+          try {
+            const plaintext = await decryptPhi(pat.data as string);
+            const fhirData = JSON.parse(plaintext) as {
+              name?: Array<{ family?: string; given?: string[] }>;
+            };
+            const name = fhirData.name?.[0];
+            const displayName = name
+              ? `${name.given?.join(" ") ?? ""} ${name.family ?? ""}`.trim()
+              : "[unknown patient]";
+            patientNameMap.set(pat.id, displayName || "[unknown patient]");
+          } catch {
+            patientNameMap.set(pat.id, "[encrypted]");
+          }
+        }),
+      );
+    }
+    const items = rows.map((enc) =>
+      rowToQueueItem(enc, patientNameMap.get(enc.patientId) ?? "[unknown patient]"),
     );
 
     const response: ReviewQueueResponseType = { data: items, total: items.length };

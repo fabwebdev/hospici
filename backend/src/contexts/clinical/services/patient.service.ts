@@ -69,7 +69,10 @@ async function toPatientResponse(row: DrizzleRow): Promise<PatientResponse> {
 
   // Conditionally include optional fields (exactOptionalPropertyTypes requires no explicit undefined)
   if (fhirData.gender !== undefined) response.gender = fhirData.gender;
+  if (fhirData.telecom !== undefined) response.telecom = fhirData.telecom;
   if (fhirData.address !== undefined) response.address = fhirData.address;
+  if (fhirData.contact !== undefined) response.contact = fhirData.contact;
+  if (fhirData.advanceDirectives !== undefined) response.advanceDirectives = fhirData.advanceDirectives;
   if (fhirData._gender !== undefined) response._gender = fhirData._gender;
   if (row.admissionDate != null) response.admissionDate = row.admissionDate;
   if (row.dischargeDate != null) response.dischargeDate = row.dischargeDate;

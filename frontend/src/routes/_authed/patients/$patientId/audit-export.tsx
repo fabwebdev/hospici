@@ -350,22 +350,22 @@ function ExportRow({
 }) {
   const queryClient = useQueryClient();
 
-  const { mutate: downloadPdf, isPending: isPdfPending } = useMutation({
+  const { mutate: downloadPdf, isPending: isPdfPending } = useMutation<{ downloadUrl: string }, Error>({
     mutationFn: () =>
       getAuditExportDownloadUrlFn({
         data: { patientId, exportId: exportRecord.id, format: "pdf" },
-      }),
+      }) as Promise<{ downloadUrl: string }>,
     onSuccess: (result) => {
       window.open(result.downloadUrl, "_blank");
       void queryClient.invalidateQueries({ queryKey: ["audit-exports", patientId] });
     },
   });
 
-  const { mutate: downloadZip, isPending: isZipPending } = useMutation({
+  const { mutate: downloadZip, isPending: isZipPending } = useMutation<{ downloadUrl: string }, Error>({
     mutationFn: () =>
       getAuditExportDownloadUrlFn({
         data: { patientId, exportId: exportRecord.id, format: "zip" },
-      }),
+      }) as Promise<{ downloadUrl: string }>,
     onSuccess: (result) => {
       window.open(result.downloadUrl, "_blank");
       void queryClient.invalidateQueries({ queryKey: ["audit-exports", patientId] });
@@ -454,7 +454,7 @@ function AuditExportPage() {
     refetchInterval: (query) => {
       const exports = query.state.data?.exports ?? [];
       const hasGenerating = exports.some(
-        (e) => e.status === "REQUESTED" || e.status === "GENERATING",
+        (e: AuditRecordExport) => e.status === "REQUESTED" || e.status === "GENERATING",
       );
       return hasGenerating ? 3000 : false;
     },
@@ -517,7 +517,7 @@ function AuditExportPage() {
               </tr>
             </thead>
             <tbody>
-              {exports.map((exportRecord) => (
+              {exports.map((exportRecord: AuditRecordExport) => (
                 <ExportRow
                   key={exportRecord.id}
                   exportRecord={exportRecord}

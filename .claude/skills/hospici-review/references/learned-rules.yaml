@@ -179,9 +179,161 @@ rules:
   regulatory_ref: null
   archived_date: null
 
+- id: drizzle-012
+  status: active
+  severity: critical
+  category: drizzle
+  title: "N+1 queries: per-row DB calls inside Promise.all on list results"
+  confidence: 0.93
+  category_weight: 2.0
+  pattern: |
+    rows.map(async (row) => { await db.select()...where(eq(table.id, row.foreignId)) })
+    called inside Promise.all. Fires N individual DB round-trips for a list of N rows.
+    Found in: noteReview listQueue (patient name), teamComm listThreads (per-thread agg),
+    qapi listEvents (action items + reporter name per event).
+  why: |
+    Review queue can easily have 50+ encounters. 50 individual patient-decrypt calls
+    = 50 pgcrypto operations serially (they share a DB connection pool). Under load
+    this saturates the pool and adds hundreds of milliseconds of latency to a
+    clinical user's dashboard load.
+  fix: |
+    Batch the foreign-key lookup: collect unique IDs, run one WHERE id = ANY($1) query,
+    build a Map, then map rows synchronously.
+    For grouped aggregates (teamComm), use GROUP BY in a single query.
+    For DISTINCT last-row-per-group (last message body), use DISTINCT ON in one query.
+  example_bad: |
+    const items = await Promise.all(
+      rows.map(async (r) => {
+        const name = await getPatientDisplayName(r.patientId);  // N DB calls
+        return buildRow(r, name);
+      })
+    );
+  example_good: |
+    const ids = [...new Set(rows.map(r => r.patientId))];
+    const patients = await db.select().from(patients).where(inArray(patients.id, ids));
+    const nameMap = new Map(patients.map(p => [p.id, resolveName(p)]));
+    const items = rows.map(r => buildRow(r, nameMap.get(r.patientId) ?? '[unknown]'));
+  first_seen:
+    file: "backend/src/contexts/clinical/services/noteReview.service.ts"
+    line: 242
+    date: "2026-03-14"
+  last_triggered: "2026-03-14"
+  trigger_count: 1
+  merge_candidates: []
+  conflicts_with: []
+  regulatory_ref: null
+  archived_date: null
+
+- id: biome-007
+  status: active
+  severity: warning
+  category: biome
+  title: "Static-only class should be module-level functions"
+  confidence: 0.90
+  category_weight: 0.8
+  pattern: |
+    export class Foo { static async method1() {...} static async method2() {...} }
+    with no constructor, no instance properties, and no instance methods.
+    Biome noStaticOnlyClass fires on this pattern.
+  why: |
+    Static-only classes are a namespace anti-pattern in TypeScript. They prevent
+    tree-shaking, add unnecessary indirection, and Biome treats them as an error.
+    Module-level functions are the idiomatic replacement.
+  fix: |
+    Convert to exported module-level functions. If callers use the class-name syntax
+    (Foo.method()), add a namespace object export:
+    export const Foo = { method1, method2 };
+  example_bad: |
+    export class QualityAnalyticsService {
+      static async getClinicianScorecards(...) {...}
+    }
+  example_good: |
+    export async function getClinicianScorecards(...) {...}
+    export const QualityAnalyticsService = { getClinicianScorecards, ... };
+  first_seen:
+    file: "backend/src/contexts/analytics/services/qualityAnalytics.service.ts"
+    line: 74
+    date: "2026-03-14"
+  last_triggered: "2026-03-14"
+  trigger_count: 1
+  merge_candidates: []
+  conflicts_with: []
+  regulatory_ref: null
+  archived_date: null
+
+- id: biome-008
+  status: active
+  severity: warning
+  category: biome
+  title: "Non-null assertion on value narrowed in a prior chained call"
+  confidence: 0.85
+  category_weight: 0.8
+  pattern: |
+    array.filter(r => r.field != null).map(r => r.field!.method())
+    TypeScript does not propagate the null-narrowing across separate chained calls.
+    The ! suppresses a real type error. Same applies to Promise.all(...).filter().
+  why: |
+    Biome noNonNullAssertion flags this. More importantly, if the filter predicate
+    and the map expression ever diverge (e.g. during a refactor), the assertion
+    becomes genuinely unsafe and will throw at runtime.
+  fix: |
+    Use reduce instead of filter+map, or inline the guard in the map body:
+    array.reduce((acc, r) => {
+      if (r.field != null) acc.push(r.field.method());
+      return acc;
+    }, []);
+  example_bad: |
+    const turnarounds = cRows.filter(r => r.reviewedAt != null)
+      .map(r => r.reviewedAt!.getTime() - r.createdAt.getTime());
+  example_good: |
+    const turnarounds = cRows.reduce<number[]>((acc, r) => {
+      if (r.reviewedAt != null) acc.push(r.reviewedAt.getTime() - r.createdAt.getTime());
+      return acc;
+    }, []);
+  first_seen:
+    file: "backend/src/contexts/analytics/services/qualityAnalytics.service.ts"
+    line: 153
+    date: "2026-03-14"
+  last_triggered: "2026-03-14"
+  trigger_count: 1
+  merge_candidates: []
+  conflicts_with: []
+  regulatory_ref: null
+  archived_date: null
+
+- id: drizzle-013
+  status: active
+  severity: warning
+  category: drizzle
+  title: "locations table missing ENABLE ROW LEVEL SECURITY"
+  confidence: 0.88
+  category_weight: 2.0
+  pattern: |
+    The `locations` table in 0000_baseline.sql has no ENABLE ROW LEVEL SECURITY
+    and no SELECT/INSERT/UPDATE policies. Per CLAUDE.md rule 1.5 every user-data
+    table requires RLS.
+  why: |
+    The locations table holds tenant-identifying data (hospice branch records).
+    Without RLS a compromised or misconfigured DB session could read all locations
+    across tenants. Even reference tables should have at minimum a read policy.
+  fix: |
+    Add a migration that adds ENABLE ROW LEVEL SECURITY to locations plus a
+    permissive SELECT policy (all authenticated users can read locations).
+    INSERT/UPDATE should be restricted to ADMIN role.
+  first_seen:
+    file: "backend/database/migrations/drizzle/0000_baseline.sql"
+    line: 1
+    date: "2026-03-14"
+  last_triggered: "2026-03-14"
+  trigger_count: 1
+  merge_candidates: []
+  conflicts_with: []
+  regulatory_ref: null
+  archived_date: null
+
 meta:
   initialized: true
   last_run: "2026-03-14"
-  total_rules_ever: 5
-  active_rules: 5
+  total_rules_ever: 9
+  active_rules: 9
   archived_rules: 0

@@ -130,7 +130,7 @@ function SavedViewsSidebar({
         </button>
       </div>
       <ul className="space-y-1">
-        {(data?.data ?? []).map((view) => (
+        {(data?.data ?? []).map((view: ReviewQueueView) => (
           <li key={view.id}>
             <div className="flex items-center justify-between group">
               <button
@@ -506,7 +506,7 @@ function ChartAuditPage() {
     if (selectedPatientIds.size === queueData.data.length) {
       setSelectedPatientIds(new Set());
     } else {
-      setSelectedPatientIds(new Set(queueData.data.map((r) => r.patientId)));
+      setSelectedPatientIds(new Set(queueData.data.map((r: ChartAuditQueueRow) => r.patientId)));
     }
   }
 

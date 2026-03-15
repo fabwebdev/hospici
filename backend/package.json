@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch -r dotenv/config src/server.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
@@ -26,6 +26,7 @@
     "db:seed:dev": "tsx scripts/seed-dev.ts",
     "db:next-migration-number": "tsx scripts/next-migration-number.ts",
     "db:schema-report": "tsx scripts/schema-report.ts",
+    "generate:openapi": "tsx scripts/export-openapi.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {
