@@ -2,9 +2,43 @@
 // Main dashboard — design from hospici-screens.pen "02 Dashboard"
 // Two-column layout: left (alerts + schedule), right (stats + quick actions)
 
+import { getComplianceAlertsFn } from "@/functions/alerts.functions.js";
+import { getMyDashboardFn } from "@/functions/dashboard.functions.js";
+import { getPatientsFn } from "@/functions/patient.functions.js";
+import { patientKeys } from "@/lib/query/keys.js";
+import type { RouterContext } from "@/routes/__root.js";
+import type {
+  Alert,
+  AlertListResponse,
+  DashboardScheduleItem,
+  MyDashboardResponse,
+  PatientListResponse,
+} from "@hospici/shared-types";
+import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
 
 export const Route = createFileRoute("/_authed/dashboard")({
+  loader: async ({ context: { queryClient } }: { context: RouterContext }) => {
+    try {
+      await Promise.all([
+        queryClient.ensureQueryData({
+          queryKey: ["alerts", "compliance"],
+          queryFn: () => getComplianceAlertsFn(),
+        }),
+        queryClient.ensureQueryData({
+          queryKey: patientKeys.list({ limit: 1 }),
+          queryFn: () => getPatientsFn({ data: { limit: 1 } }),
+        }),
+        queryClient.ensureQueryData({
+          queryKey: ["my", "dashboard"],
+          queryFn: () => getMyDashboardFn(),
+        }),
+      ]);
+    } catch {
+      // Let useQuery handle errors
+    }
+  },
   component: DashboardPage,
 });
 
@@ -16,9 +50,54 @@ function DashboardPage() {
     year: "numeric",
   });
 
+  // Real data: compliance alerts
+  const { data: alertData } = useQuery<AlertListResponse>({
+    queryKey: ["alerts", "compliance"],
+    queryFn: () => getComplianceAlertsFn() as Promise<AlertListResponse>,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+
+  // Real data: patient count
+  const { data: patientData } = useQuery<PatientListResponse>({
+    queryKey: patientKeys.list({ limit: 1 }),
+    queryFn: () => getPatientsFn({ data: { limit: 1 } }) as Promise<PatientListResponse>,
+  });
+
+  // Real data: schedule + last signed note
+  const { data: dashboardData } = useQuery<MyDashboardResponse>({
+    queryKey: ["my", "dashboard"],
+    queryFn: () => getMyDashboardFn() as Promise<MyDashboardResponse>,
+    staleTime: 60_000,
+  });
+
+  const totalPatients = patientData?.total ?? 0;
+  const schedule = dashboardData?.schedule ?? [];
+  const lastSignedNote = dashboardData?.lastSignedNote ?? null;
+
+  // Sort alerts: unresolved only, critical first, then by daysRemaining ascending
+  const alerts = useMemo(() => {
+    const unresolved = (alertData?.data ?? []).filter((a) => a.status !== "resolved");
+    return unresolved
+      .sort((a, b) => {
+        if (a.severity === "critical" && b.severity !== "critical") return -1;
+        if (b.severity === "critical" && a.severity !== "critical") return 1;
+        return a.daysRemaining - b.daysRemaining;
+      })
+      .slice(0, 5);
+  }, [alertData]);
+
+  const critCount = alerts.filter((a) => a.severity === "critical").length;
+  const warnCount = alerts.filter((a) => a.severity === "warning").length;
+
+  // Count requiring attention (critical or warning with <=3 days)
+  const attentionCount = (alertData?.data ?? []).filter(
+    (a) => a.status !== "resolved" && (a.severity === "critical" || a.daysRemaining <= 3),
+  ).length;
+
   return (
     <div className="flex-1 bg-[#F1F5F9] overflow-y-auto">
-      <div className="p-7 space-y-6 max-w-full">
+      <div className="py-7 px-8 space-y-6 max-w-full">
         {/* Page header */}
         <div className="flex items-center justify-between">
           <h1
@@ -34,14 +113,18 @@ function DashboardPage() {
         <div className="flex gap-6">
           {/* Left column — alerts + schedule */}
           <div className="flex-1 space-y-4">
-            <AlertsCard />
-            <ScheduleCard />
+            <AlertsCard alerts={alerts} critCount={critCount} warnCount={warnCount} />
+            <ScheduleCard items={schedule} />
           </div>
 
           {/* Right column — stats + quick actions */}
           <div className="w-[300px] shrink-0 space-y-4">
-            <StatsCard label="My Patients" value="24" sub="Active at Palm Valley · 3 requiring attention" />
-            <LastNoteCard />
+            <StatsCard
+              label="My Patients"
+              value={String(totalPatients)}
+              sub={`Active at Palm Valley · ${attentionCount} requiring attention`}
+            />
+            <LastNoteCard note={lastSignedNote} />
             <QuickActionsCard />
           </div>
         </div>
@@ -52,46 +135,27 @@ function DashboardPage() {
 
 // ── Alerts Card ──────────────────────────────────────────────────────────────
 
-function AlertsCard() {
-  const alerts = [
-    {
-      severity: "critical" as const,
-      title: "IDG Overdue — Margaret T. (#MRN-00291)",
-      sub: "18 days since last IDG · Legal block active",
-      meta: "Triggered Mar 11 · IDG §418.56 hard block",
-      badge: "–18d",
-    },
-    {
-      severity: "warning" as const,
-      title: "NOE Filing Due — Robert A. (#MRN-00344)",
-      sub: "2 business days remaining · WARNING",
-      meta: "Election Jan 3 · 5-business-day window closes Mar 15",
-      badge: "2d",
-    },
-    {
-      severity: "warning" as const,
-      title: "HOPE Window Closing — Dorothy K. (#MRN-00388)",
-      sub: "3 days to submit HOPE assessment · WARNING",
-      meta: "Admit date Nov 20 · HOPE-A window closes Mar 16",
-      badge: "3d",
-    },
-    {
-      severity: "warning" as const,
-      title: "Cap Utilization at 87% — Palm Valley",
-      sub: "Projected year-end 103% · Review high-LOS patients",
-      badge: "87%",
-    },
-    {
-      severity: "critical" as const,
-      title: "Benefit Period Expiring — Eleanor M. (#MRN-00419)",
-      sub: "Period 2 ends Mar 17 · Recertification or discharge required",
-      badge: "4d",
-    },
-  ];
+function formatAlertBadge(alert: Alert): string {
+  // Cap alerts show percentage
+  if (alert.type.startsWith("CAP_")) {
+    const match = alert.description.match(/(\d+)%/);
+    if (match) return `${match[1]}%`;
+  }
+  // Days-based alerts
+  const days = alert.daysRemaining;
+  if (days < 0) return `${days}d`;
+  return `${days}d`;
+}
 
-  const critCount = alerts.filter((a) => a.severity === "critical").length;
-  const warnCount = alerts.filter((a) => a.severity === "warning").length;
-
+function AlertsCard({
+  alerts,
+  critCount,
+  warnCount,
+}: {
+  alerts: Alert[];
+  critCount: number;
+  warnCount: number;
+}) {
   return (
     <div className="bg-white border border-[#E2E8F0] p-5 space-y-3">
       {/* Header */}
@@ -108,21 +172,27 @@ function AlertsCard() {
           </Link>
         </div>
         <div className="flex gap-2">
-          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 text-xs bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5]">
-            {critCount} critical
+          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 text-[11px] font-medium bg-[#FEE2E2] text-[#991B1B] border border-[#FCA5A5]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626]" />
+            {critCount} Critical
           </span>
-          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 text-xs bg-[#FFFBEB] text-[#D97706] border border-[#FCD34D]">
-            {warnCount} warning
+          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 text-[11px] font-medium bg-[#FFFBEB] text-[#92400E] border border-[#FCD34D]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D97706]" />
+            {warnCount} Warnings
           </span>
         </div>
       </div>
 
       {/* Alert rows */}
+      {alerts.length === 0 && (
+        <div className="py-6 text-center text-sm text-[#94A3B8]">No active compliance alerts</div>
+      )}
+
       {alerts.map((alert) => {
         const isCrit = alert.severity === "critical";
         return (
           <div
-            key={alert.title}
+            key={alert.id}
             className={`flex items-center gap-3 p-3 border ${
               isCrit ? "bg-[#FEF2F2] border-[#FCA5A5]" : "bg-[#FFFBEB] border-[#FCD34D]"
             }`}
@@ -134,18 +204,19 @@ function AlertsCard() {
               <p
                 className={`text-[13px] font-medium ${isCrit ? "text-[#991B1B]" : "text-[#92400E]"}`}
               >
-                {alert.title}
+                {alert.description}
+                {alert.patientName ? ` — ${alert.patientName}` : ""}
               </p>
               <p className={`text-[11px] ${isCrit ? "text-[#DC2626]" : "text-[#D97706]"}`}>
-                {alert.sub}
+                {alert.nextAction}
               </p>
-              {alert.meta && <p className="text-[11px] text-[#94A3B8]">{alert.meta}</p>}
+              <p className="text-[11px] text-[#94A3B8]">{alert.rootCause}</p>
             </div>
             <span
               className={`text-sm font-semibold shrink-0 ${isCrit ? "text-[#DC2626]" : "text-[#D97706]"}`}
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
             >
-              {alert.badge}
+              {formatAlertBadge(alert)}
             </span>
           </div>
         );
@@ -156,12 +227,31 @@ function AlertsCard() {
 
 // ── Schedule Card ────────────────────────────────────────────────────────────
 
-function ScheduleCard() {
-  const schedule = [
-    { time: "09:00", type: "Routine Visit", typeColor: "text-[#1D4ED8]", typeBg: "bg-[#EFF6FF]", name: "Margaret T." },
-    { time: "11:30", type: "IDG Meeting", typeColor: "text-[#166534]", typeBg: "bg-[#F0FDF4]", name: "Team — Conference Room B" },
-    { time: "14:00", type: "Crisis Visit", typeColor: "text-[#9A3412]", typeBg: "bg-[#FFF7ED]", name: "Robert A." },
-  ];
+const VISIT_TYPE_DISPLAY: Record<string, { label: string; color: string; bg: string }> = {
+  routine_rn: { label: "Routine Visit", color: "text-[#1D4ED8]", bg: "bg-[#EFF6FF]" },
+  admission: { label: "Admission", color: "text-[#1D4ED8]", bg: "bg-[#EFF6FF]" },
+  recertification: { label: "Recertification", color: "text-[#1D4ED8]", bg: "bg-[#EFF6FF]" },
+  discharge: { label: "Discharge", color: "text-[#64748B]", bg: "bg-[#F1F5F9]" },
+  crisis_visit: { label: "Crisis Visit", color: "text-[#9A3412]", bg: "bg-[#FFF7ED]" },
+  social_work: { label: "Social Work", color: "text-[#7C3AED]", bg: "bg-[#F3E8FF]" },
+  chaplain: { label: "Chaplain", color: "text-[#7C3AED]", bg: "bg-[#F3E8FF]" },
+  therapy: { label: "Therapy", color: "text-[#0D9488]", bg: "bg-[#F0FDFA]" },
+  aide_visit: { label: "Aide Visit", color: "text-[#64748B]", bg: "bg-[#F1F5F9]" },
+  supervision: { label: "Supervision", color: "text-[#92400E]", bg: "bg-[#FFFBEB]" },
+  progress_note: { label: "Progress Note", color: "text-[#1D4ED8]", bg: "bg-[#EFF6FF]" },
+  "IDG Meeting": { label: "IDG Meeting", color: "text-[#166534]", bg: "bg-[#F0FDF4]" },
+};
+
+function ScheduleCard({ items }: { items: DashboardScheduleItem[] }) {
+  const visitCount = items.filter((i) => i.type === "visit").length;
+  const idgCount = items.filter((i) => i.type === "idg").length;
+
+  const subtitle = [
+    visitCount > 0 ? `${visitCount} encounter${visitCount !== 1 ? "s" : ""} scheduled` : null,
+    idgCount > 0 ? `${idgCount} IDG meeting${idgCount !== 1 ? "s" : ""}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="bg-white border border-[#E2E8F0] p-5 space-y-0">
@@ -171,27 +261,38 @@ function ScheduleCard() {
       >
         Today&apos;s Schedule
       </h3>
-      <p className="text-xs text-[#64748B] mt-1">3 encounters scheduled · 1 IDG meeting</p>
+      <p className="text-xs text-[#64748B] mt-1">
+        {items.length === 0 ? "No visits scheduled today" : subtitle}
+      </p>
 
-      {schedule.map((item, i) => (
-        <div
-          key={item.time}
-          className={`flex items-center gap-3 py-3.5 ${
-            i < schedule.length - 1 ? "border-b border-[#F1F5F9]" : ""
-          }`}
-        >
-          <span
-            className="text-xs text-[#64748B] w-10 shrink-0"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+      {items.map((item, i) => {
+        const display = VISIT_TYPE_DISPLAY[item.visitType] ?? {
+          label: item.visitType,
+          color: "text-[#374151]",
+          bg: "bg-[#F1F5F9]",
+        };
+        return (
+          <div
+            key={item.id}
+            className={`flex items-center gap-3 py-3.5 ${
+              i < items.length - 1 ? "border-b border-[#F1F5F9]" : ""
+            }`}
           >
-            {item.time}
-          </span>
-          <span className={`text-[11px] ${item.typeColor} ${item.typeBg} h-[22px] px-2 inline-flex items-center`}>
-            {item.type}
-          </span>
-          <span className="text-[13px] font-medium text-[#0F172A]">{item.name}</span>
-        </div>
-      ))}
+            <span
+              className="text-xs text-[#64748B] w-10 shrink-0"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              {item.time}
+            </span>
+            <span
+              className={`text-[11px] ${display.color} ${display.bg} h-[22px] px-2 inline-flex items-center`}
+            >
+              {display.label}
+            </span>
+            <span className="text-[13px] font-medium text-[#0F172A]">{item.label}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -215,17 +316,37 @@ function StatsCard({ label, value, sub }: { label: string; value: string; sub: s
 
 // ── Last Note Card ───────────────────────────────────────────────────────────
 
-function LastNoteCard() {
+function formatNoteTimestamp(isoString: string): string {
+  const date = new Date(isoString);
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const time = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  if (isToday) return `Today ${time}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return `Yesterday ${time}`;
+  return `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} ${time}`;
+}
+
+function LastNoteCard({ note }: { note: MyDashboardResponse["lastSignedNote"] }) {
   return (
     <div className="bg-white border border-[#E2E8F0] p-5 space-y-1">
       <p className="text-xs font-medium text-[#64748B]">Last Signed Note</p>
-      <p
-        className="text-[13px] text-[#0F172A]"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}
-      >
-        Today 07:14 AM
-      </p>
-      <p className="text-xs text-[#94A3B8]">Routine Visit · Dorothy K.</p>
+      {note ? (
+        <>
+          <p
+            className="text-[13px] text-[#0F172A]"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {formatNoteTimestamp(note.visitedAt)}
+          </p>
+          <p className="text-xs text-[#94A3B8]">
+            {note.visitType} · {note.patientName}
+          </p>
+        </>
+      ) : (
+        <p className="text-[13px] text-[#94A3B8]">No signed notes yet</p>
+      )}
     </div>
   );
 }
@@ -251,9 +372,19 @@ function QuickActionsCard() {
         to="/patients/new"
         className="flex items-center gap-2.5 h-[42px] px-3.5 bg-[#2563EB] text-white text-[13px] font-medium w-full"
       >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg
+          className="w-3.5 h-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
           <title>New Admission</title>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v-2M12 11a4 4 0 100-8 4 4 0 000 8zM19 8v6M22 11h-6" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v-2M12 11a4 4 0 100-8 4 4 0 000 8zM19 8v6M22 11h-6"
+          />
         </svg>
         New Admission
       </Link>
@@ -262,10 +393,24 @@ function QuickActionsCard() {
         type="button"
         className="flex items-center gap-2.5 h-[42px] px-3.5 bg-white border border-[#E2E8F0] text-[13px] text-[#374151] w-full"
       >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg
+          className="w-3.5 h-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
           <title>Start Visit Note</title>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M14 2v6h6M16 13H8M16 17H8M10 9H8"
+          />
         </svg>
         Start Visit Note
       </button>
@@ -274,9 +419,19 @@ function QuickActionsCard() {
         type="button"
         className="flex items-center gap-2.5 h-[42px] px-3.5 bg-[#F0FDFA] border border-[#99F6E4] text-[13px] text-[#0D9488] font-medium w-full"
       >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg
+          className="w-3.5 h-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
           <title>VantageChart</title>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2 2-2 2M21 3l-2 2 2 2M13 15l2 2-2 2M21 15l-2 2 2 2" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2 2-2 2M21 3l-2 2 2 2M13 15l2 2-2 2M21 15l-2 2 2 2"
+          />
         </svg>
         VantageChart™
       </button>
@@ -290,9 +445,19 @@ function QuickActionsCard() {
         to="/filings"
         className="flex items-center gap-2.5 h-[42px] px-3.5 bg-white border border-[#E2E8F0] text-[13px] text-[#374151] w-full"
       >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg
+          className="w-3.5 h-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
           <title>File NOE</title>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
+          />
         </svg>
         File NOE
       </Link>
@@ -301,9 +466,19 @@ function QuickActionsCard() {
         type="button"
         className="flex items-center gap-2.5 h-[42px] px-3.5 bg-white border border-[#E2E8F0] text-[13px] text-[#374151] w-full"
       >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg
+          className="w-3.5 h-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
           <title>Schedule IDG</title>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+          />
         </svg>
         Schedule IDG
       </button>

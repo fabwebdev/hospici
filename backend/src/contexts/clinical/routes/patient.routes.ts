@@ -4,10 +4,11 @@
  * Base prefix: /api/v1/patients  (registered in server.ts)
  *
  * Endpoints:
- *   GET    /patients           — paginated list (location-scoped via RLS)
- *   POST   /patients           — create new patient
- *   GET    /patients/:id       — get single patient (decrypted)
- *   PATCH  /patients/:id       — partial update
+ *   GET    /patients               — paginated list (location-scoped via RLS)
+ *   GET    /patients/list-summary  — bulk enrichment (IDG, NOE, clinician)
+ *   POST   /patients               — create new patient
+ *   GET    /patients/:id           — get single patient (decrypted)
+ *   PATCH  /patients/:id           — partial update
  *
  * Hook order (per CLAUDE.md §2.4):
  *   preValidation → TypeBox validation
@@ -20,6 +21,7 @@
 import { Validators } from "@/config/typebox-compiler.js";
 import { Type } from "@sinclair/typebox";
 import type { FastifyInstance } from "fastify";
+import { PatientListSummaryResponseSchema } from "../schemas/patient-list-summary.schema.js";
 import {
   CreatePatientBodySchema,
   PatchPatientBodySchema,
@@ -27,6 +29,7 @@ import {
   PatientListResponseSchema,
   PatientResponseSchema,
 } from "../schemas/patient.schema.js";
+import { getPatientListSummary } from "../services/patient-list-summary.service.js";
 import { PatientService } from "../services/patient.service.js";
 
 const ErrorResponseSchema = Type.Object({
@@ -81,6 +84,30 @@ export default async function patientRoutes(fastify: FastifyInstance): Promise<v
         careModel?: "HOSPICE" | "PALLIATIVE" | "CCM";
       };
       const result = await PatientService.list(request.user, query);
+      reply.code(200).send(result);
+    },
+  );
+
+  // ── GET /patients/list-summary ────────────────────────────────────────────
+  fastify.get(
+    "/list-summary",
+    {
+      schema: {
+        tags: ["Patients"],
+        summary: "Bulk enrichment data for the patient list (IDG, NOE, clinician)",
+        response: {
+          200: PatientListSummaryResponseSchema,
+          401: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!request.user) {
+        const err = new Error("Unauthorized") as Error & { statusCode: number };
+        err.statusCode = 401;
+        throw err;
+      }
+      const result = await getPatientListSummary(request.user);
       reply.code(200).send(result);
     },
   );

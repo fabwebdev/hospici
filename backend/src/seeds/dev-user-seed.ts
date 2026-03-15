@@ -69,7 +69,7 @@ async function main() {
 
   await db.execute(
     sql`INSERT INTO users (id, name, email, email_verified, abac_attributes, is_active, two_factor_enabled)
-        VALUES (${userId}, ${DEV_NAME}, ${DEV_EMAIL}, true, ${abacJson}::jsonb, true, false)`,
+        VALUES (${userId}, ${DEV_NAME}, ${DEV_EMAIL}, true, ${abacJson}::jsonb, true, true)`,
   );
 
   await db.execute(

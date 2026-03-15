@@ -4,6 +4,7 @@
 export const patientKeys = {
   all: () => ["patients"] as const,
   list: (q?: object) => [...patientKeys.all(), "list", q] as const,
+  listSummary: () => [...patientKeys.all(), "list-summary"] as const,
   detail: (id: string) => [...patientKeys.all(), "detail", id] as const,
   pain: (id: string) => [...patientKeys.detail(id), "pain"] as const,
   symptoms: (id: string) => [...patientKeys.detail(id), "symptoms"] as const,

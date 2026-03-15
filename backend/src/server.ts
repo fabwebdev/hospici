@@ -16,6 +16,7 @@ import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
 import careTeamRoutes from "@/contexts/clinical/routes/careTeam.routes.js";
 import medicationRoutes from "@/contexts/clinical/routes/medication.routes.js";
+import myDashboardRoutes from "@/contexts/clinical/routes/my-dashboard.routes.js";
 import noteReviewRoutes from "@/contexts/clinical/routes/noteReview.routes.js";
 import patientConditionsRoutes from "@/contexts/clinical/routes/patient-conditions.routes.js";
 import patientInsuranceRoutes from "@/contexts/clinical/routes/patient-insurance.routes.js";
@@ -228,6 +229,7 @@ export async function buildApp() {
   await fastify.register(hopeRoutes, { prefix: "/api/v1/hope" });
   await fastify.register(analyticsRoutes, { prefix: "/api/v1/analytics" });
   await fastify.register(alertRoutes, { prefix: "/api/v1/alerts" });
+  await fastify.register(myDashboardRoutes, { prefix: "/api/v1/my" });
   await fastify.register(noteReviewRoutes, { prefix: "/api/v1" });
   await fastify.register(visitSchedulePatientRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(visitScheduleStandaloneRoutes, { prefix: "/api/v1/scheduled-visits" });

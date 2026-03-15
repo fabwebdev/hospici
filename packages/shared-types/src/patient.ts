@@ -102,6 +102,43 @@ export interface PatientListQuery {
   careModel?: CareModel;
 }
 
+// ── My Dashboard ─────────────────────────────────────────────────────────────
+
+export interface DashboardScheduleItem {
+  id: string;
+  time: string;
+  type: "visit" | "idg";
+  visitType: string;
+  label: string;
+}
+
+export interface DashboardLastSignedNote {
+  visitedAt: string;
+  visitType: string;
+  patientName: string;
+}
+
+export interface MyDashboardResponse {
+  schedule: DashboardScheduleItem[];
+  lastSignedNote: DashboardLastSignedNote | null;
+}
+
+// ── Patient list summary (bulk enrichment) ──────────────────────────────────
+
+export interface PatientEnrichment {
+  idg: {
+    lastCompletedAt: string | null;
+    daysRemaining: number | null;
+    status: "ok" | "warning" | "overdue" | "none";
+  };
+  noeStatus: string | null;
+  primaryClinician: string | null;
+}
+
+export interface PatientListSummaryResponse {
+  summary: Record<string, PatientEnrichment>;
+}
+
 // ── Conditions (diagnoses) ────────────────────────────────────────────────────
 
 export type ConditionClinicalStatus = "ACTIVE" | "RESOLVED" | "REMISSION";
