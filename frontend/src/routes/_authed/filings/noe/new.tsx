@@ -1,18 +1,15 @@
 // routes/_authed/filings/noe/new.tsx
-// NOE Create/Edit page — File Notice of Election
-//
-// Two-column layout with form card (left) and filing timeline (right).
-// Status stepper: Draft -> Submitted -> Accepted.
-// Deadline alert banner with 5-business-day calculation.
+// NOE Create/Edit — screen "22 NOE Create/Edit + Deadline Picker"
+// Two-column layout: form (left) · filing timeline + actions (right)
+// CMS 42 CFR §418.24 — 5-business-day filing requirement
 
 import { createNOEFn } from "@/functions/noe.functions.js";
 import type { CreateNOEInput } from "@hospici/shared-types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Calendar, ChevronRight, Clock, FilePlus, Save, Send, User } from "lucide-react";
 import { useMemo, useState } from "react";
 
-// ── Route definition ──────────────────────────────────────────────────────────
+// ── Route ─────────────────────────────────────────────────────────────────────
 
 export const Route = createFileRoute("/_authed/filings/noe/new")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -23,7 +20,7 @@ export const Route = createFileRoute("/_authed/filings/noe/new")({
   component: NOECreatePage,
 });
 
-// ── NOE 5-business-day deadline helper ────────────────────────────────────────
+// ── Business-day logic ────────────────────────────────────────────────────────
 
 const US_FEDERAL_HOLIDAYS_2026 = [
   "2026-01-01",
@@ -54,9 +51,7 @@ function countBusinessDaysRemaining(deadlineDate: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const deadline = new Date(`${deadlineDate}T00:00:00`);
-
   if (deadline <= today) return 0;
-
   let count = 0;
   const cursor = new Date(today);
   while (cursor < deadline) {
@@ -73,120 +68,82 @@ function countBusinessDaysRemaining(deadlineDate: string): number {
 function formatDate(iso: string): string {
   if (!iso) return "--";
   const d = new Date(`${iso}T00:00:00`);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-// ── Status stepper ────────────────────────────────────────────────────────────
+// ── Status stepper ─────────────────────────────────────────────────────────────
 
-type StepStatus = "active" | "upcoming" | "completed";
+function StatusStepper({ step }: { step: "draft" | "submitted" | "accepted" }) {
+  const steps = [
+    { key: "draft", label: "Draft" },
+    { key: "submitted", label: "Submitted" },
+    { key: "accepted", label: "Accepted" },
+  ] as const;
 
-function StatusStepper({
-  currentStep,
-}: {
-  currentStep: "draft" | "submitted" | "accepted";
-}) {
-  const steps: { key: string; label: string; status: StepStatus }[] = [
-    {
-      key: "draft",
-      label: "Draft",
-      status:
-        currentStep === "draft"
-          ? "active"
-          : currentStep === "submitted" || currentStep === "accepted"
-            ? "completed"
-            : "upcoming",
-    },
-    {
-      key: "submitted",
-      label: "Submitted",
-      status:
-        currentStep === "submitted"
-          ? "active"
-          : currentStep === "accepted"
-            ? "completed"
-            : "upcoming",
-    },
-    {
-      key: "accepted",
-      label: "Accepted",
-      status: currentStep === "accepted" ? "active" : "upcoming",
-    },
-  ];
+  const stepIndex = steps.findIndex((s) => s.key === step);
 
   return (
-    <div className="flex items-center gap-0">
-      {steps.map((step, i) => (
-        <div key={step.key} className="flex items-center">
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                step.status === "active"
-                  ? "bg-blue-600 text-white"
-                  : step.status === "completed"
-                    ? "bg-blue-600 text-white"
-                    : "border-2 border-gray-300 text-gray-400"
-              }`}
-            >
-              {step.status === "completed" ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <title>Completed</title>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                i + 1
-              )}
+    <div className="flex items-center justify-center gap-0">
+      {steps.map((s, i) => {
+        const done = i < stepIndex;
+        const active = i === stepIndex;
+        return (
+          <div key={s.key} className="flex items-center">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center"
+                style={{
+                  background: done || active ? "#2563EB" : "transparent",
+                  border: done || active ? "none" : "2px solid #E2E8F0",
+                }}
+              >
+                {done ? (
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="#fff" strokeWidth={3} aria-hidden="true">
+                    <title>done</title>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span
+                    className="text-xs font-semibold"
+                    style={{ color: active ? "#FFFFFF" : "#CBD5E1" }}
+                  >
+                    {i + 1}
+                  </span>
+                )}
+              </div>
+              <span
+                className="text-xs font-semibold"
+                style={{ color: active ? "#2563EB" : done ? "#2563EB" : "#64748B" }}
+              >
+                {s.label}
+              </span>
             </div>
-            <span
-              className={`text-sm font-medium ${
-                step.status === "active"
-                  ? "text-blue-700"
-                  : step.status === "completed"
-                    ? "text-blue-600"
-                    : "text-gray-400"
-              }`}
-            >
-              {step.label}
-            </span>
+            {i < steps.length - 1 && (
+              <div
+                className="mx-4"
+                style={{ width: 80, height: 2, background: i < stepIndex ? "#2563EB" : "#E2E8F0" }}
+              />
+            )}
           </div>
-          {i < steps.length - 1 && (
-            <div
-              className={`w-16 h-px mx-3 ${
-                step.status === "completed" ? "bg-blue-400" : "bg-gray-300"
-              }`}
-            />
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 function NOECreatePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { patientId, patientName, medicareId: initialMedicareId } = Route.useSearch();
 
-  // ── Form state ────────────────────────────────────────────────────────────
   const [electionDate, setElectionDate] = useState("");
   const [medicareId, setMedicareId] = useState(initialMedicareId);
   const [benefitPeriod, setBenefitPeriod] = useState("1");
   const [noticeType, setNoticeType] = useState("initial");
   const [primaryDiagnosis, setPrimaryDiagnosis] = useState("");
-  const [attendingPhysician] = useState("--");
-  const [certifyingPhysician] = useState("--");
 
-  // ── Derived deadline ──────────────────────────────────────────────────────
   const deadlineDate = useMemo(
     () => (electionDate ? addBusinessDays(electionDate, 5) : ""),
     [electionDate],
@@ -197,15 +154,12 @@ function NOECreatePage() {
     [deadlineDate],
   );
 
-  // ── Mutations ─────────────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: async (opts: { submit: boolean }) => {
       if (!patientId) throw new Error("Patient ID is required");
       if (!electionDate) throw new Error("Election date is required");
-
       const body: CreateNOEInput = { electionDate };
       const noe = await createNOEFn({ data: { patientId, body } });
-
       if (opts.submit && noe.id) {
         const { submitNOEFn } = await import("@/functions/noe.functions.js");
         return submitNOEFn({ data: { noeId: noe.id } });
@@ -218,277 +172,521 @@ function NOECreatePage() {
     },
   });
 
-  const handleSaveDraft = () => createMutation.mutate({ submit: false });
-  const handleSubmit = () => createMutation.mutate({ submit: true });
-
   const canSubmit = Boolean(patientId && electionDate);
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full overflow-hidden bg-white">
+      {/* Page header — white bar with bottom border */}
+      <div
+        className="flex items-center justify-between shrink-0"
+        style={{ padding: "16px 32px", borderBottom: "1px solid #E2E8F0" }}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-            <FilePlus className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">File Notice of Election (NOE)</h1>
-            <p className="text-sm text-gray-500">
-              CMS 42 CFR 418.24 -- 5-business-day filing requirement
-            </p>
-          </div>
-        </div>
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800 border border-amber-300">
-          Draft
-        </span>
-      </div>
-
-      {/* Status stepper */}
-      <div className="bg-white rounded-lg border border-gray-200 px-6 py-4">
-        <StatusStepper currentStep="draft" />
-      </div>
-
-      {/* Deadline alert banner */}
-      {electionDate && deadlineDate && daysRemaining !== null && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-5 py-4 flex items-center justify-between">
-          <div className="flex items-start gap-3">
-            <Clock className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-amber-900">
-                Filing Deadline: {formatDate(deadlineDate)}
-              </p>
-              <p className="text-sm text-amber-700 mt-0.5">
-                5 business days from election date ({formatDate(electionDate)}). {daysRemaining}{" "}
-                business day{daysRemaining !== 1 ? "s" : ""} remaining.
-              </p>
-            </div>
-          </div>
-          <span
-            className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-amber-200 text-amber-900 border border-amber-300"
-            style={{ fontFamily: "JetBrains Mono, monospace" }}
+          <svg
+            style={{ color: "#2563EB", width: 20, height: 20 }}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
           >
-            {daysRemaining}d left
+            <title>file-plus</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+            />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="18" x2="12" y2="12" />
+            <line x1="9" y1="15" x2="15" y2="15" />
+          </svg>
+          <span
+            className="font-semibold"
+            style={{ fontFamily: "Space Grotesk, Inter, sans-serif", fontSize: 18, color: "#0F172A" }}
+          >
+            File Notice of Election (NOE)
           </span>
         </div>
-      )}
+        <div
+          className="text-xs font-semibold px-3 py-1 rounded"
+          style={{
+            background: "#FEF3C7",
+            color: "#92400E",
+            border: "1px solid #F59E0B",
+          }}
+        >
+          Draft
+        </div>
+      </div>
 
-      {/* Two-column layout */}
-      <div className="flex gap-6 items-start">
-        {/* Left column: form card */}
-        <div className="flex-1 min-w-0">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-5">
+      {/* Status stepper — white bar with bottom border */}
+      <div
+        className="flex items-center justify-center shrink-0"
+        style={{ padding: "16px 32px", borderBottom: "1px solid #E2E8F0" }}
+      >
+        <StatusStepper step="draft" />
+      </div>
+
+      {/* Main scrollable content */}
+      <div
+        className="flex flex-col gap-5 flex-1 overflow-auto"
+        style={{ background: "#F1F5F9", padding: "24px 32px" }}
+      >
+        {/* Deadline alert banner */}
+        {electionDate && deadlineDate && daysRemaining !== null && (
+          <div
+            className="flex items-center gap-3"
+            style={{
+              background: "#FEF3C7",
+              border: "1px solid #F59E0B",
+              borderRadius: 8,
+              padding: "12px 16px",
+            }}
+          >
+            {/* alarm-clock icon */}
+            <svg
+              style={{ color: "#92400E", width: 18, height: 18, flexShrink: 0 }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <title>alarm-clock</title>
+              <circle cx="12" cy="13" r="8" />
+              <path d="M5 3 2 6M22 6l-3-3M12 9v4l2 2" />
+              <path d="m6.38 18.7 1.96-1.96M17.64 18.7l-1.96-1.96" />
+            </svg>
+
+            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#92400E" }}>
+                Filing Deadline: {formatDate(deadlineDate)}
+              </span>
+              <span style={{ fontSize: 12, color: "#92400E" }}>
+                5 business days from election date ({formatDate(electionDate)}).{" "}
+                {daysRemaining} business day{daysRemaining !== 1 ? "s" : ""} remaining.
+              </span>
+            </div>
+
+            {/* Countdown pill */}
+            <div
+              className="flex items-center shrink-0"
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #F59E0B",
+                borderRadius: 6,
+                padding: "6px 14px",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "JetBrains Mono, monospace",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#92400E",
+                }}
+              >
+                {daysRemaining}d left
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Two-column form layout */}
+        <div className="flex gap-5 items-start">
+          {/* Left: form card */}
+          <div
+            className="flex-1 min-w-0 flex flex-col gap-4"
+            style={{
+              background: "#FFFFFF",
+              borderRadius: 8,
+              border: "1px solid #E2E8F0",
+              padding: 24,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "Space Grotesk, Inter, sans-serif",
+                fontSize: 15,
+                fontWeight: 600,
+                color: "#0F172A",
+              }}
+            >
               Patient &amp; Election Details
-            </h2>
+            </span>
 
-            {/* Row 1: Patient + Medicare ID */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label
-                  htmlFor="noe-patient"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+            {/* Row 1: Patient | Medicare ID */}
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Patient">
+                <div
+                  className="flex items-center h-10 px-3 text-sm"
+                  style={{
+                    background: "#F8FAFC",
+                    borderRadius: 6,
+                    border: "1px solid #D1D5DB",
+                    color: "#0F172A",
+                  }}
                 >
-                  Patient
-                </label>
-                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
-                  <User className="w-4 h-4 text-gray-400 shrink-0" />
-                  <span id="noe-patient">{patientName || patientId || "No patient selected"}</span>
+                  {patientName || patientId || "No patient selected"}
                 </div>
-              </div>
-              <div>
-                <label
-                  htmlFor="noe-medicare-id"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Medicare Beneficiary ID (MBI)
-                </label>
+              </Field>
+              <Field label="Medicare ID">
                 <input
-                  id="noe-medicare-id"
                   type="text"
                   value={medicareId}
                   onChange={(e) => setMedicareId(e.target.value)}
                   placeholder="1EG4-TE5-MK72"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  style={{
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: 13,
+                    height: 40,
+                    borderRadius: 6,
+                    border: "1px solid #D1D5DB",
+                    padding: "0 12px",
+                    width: "100%",
+                    outline: "none",
+                  }}
+                  className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-              </div>
+              </Field>
             </div>
 
-            {/* Row 2: Election Date + Benefit Period */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label
-                  htmlFor="noe-election-date"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Election Date
-                  <span className="text-red-500 ml-0.5">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    id="noe-election-date"
-                    type="date"
-                    value={electionDate}
-                    onChange={(e) => setElectionDate(e.target.value)}
-                    className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <Calendar className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Deadline auto-calculates to 5 business days from this date
-                </p>
-              </div>
-              <div>
-                <label
-                  htmlFor="noe-benefit-period"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Benefit Period
-                </label>
-                <select
-                  id="noe-benefit-period"
-                  value={benefitPeriod}
-                  onChange={(e) => setBenefitPeriod(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="1">1st Benefit Period (90 days)</option>
-                  <option value="2">2nd Benefit Period (90 days)</option>
-                  <option value="3">3rd Benefit Period (60 days)</option>
-                  <option value="4">4th+ Benefit Period (60 days)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Row 3: Notice Type + Primary Diagnosis */}
+            {/* Row 2: Election Date | Benefit Period */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="noe-notice-type"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Notice Type
-                </label>
-                <select
-                  id="noe-notice-type"
-                  value={noticeType}
-                  onChange={(e) => setNoticeType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="initial">Initial Election</option>
-                  <option value="change_of_hospice">Change of Hospice Provider</option>
-                  <option value="transfer">Transfer</option>
-                </select>
-              </div>
-              <div>
-                <label
-                  htmlFor="noe-primary-diagnosis"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Primary Diagnosis (ICD-10)
-                </label>
+              <Field label="Election Date" required>
+                <div className="flex flex-col gap-1">
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={electionDate}
+                      onChange={(e) => setElectionDate(e.target.value)}
+                      style={{
+                        fontFamily: electionDate ? "JetBrains Mono, monospace" : undefined,
+                        fontWeight: electionDate ? 500 : undefined,
+                        fontSize: 13,
+                        height: 40,
+                        borderRadius: 6,
+                        border: electionDate ? "2px solid #2563EB" : "1px solid #D1D5DB",
+                        padding: "0 12px",
+                        width: "100%",
+                        outline: "none",
+                        paddingRight: 36,
+                      }}
+                    />
+                    <svg
+                      className="absolute right-3 top-3 pointer-events-none"
+                      style={{ color: "#2563EB", width: 16, height: 16 }}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    >
+                      <title>calendar</title>
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  </div>
+                  <span style={{ fontSize: 11, color: "#64748B" }}>
+                    Deadline auto-calculates to 5 business days from this date
+                  </span>
+                </div>
+              </Field>
+              <Field label="Benefit Period">
+                <div className="relative">
+                  <select
+                    value={benefitPeriod}
+                    onChange={(e) => setBenefitPeriod(e.target.value)}
+                    style={{
+                      fontSize: 13,
+                      height: 40,
+                      borderRadius: 6,
+                      border: "1px solid #D1D5DB",
+                      padding: "0 12px",
+                      width: "100%",
+                      outline: "none",
+                      appearance: "none",
+                      background: "#FFFFFF",
+                      color: "#0F172A",
+                    }}
+                    className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="1">Period 1 (90 days)</option>
+                    <option value="2">Period 2 (90 days)</option>
+                    <option value="3">Period 3 (60 days)</option>
+                    <option value="4">Period 4+ (60 days)</option>
+                  </select>
+                  <svg
+                    className="absolute right-3 top-3 pointer-events-none"
+                    style={{ color: "#64748B", width: 16, height: 16 }}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <title>chevron-down</title>
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </Field>
+            </div>
+
+            {/* Row 3: Notice Type | Primary Diagnosis */}
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Notice Type">
+                <div className="relative">
+                  <select
+                    value={noticeType}
+                    onChange={(e) => setNoticeType(e.target.value)}
+                    style={{
+                      fontSize: 13,
+                      height: 40,
+                      borderRadius: 6,
+                      border: "1px solid #D1D5DB",
+                      padding: "0 12px",
+                      width: "100%",
+                      outline: "none",
+                      appearance: "none",
+                      background: "#FFFFFF",
+                      color: "#0F172A",
+                    }}
+                    className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="initial">Notice of Election (NOE)</option>
+                    <option value="change_of_hospice">Change of Hospice Provider</option>
+                    <option value="transfer">Transfer</option>
+                  </select>
+                  <svg
+                    className="absolute right-3 top-3 pointer-events-none"
+                    style={{ color: "#64748B", width: 16, height: 16 }}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <title>chevron-down</title>
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </Field>
+              <Field label="Primary Diagnosis (ICD-10)">
                 <input
-                  id="noe-primary-diagnosis"
                   type="text"
                   value={primaryDiagnosis}
                   onChange={(e) => setPrimaryDiagnosis(e.target.value)}
                   placeholder="C34.90"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  style={{
+                    fontSize: 13,
+                    height: 40,
+                    borderRadius: 6,
+                    border: "1px solid #D1D5DB",
+                    padding: "0 12px",
+                    width: "100%",
+                    outline: "none",
+                  }}
+                  className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-              </div>
+              </Field>
             </div>
 
-            {/* Mutation error */}
             {createMutation.isError && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              <div
+                className="text-sm"
+                style={{
+                  background: "#FEF2F2",
+                  border: "1px solid #FECACA",
+                  borderRadius: 6,
+                  padding: "10px 14px",
+                  color: "#DC2626",
+                }}
+              >
                 {createMutation.error instanceof Error
                   ? createMutation.error.message
                   : "Failed to save NOE"}
               </div>
             )}
           </div>
-        </div>
 
-        {/* Right column: timeline + actions */}
-        <div className="w-[360px] shrink-0 space-y-4">
-          {/* Filing Timeline card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Filing Timeline</h3>
+          {/* Right: 360px column */}
+          <div className="flex flex-col gap-4 shrink-0" style={{ width: 360 }}>
+            {/* Filing Timeline card */}
+            <div
+              className="flex flex-col"
+              style={{
+                background: "#FFFFFF",
+                borderRadius: 8,
+                border: "1px solid #E2E8F0",
+                padding: 20,
+                gap: 14,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "Space Grotesk, Inter, sans-serif",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#0F172A",
+                }}
+              >
+                Filing Timeline
+              </span>
 
-            <div className="space-y-0">
-              {/* Election Date */}
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <span className="text-sm text-gray-500">Election Date</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {electionDate ? formatDate(electionDate) : "--"}
-                </span>
-              </div>
-
-              {/* Filing Deadline */}
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <span className="text-sm text-gray-500">Filing Deadline</span>
-                <span className="text-sm font-semibold text-orange-600">
-                  {deadlineDate ? formatDate(deadlineDate) : "--"}
-                </span>
-              </div>
-
-              {/* Days Remaining */}
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <span className="text-sm text-gray-500">Days Remaining</span>
-                <span className="text-sm font-bold text-orange-600">
-                  {daysRemaining !== null
+              <TimelineRow
+                label="Election Date"
+                value={electionDate ? formatDate(electionDate) : "--"}
+                mono
+                valueColor="#0F172A"
+              />
+              <Divider />
+              <TimelineRow
+                label="Filing Deadline"
+                value={deadlineDate ? formatDate(deadlineDate) : "--"}
+                mono
+                valueColor="#EA580C"
+                bold
+              />
+              <Divider />
+              <TimelineRow
+                label="Days Remaining"
+                value={
+                  daysRemaining !== null
                     ? `${daysRemaining} business day${daysRemaining !== 1 ? "s" : ""}`
-                    : "--"}
-                </span>
-              </div>
+                    : "--"
+                }
+                mono
+                valueColor="#EA580C"
+                bold
+              />
+              <Divider />
+              <TimelineRow label="Attending Physician" value="--" />
+              <Divider />
+              <TimelineRow label="Certifying Physician" value="--" />
+            </div>
 
-              {/* Attending Physician */}
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <span className="text-sm text-gray-500">Attending Physician</span>
-                <span className="text-sm text-gray-700">{attendingPhysician}</span>
-              </div>
+            {/* Action buttons */}
+            <div className="flex flex-col gap-2.5">
+              <button
+                type="button"
+                disabled={!canSubmit || createMutation.isPending}
+                onClick={() => createMutation.mutate({ submit: true })}
+                style={{
+                  background: "#2563EB",
+                  color: "#FFFFFF",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  borderRadius: 6,
+                  padding: "10px 0",
+                  border: "none",
+                  cursor: canSubmit && !createMutation.isPending ? "pointer" : "not-allowed",
+                  opacity: canSubmit && !createMutation.isPending ? 1 : 0.5,
+                  width: "100%",
+                }}
+              >
+                {createMutation.isPending ? "Submitting…" : "Submit NOE"}
+              </button>
 
-              {/* Certifying Physician */}
-              <div className="flex items-center justify-between py-3">
-                <span className="text-sm text-gray-500">Certifying Physician</span>
-                <span className="text-sm text-gray-700">{certifyingPhysician}</span>
-              </div>
+              <button
+                type="button"
+                disabled={!canSubmit || createMutation.isPending}
+                onClick={() => createMutation.mutate({ submit: false })}
+                style={{
+                  background: "#FFFFFF",
+                  color: "#374151",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  borderRadius: 6,
+                  padding: "10px 0",
+                  border: "1px solid #D1D5DB",
+                  cursor: canSubmit && !createMutation.isPending ? "pointer" : "not-allowed",
+                  opacity: canSubmit && !createMutation.isPending ? 1 : 0.5,
+                  width: "100%",
+                }}
+              >
+                {createMutation.isPending ? "Saving…" : "Save as Draft"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/filings" })}
+                className="text-sm text-gray-500 hover:text-gray-700 py-2 flex items-center justify-center gap-1"
+              >
+                <svg
+                  className="w-4 h-4 rotate-180"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <title>back</title>
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+                Back to Filing Workbench
+              </button>
             </div>
           </div>
-
-          {/* Action buttons */}
-          <div className="space-y-3">
-            <button
-              type="button"
-              disabled={!canSubmit || createMutation.isPending}
-              onClick={handleSubmit}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <Send className="w-4 h-4" />
-              {createMutation.isPending ? "Submitting..." : "Submit NOE"}
-            </button>
-
-            <button
-              type="button"
-              disabled={!canSubmit || createMutation.isPending}
-              onClick={handleSaveDraft}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              {createMutation.isPending ? "Saving..." : "Save as Draft"}
-            </button>
-          </div>
-
-          {/* Back to filings link */}
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/filings" })}
-            className="w-full flex items-center justify-center gap-1 text-sm text-gray-500 hover:text-gray-700 py-2"
-          >
-            <ChevronRight className="w-4 h-4 rotate-180" />
-            Back to Filing Workbench
-          </button>
         </div>
       </div>
     </div>
   );
+}
+
+// ── Small helpers ─────────────────────────────────────────────────────────────
+
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium" style={{ color: "#374151" }}>
+        {label}
+        {required && <span style={{ color: "#EF4444", marginLeft: 2 }}>*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function TimelineRow({
+  label,
+  value,
+  mono,
+  valueColor = "#0F172A",
+  bold,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  valueColor?: string;
+  bold?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span style={{ fontSize: 12, color: "#64748B" }}>{label}</span>
+      <span
+        style={{
+          fontFamily: mono ? "JetBrains Mono, monospace" : "Inter, sans-serif",
+          fontSize: 12,
+          fontWeight: bold ? 700 : 500,
+          color: valueColor,
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function Divider() {
+  return <div style={{ height: 1, background: "#F1F5F9" }} />;
 }

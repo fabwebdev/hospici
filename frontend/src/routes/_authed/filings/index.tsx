@@ -36,7 +36,7 @@ import type {
   ReadinessResponse,
 } from "@hospici/shared-types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/_authed/filings/")({
@@ -599,27 +599,58 @@ function FilingWorkbench() {
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex space-x-1 border-b">
-        {(["NOE", "NOTR"] as TabType[]).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
+      {/* Tabs + New button */}
+      <div className="flex items-center justify-between border-b">
+        <div className="flex space-x-1">
+          {(["NOE", "NOTR"] as TabType[]).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab.toUpperCase()}
+              {data && activeTab === tab && (
+                <span className="ml-2 bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded-full">
+                  {data.total}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        {activeTab === "NOE" ? (
+          <Link
+            to="/filings/noe/new"
+            search={{ patientId: "", patientName: "", medicareId: "" }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 mb-1 text-sm font-medium text-white rounded-lg"
+            style={{ background: "#2563EB" }}
           >
-            {tab.toUpperCase()}
-            {data && activeTab === tab && (
-              <span className="ml-2 bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded-full">
-                {data.total}
-              </span>
-            )}
-          </button>
-        ))}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+              <title>plus</title>
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            New NOE
+          </Link>
+        ) : (
+          <Link
+            to="/filings/notr/new"
+            search={{ patientId: "", patientName: "", medicareId: "" }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 mb-1 text-sm font-medium text-white rounded-lg"
+            style={{ background: "#DC2626" }}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+              <title>plus</title>
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            New NOTR
+          </Link>
+        )}
       </div>
 
       {/* Queue summary pills */}

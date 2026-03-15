@@ -5184,7 +5184,7 @@
                         {
                           "type": "frame",
                           "id": "OwHfN",
-                          "name": "vitalsCard",
+                          "name": "trajectoryCard",
                           "width": "fill_container",
                           "fill": "#FFFFFF",
                           "cornerRadius": 8,
@@ -5197,7 +5197,7 @@
                             {
                               "type": "frame",
                               "id": "uow7Y",
-                              "name": "vitalsHdr",
+                              "name": "trajectoryHdr",
                               "width": "fill_container",
                               "height": 44,
                               "stroke": {
@@ -5228,7 +5228,7 @@
                                   "id": "qSzKR",
                                   "name": "vitalsHdrTxt",
                                   "fill": "#0F172A",
-                                  "content": "Vital Signs",
+                                  "content": "Decline Trajectory",
                                   "fontFamily": "Space Grotesk",
                                   "fontSize": 14,
                                   "fontWeight": "600"
@@ -5240,7 +5240,7 @@
                                   "fill": "#94A3B8",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Last recorded: 2 days ago",
+                                  "content": "4 assessments",
                                   "textAlign": "right",
                                   "fontFamily": "Inter",
                                   "fontSize": 12,
@@ -5251,7 +5251,7 @@
                             {
                               "type": "frame",
                               "id": "EnJNR",
-                              "name": "vitalsTiles",
+                              "name": "trajectoryTiles",
                               "width": "fill_container",
                               "children": [
                                 {
@@ -5317,7 +5317,7 @@
                                       "id": "13rlS",
                                       "name": "tile2Val",
                                       "fill": "#0F172A",
-                                      "content": "118/72",
+                                      "content": "4/10",
                                       "fontFamily": "Space Grotesk",
                                       "fontSize": 20,
                                       "fontWeight": "600"
@@ -5327,7 +5327,7 @@
                                       "id": "sBykO",
                                       "name": "tile2Lbl",
                                       "fill": "#64748B",
-                                      "content": "Blood Pressure",
+                                      "content": "Dyspnea",
                                       "fontFamily": "Inter",
                                       "fontSize": 11,
                                       "fontWeight": "normal"
@@ -5357,7 +5357,7 @@
                                       "id": "p1SdV",
                                       "name": "tile3Val",
                                       "fill": "#0F172A",
-                                      "content": "68 bpm",
+                                      "content": "2/10",
                                       "fontFamily": "Space Grotesk",
                                       "fontSize": 20,
                                       "fontWeight": "600"
@@ -5367,7 +5367,7 @@
                                       "id": "DMn4z",
                                       "name": "tile3Lbl",
                                       "fill": "#64748B",
-                                      "content": "Heart Rate",
+                                      "content": "Nausea",
                                       "fontFamily": "Inter",
                                       "fontSize": 11,
                                       "fontWeight": "normal"
@@ -5391,7 +5391,7 @@
                                       "id": "4TK21",
                                       "name": "tile4Val",
                                       "fill": "#0F172A",
-                                      "content": "94%",
+                                      "content": "6/10",
                                       "fontFamily": "Space Grotesk",
                                       "fontSize": 20,
                                       "fontWeight": "600"
@@ -5401,7 +5401,7 @@
                                       "id": "kv85L",
                                       "name": "tile4Lbl",
                                       "fill": "#64748B",
-                                      "content": "O2 Saturation",
+                                      "content": "Functional",
                                       "fontFamily": "Inter",
                                       "fontSize": 11,
                                       "fontWeight": "normal"

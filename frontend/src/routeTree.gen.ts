@@ -46,12 +46,15 @@ import { Route as AuthedPatientsPatientIdInfoImport } from './routes/_authed/pat
 import { Route as AuthedPatientsPatientIdDoseSpotImport } from './routes/_authed/patients/$patientId/dose-spot'
 import { Route as AuthedPatientsPatientIdDocumentsImport } from './routes/_authed/patients/$patientId/documents'
 import { Route as AuthedPatientsPatientIdClinicalNotesImport } from './routes/_authed/patients/$patientId/clinical-notes'
+import { Route as AuthedPatientsPatientIdDischargeImport } from './routes/_authed/patients/$patientId/discharge'
+import { Route as AuthedPatientsPatientIdCarePlanImport } from './routes/_authed/patients/$patientId/care-plan'
 import { Route as AuthedPatientsPatientIdCareTeamImport } from './routes/_authed/patients/$patientId/care-team'
 import { Route as AuthedPatientsPatientIdAuditExportImport } from './routes/_authed/patients/$patientId/audit-export'
 import { Route as AuthedPatientsPatientIdAssessmentsImport } from './routes/_authed/patients/$patientId/assessments'
 import { Route as AuthedHopeAssessmentsNewImport } from './routes/_authed/hope/assessments/new'
 import { Route as AuthedHopeAssessmentsIdImport } from './routes/_authed/hope/assessments/$id'
 import { Route as AuthedFilingsNoeNewImport } from './routes/_authed/filings/noe/new'
+import { Route as AuthedFilingsNotrNewImport } from './routes/_authed/filings/notr/new'
 import { Route as AuthedPatientsPatientIdVisitsIndexImport } from './routes/_authed/patients/$patientId/visits/index'
 import { Route as AuthedPatientsPatientIdIdgScheduleImport } from './routes/_authed/patients/$patientId/idg/schedule'
 import { Route as AuthedPatientsPatientIdF2fNewImport } from './routes/_authed/patients/$patientId/f2f/new'
@@ -280,6 +283,20 @@ const AuthedPatientsPatientIdClinicalNotesRoute =
     getParentRoute: () => AuthedPatientsPatientIdRoute,
   } as any)
 
+const AuthedPatientsPatientIdDischargeRoute =
+  AuthedPatientsPatientIdDischargeImport.update({
+    id: '/discharge',
+    path: '/discharge',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
+
+const AuthedPatientsPatientIdCarePlanRoute =
+  AuthedPatientsPatientIdCarePlanImport.update({
+    id: '/care-plan',
+    path: '/care-plan',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
+
 const AuthedPatientsPatientIdCareTeamRoute =
   AuthedPatientsPatientIdCareTeamImport.update({
     id: '/care-team',
@@ -316,6 +333,12 @@ const AuthedHopeAssessmentsIdRoute = AuthedHopeAssessmentsIdImport.update({
 const AuthedFilingsNoeNewRoute = AuthedFilingsNoeNewImport.update({
   id: '/filings/noe/new',
   path: '/filings/noe/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
+
+const AuthedFilingsNotrNewRoute = AuthedFilingsNotrNewImport.update({
+  id: '/filings/notr/new',
+  path: '/filings/notr/new',
   getParentRoute: () => AuthedRoute,
 } as any)
 
@@ -519,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedFilingsNoeNewImport
       parentRoute: typeof AuthedImport
     }
+    '/_authed/filings/notr/new': {
+      id: '/_authed/filings/notr/new'
+      path: '/filings/notr/new'
+      fullPath: '/filings/notr/new'
+      preLoaderRoute: typeof AuthedFilingsNotrNewImport
+      parentRoute: typeof AuthedImport
+    }
     '/_authed/hope/assessments/$id': {
       id: '/_authed/hope/assessments/$id'
       path: '/hope/assessments/$id'
@@ -545,6 +575,20 @@ declare module '@tanstack/react-router' {
       path: '/audit-export'
       fullPath: '/patients/$patientId/audit-export'
       preLoaderRoute: typeof AuthedPatientsPatientIdAuditExportImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
+    }
+    '/_authed/patients/$patientId/care-plan': {
+      id: '/_authed/patients/$patientId/care-plan'
+      path: '/care-plan'
+      fullPath: '/patients/$patientId/care-plan'
+      preLoaderRoute: typeof AuthedPatientsPatientIdCarePlanImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
+    }
+    '/_authed/patients/$patientId/discharge': {
+      id: '/_authed/patients/$patientId/discharge'
+      path: '/discharge'
+      fullPath: '/patients/$patientId/discharge'
+      preLoaderRoute: typeof AuthedPatientsPatientIdDischargeImport
       parentRoute: typeof AuthedPatientsPatientIdImport
     }
     '/_authed/patients/$patientId/care-team': {
@@ -674,6 +718,8 @@ declare module '@tanstack/react-router' {
 interface AuthedPatientsPatientIdRouteChildren {
   AuthedPatientsPatientIdAssessmentsRoute: typeof AuthedPatientsPatientIdAssessmentsRoute
   AuthedPatientsPatientIdAuditExportRoute: typeof AuthedPatientsPatientIdAuditExportRoute
+  AuthedPatientsPatientIdCarePlanRoute: typeof AuthedPatientsPatientIdCarePlanRoute
+  AuthedPatientsPatientIdDischargeRoute: typeof AuthedPatientsPatientIdDischargeRoute
   AuthedPatientsPatientIdCareTeamRoute: typeof AuthedPatientsPatientIdCareTeamRoute
   AuthedPatientsPatientIdClinicalNotesRoute: typeof AuthedPatientsPatientIdClinicalNotesRoute
   AuthedPatientsPatientIdDocumentsRoute: typeof AuthedPatientsPatientIdDocumentsRoute
@@ -695,6 +741,8 @@ const AuthedPatientsPatientIdRouteChildren: AuthedPatientsPatientIdRouteChildren
       AuthedPatientsPatientIdAssessmentsRoute,
     AuthedPatientsPatientIdAuditExportRoute:
       AuthedPatientsPatientIdAuditExportRoute,
+    AuthedPatientsPatientIdCarePlanRoute: AuthedPatientsPatientIdCarePlanRoute,
+    AuthedPatientsPatientIdDischargeRoute: AuthedPatientsPatientIdDischargeRoute,
     AuthedPatientsPatientIdCareTeamRoute: AuthedPatientsPatientIdCareTeamRoute,
     AuthedPatientsPatientIdClinicalNotesRoute:
       AuthedPatientsPatientIdClinicalNotesRoute,
@@ -743,6 +791,7 @@ interface AuthedRouteChildren {
   AuthedReviewQueueIndexRoute: typeof AuthedReviewQueueIndexRoute
   AuthedSignaturesIndexRoute: typeof AuthedSignaturesIndexRoute
   AuthedFilingsNoeNewRoute: typeof AuthedFilingsNoeNewRoute
+  AuthedFilingsNotrNewRoute: typeof AuthedFilingsNotrNewRoute
   AuthedHopeAssessmentsIdRoute: typeof AuthedHopeAssessmentsIdRoute
   AuthedHopeAssessmentsNewRoute: typeof AuthedHopeAssessmentsNewRoute
   AuthedSettingsBaaIdRoute: typeof AuthedSettingsBaaIdRoute
@@ -773,6 +822,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedReviewQueueIndexRoute: AuthedReviewQueueIndexRoute,
   AuthedSignaturesIndexRoute: AuthedSignaturesIndexRoute,
   AuthedFilingsNoeNewRoute: AuthedFilingsNoeNewRoute,
+  AuthedFilingsNotrNewRoute: AuthedFilingsNotrNewRoute,
   AuthedHopeAssessmentsIdRoute: AuthedHopeAssessmentsIdRoute,
   AuthedHopeAssessmentsNewRoute: AuthedHopeAssessmentsNewRoute,
   AuthedSettingsBaaIdRoute: AuthedSettingsBaaIdRoute,
@@ -809,10 +859,13 @@ export interface FileRoutesByFullPath {
   '/review-queue': typeof AuthedReviewQueueIndexRoute
   '/signatures': typeof AuthedSignaturesIndexRoute
   '/filings/noe/new': typeof AuthedFilingsNoeNewRoute
+  '/filings/notr/new': typeof AuthedFilingsNotrNewRoute
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
   '/patients/$patientId/assessments': typeof AuthedPatientsPatientIdAssessmentsRoute
   '/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
+  '/patients/$patientId/care-plan': typeof AuthedPatientsPatientIdCarePlanRoute
+  '/patients/$patientId/discharge': typeof AuthedPatientsPatientIdDischargeRoute
   '/patients/$patientId/care-team': typeof AuthedPatientsPatientIdCareTeamRoute
   '/patients/$patientId/clinical-notes': typeof AuthedPatientsPatientIdClinicalNotesRoute
   '/patients/$patientId/documents': typeof AuthedPatientsPatientIdDocumentsRoute
@@ -858,8 +911,11 @@ export interface FileRoutesByTo {
   '/filings/noe/new': typeof AuthedFilingsNoeNewRoute
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
+  '/filings/notr/new': typeof AuthedFilingsNotrNewRoute
   '/patients/$patientId/assessments': typeof AuthedPatientsPatientIdAssessmentsRoute
   '/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
+  '/patients/$patientId/care-plan': typeof AuthedPatientsPatientIdCarePlanRoute
+  '/patients/$patientId/discharge': typeof AuthedPatientsPatientIdDischargeRoute
   '/patients/$patientId/care-team': typeof AuthedPatientsPatientIdCareTeamRoute
   '/patients/$patientId/clinical-notes': typeof AuthedPatientsPatientIdClinicalNotesRoute
   '/patients/$patientId/documents': typeof AuthedPatientsPatientIdDocumentsRoute
@@ -905,10 +961,12 @@ export interface FileRoutesById {
   '/_authed/review-queue/': typeof AuthedReviewQueueIndexRoute
   '/_authed/signatures/': typeof AuthedSignaturesIndexRoute
   '/_authed/filings/noe/new': typeof AuthedFilingsNoeNewRoute
+  '/_authed/filings/notr/new': typeof AuthedFilingsNotrNewRoute
   '/_authed/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/_authed/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
   '/_authed/patients/$patientId/assessments': typeof AuthedPatientsPatientIdAssessmentsRoute
   '/_authed/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
+  '/_authed/patients/$patientId/care-plan': typeof AuthedPatientsPatientIdCarePlanRoute
   '/_authed/patients/$patientId/care-team': typeof AuthedPatientsPatientIdCareTeamRoute
   '/_authed/patients/$patientId/clinical-notes': typeof AuthedPatientsPatientIdClinicalNotesRoute
   '/_authed/patients/$patientId/documents': typeof AuthedPatientsPatientIdDocumentsRoute
@@ -955,10 +1013,13 @@ export interface FileRouteTypes {
     | '/review-queue'
     | '/signatures'
     | '/filings/noe/new'
+    | '/filings/notr/new'
     | '/hope/assessments/$id'
     | '/hope/assessments/new'
     | '/patients/$patientId/assessments'
     | '/patients/$patientId/audit-export'
+    | '/patients/$patientId/care-plan'
+    | '/patients/$patientId/discharge'
     | '/patients/$patientId/care-team'
     | '/patients/$patientId/clinical-notes'
     | '/patients/$patientId/documents'
@@ -1001,10 +1062,13 @@ export interface FileRouteTypes {
     | '/review-queue'
     | '/signatures'
     | '/filings/noe/new'
+    | '/filings/notr/new'
     | '/hope/assessments/$id'
     | '/hope/assessments/new'
     | '/patients/$patientId/assessments'
     | '/patients/$patientId/audit-export'
+    | '/patients/$patientId/care-plan'
+    | '/patients/$patientId/discharge'
     | '/patients/$patientId/care-team'
     | '/patients/$patientId/clinical-notes'
     | '/patients/$patientId/documents'
@@ -1048,10 +1112,12 @@ export interface FileRouteTypes {
     | '/_authed/review-queue/'
     | '/_authed/signatures/'
     | '/_authed/filings/noe/new'
+    | '/_authed/filings/notr/new'
     | '/_authed/hope/assessments/$id'
     | '/_authed/hope/assessments/new'
     | '/_authed/patients/$patientId/assessments'
     | '/_authed/patients/$patientId/audit-export'
+    | '/_authed/patients/$patientId/care-plan'
     | '/_authed/patients/$patientId/care-team'
     | '/_authed/patients/$patientId/clinical-notes'
     | '/_authed/patients/$patientId/documents'
@@ -1126,6 +1192,7 @@ export const routeTree = rootRoute
         "/_authed/review-queue/",
         "/_authed/signatures/",
         "/_authed/filings/noe/new",
+        "/_authed/filings/notr/new",
         "/_authed/hope/assessments/$id",
         "/_authed/hope/assessments/new",
         "/_authed/settings/baa/$id",
@@ -1236,6 +1303,10 @@ export const routeTree = rootRoute
     },
     "/_authed/filings/noe/new": {
       "filePath": "_authed/filings/noe/new.tsx",
+      "parent": "/_authed"
+    },
+    "/_authed/filings/notr/new": {
+      "filePath": "_authed/filings/notr/new.tsx",
       "parent": "/_authed"
     },
     "/_authed/hope/assessments/$id": {
