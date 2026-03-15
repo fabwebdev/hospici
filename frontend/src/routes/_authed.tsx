@@ -193,7 +193,7 @@ function AuthedLayout() {
         {/* Sidebar */}
         <nav className="w-64 shrink-0 bg-[#0F172A] flex flex-col overflow-y-auto">
           <div className="py-3 flex-1 flex flex-col">
-            <SidebarLink to="/dashboard" icon="layout-dashboard" label="Dashboard" active />
+            <SidebarLink to="/dashboard" icon="layout-dashboard" label="Dashboard" />
 
             <SidebarSection label="PATIENTS" />
             <SidebarLink to="/patients" icon="users" label="Patients" />
@@ -243,21 +243,22 @@ function SidebarLink({
   to,
   icon,
   label,
-  active,
 }: {
   to: string;
   icon: string;
   label: string;
-  active?: boolean;
 }) {
   return (
     <Link
       to={to}
-      className={`flex items-center gap-2.5 h-9 px-4 text-[13px] ${
-        active
-          ? "bg-[#1E3A5F] text-white font-medium"
-          : "text-[#94A3B8] hover:text-white hover:bg-[#1E293B]"
-      }`}
+      activeProps={{
+        className:
+          "flex items-center gap-2.5 h-9 px-4 text-[13px] bg-[#1E3A5F] text-white font-medium",
+      }}
+      inactiveProps={{
+        className:
+          "flex items-center gap-2.5 h-9 px-4 text-[13px] text-[#94A3B8] hover:text-white hover:bg-[#1E293B]",
+      }}
     >
       <SidebarIcon name={icon} />
       {label}

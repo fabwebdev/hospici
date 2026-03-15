@@ -3,6 +3,55 @@
 // ⚠️  CRITICAL: Never call TypeCompiler.Compile() inside functions, class methods,
 // request handlers, or loops. Module-level only (here or in schema files).
 
+// ── Register string formats before any compilation ──────────────────────────
+import { FormatRegistry } from "@sinclair/typebox";
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const URI_RE = /^https?:\/\/.+/;
+
+FormatRegistry.Set("date", (v) => typeof v === "string" && ISO_DATE_RE.test(v));
+FormatRegistry.Set("date-time", (v) => typeof v === "string" && ISO_DATETIME_RE.test(v));
+FormatRegistry.Set("uuid", (v) => typeof v === "string" && UUID_RE.test(v));
+FormatRegistry.Set("email", (v) => typeof v === "string" && EMAIL_RE.test(v));
+FormatRegistry.Set("uri", (v) => typeof v === "string" && URI_RE.test(v));
+
+import {
+  AuditDashboardResponseSchema,
+  AuditFailureSchema,
+  AuditResultSchema,
+  AuditSnapshotResponseSchema,
+  BulkHoldBodySchema,
+  BulkReleaseBodySchema,
+  WarnOverrideBodySchema,
+} from "@/contexts/billing/schemas/claimAudit.schema.js";
+import {
+  ChartAuditDashboardResponseSchema,
+  ChartAuditDetailResponseSchema,
+  ChartAuditQueueResponseSchema,
+  ChartBulkActionBodySchema,
+  ChartBulkActionResultSchema,
+  CreateReviewQueueViewBodySchema,
+  PatchReviewQueueViewBodySchema,
+  ReviewChecklistTemplateListResponseSchema,
+  ReviewChecklistTemplateSchema,
+  ReviewQueueBulkActionBodySchema,
+  ReviewQueueBulkActionResultSchema,
+  ReviewQueueViewListResponseSchema,
+  ReviewQueueViewSchema,
+} from "@/contexts/compliance/schemas/chartAudit.schema.js";
+import {
+  CreateOrderBodySchema,
+  ExceptionOrderBodySchema,
+  OrderInboxResponseSchema,
+  OrderListResponseSchema,
+  OrderResponseSchema,
+  RejectOrderBodySchema,
+  ResendOrderBodySchema,
+  SignOrderBodySchema,
+} from "@/contexts/orders/schemas/order.schema.js";
 import {
   ClinicianQualityScorecardSchema,
   DeficiencyTrendReportSchema,
@@ -20,29 +69,15 @@ import {
   TrendQuerySchema,
 } from "@/contexts/qapi/schemas/qapi.schema.js";
 import {
-  ChartAuditDashboardResponseSchema,
-  ChartAuditDetailResponseSchema,
-  ChartAuditQueueResponseSchema,
-  ChartBulkActionBodySchema,
-  ChartBulkActionResultSchema,
-  CreateReviewQueueViewBodySchema,
-  PatchReviewQueueViewBodySchema,
-  ReviewChecklistTemplateListResponseSchema,
-  ReviewChecklistTemplateSchema,
-  ReviewQueueBulkActionBodySchema,
-  ReviewQueueBulkActionResultSchema,
-  ReviewQueueViewListResponseSchema,
-  ReviewQueueViewSchema,
-} from "@/contexts/compliance/schemas/chartAudit.schema.js";
-import {
-  AuditDashboardResponseSchema,
-  AuditFailureSchema,
-  AuditResultSchema,
-  AuditSnapshotResponseSchema,
-  BulkHoldBodySchema,
-  BulkReleaseBodySchema,
-  WarnOverrideBodySchema,
-} from "@/contexts/billing/schemas/claimAudit.schema.js";
+  CountersignBodySchema,
+  CreateSignatureRequestBodySchema,
+  MarkExceptionBodySchema,
+  RejectSignatureBodySchema,
+  SignDocumentBodySchema,
+  SignatureListQuerySchema,
+  SignatureListResponseSchema,
+  VoidSignatureBodySchema,
+} from "@/contexts/signatures/schemas/signature.schema.js";
 import {
   CreateVendorBodySchema,
   CreateVendorReviewBodySchema,
@@ -54,26 +89,6 @@ import {
   VendorResponseSchema,
   VendorReviewResponseSchema,
 } from "@/contexts/vendors/schemas/vendor.schema.js";
-import {
-  CreateOrderBodySchema,
-  ExceptionOrderBodySchema,
-  OrderInboxResponseSchema,
-  OrderListResponseSchema,
-  OrderResponseSchema,
-  RejectOrderBodySchema,
-  ResendOrderBodySchema,
-  SignOrderBodySchema,
-} from "@/contexts/orders/schemas/order.schema.js";
-import {
-  CountersignBodySchema,
-  CreateSignatureRequestBodySchema,
-  MarkExceptionBodySchema,
-  RejectSignatureBodySchema,
-  SignDocumentBodySchema,
-  SignatureListQuerySchema,
-  SignatureListResponseSchema,
-  VoidSignatureBodySchema,
-} from "@/contexts/signatures/schemas/signature.schema.js";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 import {
@@ -123,20 +138,6 @@ import {
   RecalculateCapResponseSchema,
 } from "@/contexts/billing/schemas/capIntelligence.schema.js";
 import {
-  ClaimRemittanceResponseSchema,
-  IngestERABodySchema,
-  IngestERAResultSchema,
-  ManualMatchBodySchema,
-  ManualPostBodySchema,
-  Remittance835DetailSchema,
-  Remittance835Schema,
-  RemittanceListQuerySchema,
-  RemittanceListResponseSchema,
-  RemittancePostingSchema,
-  UnmatchedRemittanceListResponseSchema,
-  UnmatchedRemittanceSchema,
-} from "@/contexts/billing/schemas/era835.schema.js";
-import {
   BillHoldSchema,
   BulkSubmitBodySchema,
   BulkSubmitResponseSchema,
@@ -152,6 +153,20 @@ import {
   HoldBodySchema,
   ReplaceClaimBodySchema,
 } from "@/contexts/billing/schemas/claim.schema.js";
+import {
+  ClaimRemittanceResponseSchema,
+  IngestERABodySchema,
+  IngestERAResultSchema,
+  ManualMatchBodySchema,
+  ManualPostBodySchema,
+  Remittance835DetailSchema,
+  Remittance835Schema,
+  RemittanceListQuerySchema,
+  RemittanceListResponseSchema,
+  RemittancePostingSchema,
+  UnmatchedRemittanceListResponseSchema,
+  UnmatchedRemittanceSchema,
+} from "@/contexts/billing/schemas/era835.schema.js";
 import {
   CMSResponseBodySchema,
   CorrectNOEBodySchema,
@@ -187,6 +202,11 @@ import {
   PhysicianReviewBodySchema,
 } from "@/contexts/clinical/schemas/carePlan.schema";
 import {
+  AssignCareTeamMemberBodySchema,
+  CareTeamListResponseSchema,
+  CareTeamMemberResponseSchema,
+} from "@/contexts/clinical/schemas/careTeam.schema.js";
+import {
   AddendumEntrySchema,
   CreateEncounterBodySchema,
   EnhanceNarrativeBodySchema,
@@ -207,10 +227,16 @@ import {
   RecordAdministrationBodySchema,
 } from "@/contexts/clinical/schemas/medication.schema";
 import {
-  AssignCareTeamMemberBodySchema,
-  CareTeamListResponseSchema,
-  CareTeamMemberResponseSchema,
-} from "@/contexts/clinical/schemas/careTeam.schema.js";
+  AssignReviewBodySchema,
+  BulkAcknowledgeBodySchema,
+  EscalateReviewBodySchema,
+  ReviewHistoryResponseSchema,
+  ReviewQueueItemSchema,
+  ReviewQueueResponseSchema,
+  SubmitReviewBodySchema,
+} from "@/contexts/clinical/schemas/noteReview.schema.js";
+import { NrsScaleSchema } from "@/contexts/clinical/schemas/nrsScale.schema";
+import { PainadScaleSchema } from "@/contexts/clinical/schemas/painadScale.schema";
 import {
   ConditionListResponseSchema,
   CreateConditionBodySchema,
@@ -223,12 +249,7 @@ import {
   PatchInsuranceBodySchema,
   PatientInsuranceResponseSchema,
 } from "@/contexts/clinical/schemas/patient-insurance.schema.js";
-import {
-  CreateDocumentBodySchema,
-  DocumentListResponseSchema,
-  DocumentResponseSchema,
-  PatchDocumentBodySchema,
-} from "@/contexts/documentation/schemas/document.schema.js";
+import { WongBakerScaleSchema } from "@/contexts/clinical/schemas/wongBakerScale.schema";
 import {
   CommMessageListResponseSchema,
   CommMessageResponseSchema,
@@ -237,18 +258,6 @@ import {
   CreateCommThreadBodySchema,
   SendCommMessageBodySchema,
 } from "@/contexts/communication/schemas/teamComm.schema.js";
-import {
-  AssignReviewBodySchema,
-  BulkAcknowledgeBodySchema,
-  EscalateReviewBodySchema,
-  ReviewHistoryResponseSchema,
-  ReviewQueueItemSchema,
-  ReviewQueueResponseSchema,
-  SubmitReviewBodySchema,
-} from "@/contexts/clinical/schemas/noteReview.schema.js";
-import { NrsScaleSchema } from "@/contexts/clinical/schemas/nrsScale.schema";
-import { PainadScaleSchema } from "@/contexts/clinical/schemas/painadScale.schema";
-import { WongBakerScaleSchema } from "@/contexts/clinical/schemas/wongBakerScale.schema";
 import {
   AlertListResponseSchema,
   AlertStatusPatchBodySchema,
@@ -260,6 +269,12 @@ import {
   AuditRecordExportRequestSchema,
   AuditRecordExportSchema,
 } from "@/contexts/compliance/schemas/auditExport.schema.js";
+import {
+  CreateDocumentBodySchema,
+  DocumentListResponseSchema,
+  DocumentResponseSchema,
+  PatchDocumentBodySchema,
+} from "@/contexts/documentation/schemas/document.schema.js";
 import {
   CreateF2FBodySchema,
   F2FEncounterListResponseSchema,
@@ -576,7 +591,9 @@ export const Validators = {
 
   // Chart Audit Mode (T3-13)
   ReviewChecklistTemplate: TypeCompiler.Compile(ReviewChecklistTemplateSchema),
-  ReviewChecklistTemplateListResponse: TypeCompiler.Compile(ReviewChecklistTemplateListResponseSchema),
+  ReviewChecklistTemplateListResponse: TypeCompiler.Compile(
+    ReviewChecklistTemplateListResponseSchema,
+  ),
   ReviewQueueView: TypeCompiler.Compile(ReviewQueueViewSchema),
   ReviewQueueViewListResponse: TypeCompiler.Compile(ReviewQueueViewListResponseSchema),
   CreateReviewQueueViewBody: TypeCompiler.Compile(CreateReviewQueueViewBodySchema),

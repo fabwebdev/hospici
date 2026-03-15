@@ -53,8 +53,15 @@ export async function fetchCreatePatient(
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
-    throw new Error(err.error?.message ?? "Failed to create patient");
+    const err = (await res.json().catch(() => ({}))) as {
+      error?: { message?: string; details?: { path: string; message: string }[] };
+    };
+    const details = err.error?.details?.map((d) => `${d.path}: ${d.message}`).join("; ");
+    throw new Error(
+      details
+        ? `${err.error?.message}: ${details}`
+        : (err.error?.message ?? "Failed to create patient"),
+    );
   }
   return (await res.json()) as PatientResponse;
 }

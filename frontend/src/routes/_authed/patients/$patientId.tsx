@@ -74,11 +74,18 @@ function HeaderSparkline({
   let inSeg = false;
   for (let i = 0; i < points.length; i++) {
     const val = points[i] ?? null;
-    if (val === null) { inSeg = false; continue; }
+    if (val === null) {
+      inSeg = false;
+      continue;
+    }
     const x = i * stepX;
     const y = h - (val / max) * h;
-    if (!inSeg) { segs.push(`M${x.toFixed(1)},${y.toFixed(1)}`); inSeg = true; }
-    else { segs.push(`L${x.toFixed(1)},${y.toFixed(1)}`); }
+    if (!inSeg) {
+      segs.push(`M${x.toFixed(1)},${y.toFixed(1)}`);
+      inSeg = true;
+    } else {
+      segs.push(`L${x.toFixed(1)},${y.toFixed(1)}`);
+    }
   }
   const last = defined[defined.length - 1] ?? 0;
   return (
@@ -88,7 +95,9 @@ function HeaderSparkline({
         <title>{label} trend</title>
         <path d={segs.join(" ")} stroke={color} strokeWidth="1.5" fill="none" />
       </svg>
-      <span className="text-[10px] font-mono font-semibold" style={{ color }}>{last}/10</span>
+      <span className="text-[10px] font-mono font-semibold" style={{ color }}>
+        {last}/10
+      </span>
     </div>
   );
 }
@@ -110,18 +119,19 @@ type DisabledTab = { label: string; disabled: true };
 type Tab = LinkedTab | DisabledTab;
 
 const TABS: Tab[] = [
-  { label: "Overview",       to: ".",                                      exact: true },
-  { label: "Patient Info",   to: "/patients/$patientId/info" },
-  { label: "Team Comm",      to: "/patients/$patientId/team-comm" },
-  { label: "Encounters",     to: "/patients/$patientId/visits/" },
+  { label: "Overview", to: ".", exact: true },
+  { label: "Patient Info", to: "/patients/$patientId/info" },
+  { label: "Team Comm", to: "/patients/$patientId/team-comm" },
+  { label: "Encounters", to: "/patients/$patientId/visits/" },
   { label: "Clinical Notes", to: "/patients/$patientId/clinical-notes" },
-  { label: "HOPE",           disabled: true },
-  { label: "Orders",         to: "/patients/$patientId/orders" },
-  { label: "Medications",    to: "/patients/$patientId/medications" },
-  { label: "Care Team",      to: "/patients/$patientId/care-team" },
-  { label: "Documents",      to: "/patients/$patientId/documents" },
-  { label: "Care Plan",      disabled: true },
-  { label: "Dose Spot",      to: "/patients/$patientId/dose-spot" },
+  { label: "Assessments", to: "/patients/$patientId/assessments" },
+  { label: "HOPE", disabled: true },
+  { label: "Orders", to: "/patients/$patientId/orders" },
+  { label: "Medications", to: "/patients/$patientId/medications" },
+  { label: "Care Team", to: "/patients/$patientId/care-team" },
+  { label: "Documents", to: "/patients/$patientId/documents" },
+  { label: "Care Plan", disabled: true },
+  { label: "Dose Spot", to: "/patients/$patientId/dose-spot" },
 ];
 
 // ── Layout ────────────────────────────────────────────────────────────────────
@@ -136,8 +146,7 @@ function PatientDetailLayout() {
 
   const { data: idgCompliance } = useQuery<IDGComplianceStatus>({
     queryKey: ["idg-compliance", patientId],
-    queryFn: () =>
-      getIDGComplianceFn({ data: { patientId } }) as Promise<IDGComplianceStatus>,
+    queryFn: () => getIDGComplianceFn({ data: { patientId } }) as Promise<IDGComplianceStatus>,
   });
 
   const { data: trajectory } = useQuery<TrajectoryResponse>({
@@ -157,9 +166,9 @@ function PatientDetailLayout() {
   const mrn = patient?.identifier.find((id) => id.system.toLowerCase().includes("mrn"))?.value;
 
   const pts: TrajectoryDataPoint[] = trajectory?.dataPoints ?? [];
-  const pain    = pts.map((p) => p.pain);
+  const pain = pts.map((p) => p.pain);
   const dyspnea = pts.map((p) => p.dyspnea);
-  const nausea  = pts.map((p) => p.nausea);
+  const nausea = pts.map((p) => p.nausea);
 
   return (
     <div className="flex flex-col h-full">
@@ -215,9 +224,9 @@ function PatientDetailLayout() {
           {/* Decline trajectory sparklines (hidden on smaller screens) */}
           {pts.length >= 2 && (
             <div className="hidden xl:flex items-end gap-5 shrink-0 border-l border-gray-100 pl-5">
-              <HeaderSparkline label="Pain"    points={pain}    color={trendColor(pain)}    />
+              <HeaderSparkline label="Pain" points={pain} color={trendColor(pain)} />
               <HeaderSparkline label="Dyspnea" points={dyspnea} color={trendColor(dyspnea)} />
-              <HeaderSparkline label="Nausea"  points={nausea}  color={trendColor(nausea)}  />
+              <HeaderSparkline label="Nausea" points={nausea} color={trendColor(nausea)} />
             </div>
           )}
 

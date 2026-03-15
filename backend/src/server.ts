@@ -4,40 +4,34 @@
 import { env } from "@/config/env.js";
 import { createLoggingConfig } from "@/config/logging.config.js";
 import hopeRoutes, { analyticsRoutes } from "@/contexts/analytics/routes/hope.routes.js";
+import qualityAnalyticsRoutes from "@/contexts/analytics/routes/qualityAnalytics.routes.js";
 import billingRoutes from "@/contexts/billing/routes/billing.routes.js";
 import capRoutes from "@/contexts/billing/routes/cap.routes.js";
 import { claimRoutes } from "@/contexts/billing/routes/claim.routes.js";
 import { claimAuditRoutes } from "@/contexts/billing/routes/claimAudit.routes.js";
-import { vendorRoutes } from "@/contexts/vendors/routes/vendor.routes.js";
-import { orderRoutes, orderPatientRoutes } from "@/contexts/orders/routes/order.routes.js";
-import auditExportRoutes from "@/contexts/compliance/routes/auditExport.routes.js";
-import chartAuditRoutes from "@/contexts/compliance/routes/chartAudit.routes.js";
-import qapiRoutes from "@/contexts/qapi/routes/qapi.routes.js";
-import qualityAnalyticsRoutes from "@/contexts/analytics/routes/qualityAnalytics.routes.js";
-import { createQAPIOverdueCheckWorker } from "@/jobs/workers/qapi-overdue-check.worker.js";
-import { createAuditExportWorker } from "@/jobs/workers/audit-export.worker.js";
-import { setOrderEventEmitter } from "@/contexts/orders/services/order.service.js";
-import { createOrderExpiryWorker } from "@/jobs/workers/order-expiry-check.worker.js";
-import { createOrderReminderWorker } from "@/jobs/workers/order-reminder.worker.js";
+import noePatientRoutes, { noeStandaloneRoutes } from "@/contexts/billing/routes/noe.routes.js";
 import { setClaimEventEmitter } from "@/contexts/billing/services/claim.service.js";
 import { setClaimAuditEventEmitter } from "@/contexts/billing/services/claimAudit.service.js";
-import { complianceEvents } from "@/events/compliance-events.js";
-import noePatientRoutes, { noeStandaloneRoutes } from "@/contexts/billing/routes/noe.routes.js";
 import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
-import medicationRoutes from "@/contexts/clinical/routes/medication.routes.js";
 import careTeamRoutes from "@/contexts/clinical/routes/careTeam.routes.js";
+import medicationRoutes from "@/contexts/clinical/routes/medication.routes.js";
+import noteReviewRoutes from "@/contexts/clinical/routes/noteReview.routes.js";
 import patientConditionsRoutes from "@/contexts/clinical/routes/patient-conditions.routes.js";
 import patientInsuranceRoutes from "@/contexts/clinical/routes/patient-insurance.routes.js";
-import noteReviewRoutes from "@/contexts/clinical/routes/noteReview.routes.js";
-import documentRoutes from "@/contexts/documentation/routes/document.routes.js";
-import teamCommRoutes from "@/contexts/communication/routes/teamComm.routes.js";
 import patientRoutes from "@/contexts/clinical/routes/patient.routes.js";
 import vantageChartRoutes from "@/contexts/clinical/routes/vantageChart.routes.js";
+import teamCommRoutes from "@/contexts/communication/routes/teamComm.routes.js";
 import alertRoutes from "@/contexts/compliance/routes/alert.routes.js";
+import auditExportRoutes from "@/contexts/compliance/routes/auditExport.routes.js";
+import chartAuditRoutes from "@/contexts/compliance/routes/chartAudit.routes.js";
+import documentRoutes from "@/contexts/documentation/routes/document.routes.js";
 import { f2fPatientRoutes, f2fStandaloneRoutes } from "@/contexts/f2f/routes/f2f.routes.js";
 import fhirRoutes from "@/contexts/fhir/routes/fhir.routes.js";
 import authRoutes from "@/contexts/identity/routes/auth.routes.js";
+import { orderPatientRoutes, orderRoutes } from "@/contexts/orders/routes/order.routes.js";
+import { setOrderEventEmitter } from "@/contexts/orders/services/order.service.js";
+import qapiRoutes from "@/contexts/qapi/routes/qapi.routes.js";
 import { idgMeetingsRoutes, patientIdgRoutes } from "@/contexts/scheduling/routes/idg.routes.js";
 import schedulingRoutes from "@/contexts/scheduling/routes/scheduling.routes.js";
 import visitSchedulePatientRoutes, {
@@ -47,13 +41,14 @@ import {
   patientSignatureRoutes,
   signatureRoutes,
 } from "@/contexts/signatures/routes/signature.routes.js";
+import { vendorRoutes } from "@/contexts/vendors/routes/vendor.routes.js";
 import { db } from "@/db/client.js";
+import { complianceEvents } from "@/events/compliance-events.js";
 import { closeQueues, scheduleDailyJobs } from "@/jobs/queue.js";
-import { sql } from "drizzle-orm";
 import { createAideSupervisionWorker } from "@/jobs/workers/aide-supervision.worker.js";
+import { createAuditExportWorker } from "@/jobs/workers/audit-export.worker.js";
 import { createCapRecalculationWorker } from "@/jobs/workers/cap-recalculation.worker.js";
 import { createClaimSubmissionWorker } from "@/jobs/workers/claim-submission.worker.js";
-import { createVendorComplianceWorker } from "@/jobs/workers/vendor-compliance-check.worker.js";
 import { createF2FDeadlineWorker } from "@/jobs/workers/f2f-deadline-check.worker.js";
 import { createHopeDeadlineCheckWorker } from "@/jobs/workers/hope-deadline-check.worker.js";
 import { createHopeSubmissionWorker } from "@/jobs/workers/hope-submission.worker.js";
@@ -61,6 +56,10 @@ import { createHqrpPeriodCloseWorker } from "@/jobs/workers/hqrp-period-close.wo
 import { createMissedVisitCheckWorker } from "@/jobs/workers/missed-visit-check.worker.js";
 import { createNoeDeadlineWorker } from "@/jobs/workers/noe-deadline.worker.js";
 import { createNoteReviewDeadlineWorker } from "@/jobs/workers/note-review-deadline.worker.js";
+import { createOrderExpiryWorker } from "@/jobs/workers/order-expiry-check.worker.js";
+import { createOrderReminderWorker } from "@/jobs/workers/order-reminder.worker.js";
+import { createQAPIOverdueCheckWorker } from "@/jobs/workers/qapi-overdue-check.worker.js";
+import { createVendorComplianceWorker } from "@/jobs/workers/vendor-compliance-check.worker.js";
 import { registerRLSMiddleware } from "@/middleware/rls.middleware.js";
 import socketPlugin from "@/plugins/socket.plugin.js";
 import valkeyPlugin from "@/plugins/valkey.plugin.js";
@@ -69,6 +68,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import { sql } from "drizzle-orm";
 import Fastify from "fastify";
 
 /**
@@ -135,6 +135,27 @@ export async function buildApp() {
 
   // ── Rate Limiting ─────────────────────────────────────────────────────────────
   await fastify.register(rateLimit, { max: 100, timeWindow: "1 minute" });
+
+  // ── Global Error Handler ───────────────────────────────────────────────────
+  // Ensures all error responses match ErrorResponseSchema ({ success, error })
+  // and prevents Fastify's FST_ERR_FAILED_ERROR_SERIALIZATION crashes.
+  fastify.setErrorHandler((error, _request, reply) => {
+    const statusCode = error.statusCode ?? 500;
+    fastify.log.error(error, "Request error");
+    // Use reply.header + reply.serializer to bypass route-level response schema
+    // serialization which fails on Type.Literal(false) with fast-json-stringify.
+    reply
+      .code(statusCode)
+      .header("content-type", "application/json; charset=utf-8")
+      .serializer((payload: unknown) => JSON.stringify(payload))
+      .send({
+        success: false,
+        error: {
+          code: error.code ?? "INTERNAL_ERROR",
+          message: error.message,
+        },
+      });
+  });
 
   // ── Infrastructure Plugins ──────────────────────────────────────────────────
   await fastify.register(valkeyPlugin);

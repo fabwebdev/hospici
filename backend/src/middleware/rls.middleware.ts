@@ -72,8 +72,9 @@ export function registerRLSMiddleware(fastify: FastifyInstance) {
     const sessionData = await auth.api.getSession({ headers });
 
     if (!sessionData) {
-      reply.code(401).send({ error: "Unauthorized" });
-      return;
+      const err = new Error("Unauthorized") as Error & { statusCode: number };
+      err.statusCode = 401;
+      throw err;
     }
 
     const { user } = sessionData;
@@ -81,8 +82,9 @@ export function registerRLSMiddleware(fastify: FastifyInstance) {
     // HIPAA §164.312(d): TOTP must be enrolled before accessing protected resources.
     // All 2FA setup endpoints are under /api/v1/auth/* and are already bypassed above.
     if (!user.twoFactorEnabled) {
-      reply.code(403).send({ error: "TOTP_ENROLLMENT_REQUIRED" });
-      return;
+      const err = new Error("TOTP enrollment required") as Error & { statusCode: number };
+      err.statusCode = 403;
+      throw err;
     }
 
     // Extract ABAC attributes (stored as JSON string by Better Auth additional fields)
@@ -122,12 +124,14 @@ export function registerRLSMiddleware(fastify: FastifyInstance) {
 export function requireRoles(...allowedRoles: string[]) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     if (!request.user) {
-      reply.code(401).send({ error: "Unauthorized" });
-      return;
+      const err = new Error("Unauthorized") as Error & { statusCode: number };
+      err.statusCode = 401;
+      throw err;
     }
     if (!allowedRoles.includes(request.user.role)) {
-      reply.code(403).send({ error: "Forbidden: Insufficient permissions" });
-      return;
+      const err = new Error("Forbidden: Insufficient permissions") as Error & { statusCode: number };
+      err.statusCode = 403;
+      throw err;
     }
   };
 }

@@ -13,6 +13,37 @@ const DEV_NAME = "Dr. Dev Smith";
 const DEV_LOCATION_ID = "a1a1a1a1-0000-0000-0000-000000000001";
 
 async function main() {
+  // ── Ensure the dev location exists (CMS requires a facility/home location) ──
+  const locExists = await db.execute<{ id: string }>(
+    sql`SELECT id FROM locations WHERE id = ${DEV_LOCATION_ID}::uuid LIMIT 1`,
+  );
+
+  if (locExists.rows.length === 0) {
+    const address = JSON.stringify({
+      line: ["1234 Palm Valley Blvd", "Suite 200"],
+      city: "Scottsdale",
+      state: "AZ",
+      postalCode: "85260",
+      country: "US",
+    });
+
+    await db.execute(
+      sql`INSERT INTO locations (id, name, npi, taxid, address, phone, isactive)
+          VALUES (
+            ${DEV_LOCATION_ID}::uuid,
+            'Palm Valley Hospice',
+            '1234567890',
+            '123456789',
+            ${address}::jsonb,
+            '(480) 555-0100',
+            true
+          )`,
+    );
+    console.log("Dev location created: Palm Valley Hospice");
+  } else {
+    console.log("Dev location already exists: Palm Valley Hospice");
+  }
+
   // Check if user already exists
   const existing = await db.execute<{ id: string }>(
     sql`SELECT id FROM users WHERE email = ${DEV_EMAIL} LIMIT 1`,

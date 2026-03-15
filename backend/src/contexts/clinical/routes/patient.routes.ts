@@ -71,9 +71,9 @@ export default async function patientRoutes(fastify: FastifyInstance): Promise<v
     },
     async (request, reply) => {
       if (!request.user) {
-        return reply
-          .code(401)
-          .send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+        const err = new Error("Unauthorized") as Error & { statusCode: number };
+        err.statusCode = 401;
+        throw err;
       }
       const query = request.query as {
         page?: number;
@@ -115,9 +115,9 @@ export default async function patientRoutes(fastify: FastifyInstance): Promise<v
     },
     async (request, reply) => {
       if (!request.user) {
-        return reply
-          .code(401)
-          .send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+        const err = new Error("Unauthorized") as Error & { statusCode: number };
+        err.statusCode = 401;
+        throw err;
       }
       const patient = await PatientService.create(
         request.body as Parameters<typeof PatientService.create>[0],
@@ -148,9 +148,9 @@ export default async function patientRoutes(fastify: FastifyInstance): Promise<v
     },
     async (request, reply) => {
       if (!request.user) {
-        return reply
-          .code(401)
-          .send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+        const err = new Error("Unauthorized") as Error & { statusCode: number };
+        err.statusCode = 401;
+        throw err;
       }
       const { id } = request.params as { id: string };
       const patient = await PatientService.getById(id, request.user);
@@ -200,9 +200,9 @@ export default async function patientRoutes(fastify: FastifyInstance): Promise<v
     },
     async (request, reply) => {
       if (!request.user) {
-        return reply
-          .code(401)
-          .send({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+        const err = new Error("Unauthorized") as Error & { statusCode: number };
+        err.statusCode = 401;
+        throw err;
       }
       const { id } = request.params as { id: string };
       const patient = await PatientService.patch(

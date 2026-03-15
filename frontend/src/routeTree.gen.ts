@@ -48,8 +48,10 @@ import { Route as AuthedPatientsPatientIdDocumentsImport } from './routes/_authe
 import { Route as AuthedPatientsPatientIdClinicalNotesImport } from './routes/_authed/patients/$patientId/clinical-notes'
 import { Route as AuthedPatientsPatientIdCareTeamImport } from './routes/_authed/patients/$patientId/care-team'
 import { Route as AuthedPatientsPatientIdAuditExportImport } from './routes/_authed/patients/$patientId/audit-export'
+import { Route as AuthedPatientsPatientIdAssessmentsImport } from './routes/_authed/patients/$patientId/assessments'
 import { Route as AuthedHopeAssessmentsNewImport } from './routes/_authed/hope/assessments/new'
 import { Route as AuthedHopeAssessmentsIdImport } from './routes/_authed/hope/assessments/$id'
+import { Route as AuthedFilingsNoeNewImport } from './routes/_authed/filings/noe/new'
 import { Route as AuthedPatientsPatientIdVisitsIndexImport } from './routes/_authed/patients/$patientId/visits/index'
 import { Route as AuthedPatientsPatientIdIdgScheduleImport } from './routes/_authed/patients/$patientId/idg/schedule'
 import { Route as AuthedPatientsPatientIdF2fNewImport } from './routes/_authed/patients/$patientId/f2f/new'
@@ -292,6 +294,13 @@ const AuthedPatientsPatientIdAuditExportRoute =
     getParentRoute: () => AuthedPatientsPatientIdRoute,
   } as any)
 
+const AuthedPatientsPatientIdAssessmentsRoute =
+  AuthedPatientsPatientIdAssessmentsImport.update({
+    id: '/assessments',
+    path: '/assessments',
+    getParentRoute: () => AuthedPatientsPatientIdRoute,
+  } as any)
+
 const AuthedHopeAssessmentsNewRoute = AuthedHopeAssessmentsNewImport.update({
   id: '/hope/assessments/new',
   path: '/hope/assessments/new',
@@ -301,6 +310,12 @@ const AuthedHopeAssessmentsNewRoute = AuthedHopeAssessmentsNewImport.update({
 const AuthedHopeAssessmentsIdRoute = AuthedHopeAssessmentsIdImport.update({
   id: '/hope/assessments/$id',
   path: '/hope/assessments/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
+
+const AuthedFilingsNoeNewRoute = AuthedFilingsNoeNewImport.update({
+  id: '/filings/noe/new',
+  path: '/filings/noe/new',
   getParentRoute: () => AuthedRoute,
 } as any)
 
@@ -497,6 +512,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSignaturesIndexImport
       parentRoute: typeof AuthedImport
     }
+    '/_authed/filings/noe/new': {
+      id: '/_authed/filings/noe/new'
+      path: '/filings/noe/new'
+      fullPath: '/filings/noe/new'
+      preLoaderRoute: typeof AuthedFilingsNoeNewImport
+      parentRoute: typeof AuthedImport
+    }
     '/_authed/hope/assessments/$id': {
       id: '/_authed/hope/assessments/$id'
       path: '/hope/assessments/$id'
@@ -510,6 +532,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/hope/assessments/new'
       preLoaderRoute: typeof AuthedHopeAssessmentsNewImport
       parentRoute: typeof AuthedImport
+    }
+    '/_authed/patients/$patientId/assessments': {
+      id: '/_authed/patients/$patientId/assessments'
+      path: '/assessments'
+      fullPath: '/patients/$patientId/assessments'
+      preLoaderRoute: typeof AuthedPatientsPatientIdAssessmentsImport
+      parentRoute: typeof AuthedPatientsPatientIdImport
     }
     '/_authed/patients/$patientId/audit-export': {
       id: '/_authed/patients/$patientId/audit-export'
@@ -643,6 +672,7 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface AuthedPatientsPatientIdRouteChildren {
+  AuthedPatientsPatientIdAssessmentsRoute: typeof AuthedPatientsPatientIdAssessmentsRoute
   AuthedPatientsPatientIdAuditExportRoute: typeof AuthedPatientsPatientIdAuditExportRoute
   AuthedPatientsPatientIdCareTeamRoute: typeof AuthedPatientsPatientIdCareTeamRoute
   AuthedPatientsPatientIdClinicalNotesRoute: typeof AuthedPatientsPatientIdClinicalNotesRoute
@@ -661,6 +691,8 @@ interface AuthedPatientsPatientIdRouteChildren {
 
 const AuthedPatientsPatientIdRouteChildren: AuthedPatientsPatientIdRouteChildren =
   {
+    AuthedPatientsPatientIdAssessmentsRoute:
+      AuthedPatientsPatientIdAssessmentsRoute,
     AuthedPatientsPatientIdAuditExportRoute:
       AuthedPatientsPatientIdAuditExportRoute,
     AuthedPatientsPatientIdCareTeamRoute: AuthedPatientsPatientIdCareTeamRoute,
@@ -710,6 +742,7 @@ interface AuthedRouteChildren {
   AuthedQapiIndexRoute: typeof AuthedQapiIndexRoute
   AuthedReviewQueueIndexRoute: typeof AuthedReviewQueueIndexRoute
   AuthedSignaturesIndexRoute: typeof AuthedSignaturesIndexRoute
+  AuthedFilingsNoeNewRoute: typeof AuthedFilingsNoeNewRoute
   AuthedHopeAssessmentsIdRoute: typeof AuthedHopeAssessmentsIdRoute
   AuthedHopeAssessmentsNewRoute: typeof AuthedHopeAssessmentsNewRoute
   AuthedSettingsBaaIdRoute: typeof AuthedSettingsBaaIdRoute
@@ -739,6 +772,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedQapiIndexRoute: AuthedQapiIndexRoute,
   AuthedReviewQueueIndexRoute: AuthedReviewQueueIndexRoute,
   AuthedSignaturesIndexRoute: AuthedSignaturesIndexRoute,
+  AuthedFilingsNoeNewRoute: AuthedFilingsNoeNewRoute,
   AuthedHopeAssessmentsIdRoute: AuthedHopeAssessmentsIdRoute,
   AuthedHopeAssessmentsNewRoute: AuthedHopeAssessmentsNewRoute,
   AuthedSettingsBaaIdRoute: AuthedSettingsBaaIdRoute,
@@ -774,8 +808,10 @@ export interface FileRoutesByFullPath {
   '/qapi': typeof AuthedQapiIndexRoute
   '/review-queue': typeof AuthedReviewQueueIndexRoute
   '/signatures': typeof AuthedSignaturesIndexRoute
+  '/filings/noe/new': typeof AuthedFilingsNoeNewRoute
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
+  '/patients/$patientId/assessments': typeof AuthedPatientsPatientIdAssessmentsRoute
   '/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
   '/patients/$patientId/care-team': typeof AuthedPatientsPatientIdCareTeamRoute
   '/patients/$patientId/clinical-notes': typeof AuthedPatientsPatientIdClinicalNotesRoute
@@ -819,8 +855,10 @@ export interface FileRoutesByTo {
   '/qapi': typeof AuthedQapiIndexRoute
   '/review-queue': typeof AuthedReviewQueueIndexRoute
   '/signatures': typeof AuthedSignaturesIndexRoute
+  '/filings/noe/new': typeof AuthedFilingsNoeNewRoute
   '/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
+  '/patients/$patientId/assessments': typeof AuthedPatientsPatientIdAssessmentsRoute
   '/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
   '/patients/$patientId/care-team': typeof AuthedPatientsPatientIdCareTeamRoute
   '/patients/$patientId/clinical-notes': typeof AuthedPatientsPatientIdClinicalNotesRoute
@@ -866,8 +904,10 @@ export interface FileRoutesById {
   '/_authed/qapi/': typeof AuthedQapiIndexRoute
   '/_authed/review-queue/': typeof AuthedReviewQueueIndexRoute
   '/_authed/signatures/': typeof AuthedSignaturesIndexRoute
+  '/_authed/filings/noe/new': typeof AuthedFilingsNoeNewRoute
   '/_authed/hope/assessments/$id': typeof AuthedHopeAssessmentsIdRoute
   '/_authed/hope/assessments/new': typeof AuthedHopeAssessmentsNewRoute
+  '/_authed/patients/$patientId/assessments': typeof AuthedPatientsPatientIdAssessmentsRoute
   '/_authed/patients/$patientId/audit-export': typeof AuthedPatientsPatientIdAuditExportRoute
   '/_authed/patients/$patientId/care-team': typeof AuthedPatientsPatientIdCareTeamRoute
   '/_authed/patients/$patientId/clinical-notes': typeof AuthedPatientsPatientIdClinicalNotesRoute
@@ -914,8 +954,10 @@ export interface FileRouteTypes {
     | '/qapi'
     | '/review-queue'
     | '/signatures'
+    | '/filings/noe/new'
     | '/hope/assessments/$id'
     | '/hope/assessments/new'
+    | '/patients/$patientId/assessments'
     | '/patients/$patientId/audit-export'
     | '/patients/$patientId/care-team'
     | '/patients/$patientId/clinical-notes'
@@ -958,8 +1000,10 @@ export interface FileRouteTypes {
     | '/qapi'
     | '/review-queue'
     | '/signatures'
+    | '/filings/noe/new'
     | '/hope/assessments/$id'
     | '/hope/assessments/new'
+    | '/patients/$patientId/assessments'
     | '/patients/$patientId/audit-export'
     | '/patients/$patientId/care-team'
     | '/patients/$patientId/clinical-notes'
@@ -1003,8 +1047,10 @@ export interface FileRouteTypes {
     | '/_authed/qapi/'
     | '/_authed/review-queue/'
     | '/_authed/signatures/'
+    | '/_authed/filings/noe/new'
     | '/_authed/hope/assessments/$id'
     | '/_authed/hope/assessments/new'
+    | '/_authed/patients/$patientId/assessments'
     | '/_authed/patients/$patientId/audit-export'
     | '/_authed/patients/$patientId/care-team'
     | '/_authed/patients/$patientId/clinical-notes'
@@ -1079,6 +1125,7 @@ export const routeTree = rootRoute
         "/_authed/qapi/",
         "/_authed/review-queue/",
         "/_authed/signatures/",
+        "/_authed/filings/noe/new",
         "/_authed/hope/assessments/$id",
         "/_authed/hope/assessments/new",
         "/_authed/settings/baa/$id",
@@ -1130,6 +1177,7 @@ export const routeTree = rootRoute
       "filePath": "_authed/patients/$patientId.tsx",
       "parent": "/_authed",
       "children": [
+        "/_authed/patients/$patientId/assessments",
         "/_authed/patients/$patientId/audit-export",
         "/_authed/patients/$patientId/care-team",
         "/_authed/patients/$patientId/clinical-notes",
@@ -1186,6 +1234,10 @@ export const routeTree = rootRoute
       "filePath": "_authed/signatures/index.tsx",
       "parent": "/_authed"
     },
+    "/_authed/filings/noe/new": {
+      "filePath": "_authed/filings/noe/new.tsx",
+      "parent": "/_authed"
+    },
     "/_authed/hope/assessments/$id": {
       "filePath": "_authed/hope/assessments/$id.tsx",
       "parent": "/_authed"
@@ -1193,6 +1245,10 @@ export const routeTree = rootRoute
     "/_authed/hope/assessments/new": {
       "filePath": "_authed/hope/assessments/new.tsx",
       "parent": "/_authed"
+    },
+    "/_authed/patients/$patientId/assessments": {
+      "filePath": "_authed/patients/$patientId/assessments.tsx",
+      "parent": "/_authed/patients/$patientId"
     },
     "/_authed/patients/$patientId/audit-export": {
       "filePath": "_authed/patients/$patientId/audit-export.tsx",

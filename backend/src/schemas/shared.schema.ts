@@ -39,7 +39,7 @@ export const SuccessResponseSchema = <T extends ReturnType<typeof Type.Object>>(
   });
 
 export const ErrorResponseSchema = Type.Object({
-  success: Type.Literal(false),
+  success: Type.Boolean({ default: false }),
   error: Type.Object({
     code: Type.String(),
     message: Type.String(),

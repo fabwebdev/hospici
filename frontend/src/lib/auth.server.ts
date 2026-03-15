@@ -51,14 +51,17 @@ export function parseHospiciSession(session: {
   };
 }): HospiciSession {
   const raw = session.user.abacAttributes;
-  const abac =
-    typeof raw === "string"
-      ? (JSON.parse(raw) as {
-          locationIds: string[];
-          role: string;
-          permissions: string[];
-        })
-      : { locationIds: [] as string[], role: "clinician", permissions: [] as string[] };
+  type AbacShape = { locationIds: string[]; role: string; permissions: string[] };
+  const fallback: AbacShape = { locationIds: [], role: "clinician", permissions: [] };
+
+  let abac: AbacShape;
+  if (typeof raw === "string") {
+    abac = JSON.parse(raw) as AbacShape;
+  } else if (raw && typeof raw === "object" && "locationIds" in raw) {
+    abac = raw as AbacShape;
+  } else {
+    abac = fallback;
+  }
 
   return {
     userId: session.user.id,

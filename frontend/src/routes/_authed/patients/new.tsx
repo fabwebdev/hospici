@@ -220,7 +220,10 @@ function PatientAdmissionWizard() {
   const admitMutation = useMutation({
     mutationFn: async () => {
       const locationId = session?.locationId;
-      if (!locationId) throw new Error("No location context");
+      if (!locationId)
+        throw new Error(
+          "No location context — your account is missing a location assignment. Contact your administrator.",
+        );
 
       const d = formData.demographics;
       const c = formData.clinical;
@@ -232,44 +235,45 @@ function PatientAdmissionWizard() {
           body: {
             identifier: [],
             name: [{ use: "official", family: d.lastName, given: [d.firstName] }],
-            gender: d.gender,
-            birthDate: d.birthDate,
+            gender: d.gender || undefined,
+            birthDate: d.birthDate || (new Date().toISOString().split("T")[0] ?? ""),
             telecom: [
               ...(d.phone
                 ? [{ system: "phone" as const, value: d.phone, use: "home" as const }]
                 : []),
               ...(d.email ? [{ system: "email" as const, value: d.email }] : []),
             ],
-            address: d.addressLine1
-              ? [
-                  {
-                    use: "home" as const,
-                    line: [d.addressLine1, d.addressLine2].filter(Boolean),
-                    city: d.city,
-                    state: d.state,
-                    postalCode: d.postalCode,
-                    country: "US",
-                  },
-                ]
-              : undefined,
+            address:
+              d.addressLine1 && d.city && d.state && d.postalCode
+                ? [
+                    {
+                      use: "home" as const,
+                      line: [d.addressLine1, d.addressLine2].filter(Boolean),
+                      city: d.city,
+                      state: d.state,
+                      postalCode: d.postalCode,
+                      country: "US",
+                    },
+                  ]
+                : undefined,
             contact: d.emergencyContactLastName
               ? [
                   {
                     relationship: [d.emergencyContactRelationship || "family"],
                     name: {
                       family: d.emergencyContactLastName,
-                      given: [d.emergencyContactFirstName],
+                      given: [d.emergencyContactFirstName].filter(Boolean),
                     },
                     telecom: d.emergencyContactPhone
                       ? [{ system: "phone" as const, value: d.emergencyContactPhone }]
-                      : [],
+                      : undefined,
                     isPrimary: true,
                   },
                 ]
               : undefined,
             hospiceLocationId: locationId,
             admissionDate: e.benefitPeriodStart || undefined,
-            careModel: c.careModel,
+            careModel: c.careModel || undefined,
           },
         },
       });
@@ -1128,7 +1132,7 @@ function CareTeamStep({
       <div className="space-y-4">
         {data.members.map((member, idx) => (
           <div
-            key={`${member.discipline}-${member.name || idx}`}
+            key={idx}
             className="border border-gray-200 rounded-lg p-4 bg-white"
           >
             <div className="flex items-start gap-4">
