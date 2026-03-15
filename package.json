@@ -18,7 +18,32 @@
   "pnpm": {
     "overrides": {
       "zod": "^4.0.0",
-      "drizzle-orm": "^0.41.0"
+      "drizzle-orm": "^0.41.0",
+      "vinxi>zod": "^3.0.0",
+      "@tanstack/router-generator>zod": "^3.0.0",
+      "@tanstack/router-plugin>zod": "^3.0.0",
+      "@tanstack/react-start-plugin>zod": "^3.0.0",
+      "@tanstack/react-start-config>zod": "^3.0.0",
+      "@tanstack/router-core": "1.120.19",
+      "@tanstack/history": "1.120.17",
+      "@tanstack/router-generator": "1.120.20",
+      "@tanstack/router-plugin": "1.120.20",
+      "@tanstack/router-utils": "1.120.17",
+      "@tanstack/virtual-file-routes": "1.120.17",
+      "@tanstack/server-functions-plugin": "1.120.17",
+      "@tanstack/react-start-plugin": "1.120.17",
+      "@tanstack/react-start-config": "1.120.20",
+      "@tanstack/react-start-client": "1.120.20",
+      "@tanstack/react-start-server": "1.120.20",
+      "@tanstack/start-client-core": "1.120.17",
+      "@tanstack/start-server-core": "1.120.17",
+      "@tanstack/start-server-functions-handler": "1.120.19",
+      "@tanstack/start-server-functions-server": "1.120.17",
+      "@tanstack/start-server-functions-client": "1.120.17",
+      "@tanstack/start-server-functions-ssr": "1.120.19",
+      "@tanstack/start-server-functions-fetcher": "1.120.17",
+      "@tanstack/start-api-routes": "1.120.19",
+      "@tanstack/react-start-router-manifest": "1.120.19"
     }
   }
 }

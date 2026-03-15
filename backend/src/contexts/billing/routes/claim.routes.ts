@@ -219,43 +219,6 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  // ── POST /claims/:id/audit ────────────────────────────────────────────────────
-  // TODO: Full audit engine wired in T3-12. Transitions to READY_FOR_AUDIT only.
-
-  app.post(
-    "/claims/:id/audit",
-    {
-      schema: {
-        tags: ["Claims"],
-        summary: "Trigger audit for a claim (stub — full engine wired in T3-12)",
-        params: idParams,
-        response: {
-          200: { type: "object" },
-          404: { type: "object" },
-          409: { type: "object" },
-        },
-      },
-    },
-    async (req, reply) => {
-      if (!req.user) throw Object.assign(new Error("Not authenticated"), { statusCode: 401 });
-      const { id } = req.params as { id: string };
-      const { id: userId, locationId } = req.user;
-      try {
-        const claim = await ClaimService.transitionState(
-          id,
-          "READY_FOR_AUDIT",
-          userId,
-          locationId,
-          "Audit triggered by user",
-          req.log,
-        );
-        reply.send({ success: true, data: { claim } });
-      } catch (err) {
-        handleError(err, reply);
-      }
-    },
-  );
-
   // ── POST /claims/submit ───────────────────────────────────────────────────────
   // NOTE: Registered as a static path before /claims/:id to prevent Fastify
   // from treating "submit" as an :id param value.
