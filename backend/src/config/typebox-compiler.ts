@@ -202,6 +202,10 @@ import {
   PhysicianReviewBodySchema,
 } from "@/contexts/clinical/schemas/carePlan.schema";
 import {
+  DischargeBodySchema,
+  DischargeResponseSchema,
+} from "@/contexts/clinical/schemas/discharge.schema.js";
+import {
   AssignCareTeamMemberBodySchema,
   CareTeamListResponseSchema,
   CareTeamMemberResponseSchema,
@@ -333,6 +337,10 @@ export const Validators = {
   NrsScale: TypeCompiler.Compile(NrsScaleSchema),
   WongBakerScale: TypeCompiler.Compile(WongBakerScaleSchema),
   EsasScale: TypeCompiler.Compile(EsasScaleSchema),
+
+  // Clinical — discharge workflow
+  DischargeBody: TypeCompiler.Compile(DischargeBodySchema),
+  DischargeResponse: TypeCompiler.Compile(DischargeResponseSchema),
 
   // Clinical — care plan
   DisciplineType: TypeCompiler.Compile(DisciplineTypeSchema),

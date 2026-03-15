@@ -1,5 +1,11 @@
 export type { ServerToClientEvents, ClientToServerEvents } from "./socket.js";
 export type {
+  DischargeType,
+  DeathLocation,
+  DischargeInput,
+  DischargeResponse,
+} from "./discharge.js";
+export type {
   HumanName,
   PatientAddress,
   PatientIdentifier,

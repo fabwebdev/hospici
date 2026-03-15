@@ -106,7 +106,7 @@ async function fetchBenefitPeriod(
 async function postRecertify(
   cookieHeader: string,
   id: string,
-  body: { physicianId: string; completedAt: string },
+  body: { physicianId: string; completedAt: string; clinicalNarrative?: string },
 ): Promise<JsonBenefitPeriodDetail> {
   const res = await fetch(`${env.apiUrl}/api/v1/benefit-periods/${id}/recertify`, {
     method: "POST",
@@ -213,12 +213,21 @@ export const getBenefitPeriodFn = createServerFn({ method: "GET" })
   });
 
 export const recertifyFn = createServerFn({ method: "POST" })
-  .validator((data: unknown) => data as { id: string; physicianId: string; completedAt: string })
+  .validator(
+    (data: unknown) =>
+      data as {
+        id: string;
+        physicianId: string;
+        completedAt: string;
+        clinicalNarrative?: string;
+      },
+  )
   .handler(async ({ data }) => {
     const cookie = getRequestHeader("cookie") ?? "";
     return postRecertify(cookie, data.id, {
       physicianId: data.physicianId,
       completedAt: data.completedAt,
+      clinicalNarrative: data.clinicalNarrative,
     });
   });
 

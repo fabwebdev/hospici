@@ -651,6 +651,7 @@ export class BenefitPeriodService {
   /**
    * Complete a recertification for a benefit period.
    * Transitions recertStatus → 'completed', sets recertCompletedAt + recertPhysicianId.
+   * Creates the next benefit period (60d) starting the day after the current period ends.
    */
   async completeRecertification(
     id: string,
@@ -660,6 +661,15 @@ export class BenefitPeriodService {
     const row = await db.transaction(async (tx) => {
       await applyRlsContext(tx, user);
 
+      const [current] = await tx
+        .select()
+        .from(benefitPeriods)
+        .where(eq(benefitPeriods.id, id))
+        .limit(1);
+
+      if (!current) return undefined;
+
+      // Mark the current period as recertification completed
       const [updated] = await tx
         .update(benefitPeriods)
         .set({
@@ -670,6 +680,38 @@ export class BenefitPeriodService {
         })
         .where(eq(benefitPeriods.id, id))
         .returning({ id: benefitPeriods.id });
+
+      // Create the next benefit period (always 60d for period 3+; period 2 → period 3 = 60d)
+      const nextPeriodNumber = current.periodNumber + 1;
+      const nextStartDate = addDays(current.endDate, 1);
+      const nextLengthDays = getPeriodLengthDays(nextPeriodNumber);
+      const nextEndDate = addDays(nextStartDate, nextLengthDays - 1);
+      const nextRecertDueDate = addDays(nextEndDate, -7);
+      const nextF2FRequired = isF2FRequired(nextPeriodNumber);
+      const nextF2FWindowStart = nextF2FRequired
+        ? addDays(nextEndDate, -30)
+        : null;
+
+      await tx.insert(benefitPeriods).values({
+        patientId: current.patientId,
+        locationId: current.locationId,
+        periodNumber: nextPeriodNumber,
+        startDate: nextStartDate,
+        endDate: nextEndDate,
+        status: "upcoming",
+        admissionType: current.admissionType,
+        isTransferDerived: current.isTransferDerived,
+        isReportingPeriod: false,
+        recertDueDate: nextRecertDueDate,
+        recertStatus: "not_yet_due",
+        f2fRequired: nextF2FRequired,
+        f2fStatus: nextF2FRequired ? "not_yet_due" : "not_required",
+        f2fWindowStart: nextF2FWindowStart,
+        f2fWindowEnd: nextF2FRequired ? nextEndDate : null,
+        noeId: current.noeId,
+        billingRisk: false,
+      } satisfies Omit<BenefitPeriodInsert, "id">);
+
       return updated;
     });
 
@@ -680,7 +722,11 @@ export class BenefitPeriodService {
       locationId: user.locationId,
       resourceType: "benefit_period",
       resourceId: id,
-      details: { action: "complete_recertification", physicianId: body.physicianId },
+      details: {
+        action: "complete_recertification",
+        physicianId: body.physicianId,
+        clinicalNarrative: body.clinicalNarrative ?? null,
+      },
     });
 
     return this.getPeriod(id, user);

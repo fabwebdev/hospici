@@ -130,7 +130,7 @@ const TABS: Tab[] = [
   { label: "Medications", to: "/patients/$patientId/medications" },
   { label: "Care Team", to: "/patients/$patientId/care-team" },
   { label: "Documents", to: "/patients/$patientId/documents" },
-  { label: "Care Plan", disabled: true },
+  { label: "Care Plan", to: "/patients/$patientId/care-plan" },
   { label: "Dose Spot", to: "/patients/$patientId/dose-spot" },
 ];
 
@@ -250,6 +250,22 @@ function PatientDetailLayout() {
             >
               + New Order
             </button>
+            <Link
+              to="/patients/$patientId/discharge"
+              params={{ patientId }}
+              search={{ type: "revocation" }}
+              className="h-9 px-3.5 border border-amber-300 rounded-md text-sm font-medium text-amber-700 bg-white hover:bg-amber-50 flex items-center"
+            >
+              Record Revocation
+            </Link>
+            <Link
+              to="/patients/$patientId/discharge"
+              params={{ patientId }}
+              search={{ type: undefined }}
+              className="h-9 px-3.5 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50 flex items-center"
+            >
+              Discharge Patient
+            </Link>
           </div>
         </div>
 

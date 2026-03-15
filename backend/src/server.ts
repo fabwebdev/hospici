@@ -14,6 +14,7 @@ import { setClaimEventEmitter } from "@/contexts/billing/services/claim.service.
 import { setClaimAuditEventEmitter } from "@/contexts/billing/services/claimAudit.service.js";
 import assessmentRoutes from "@/contexts/clinical/routes/assessment.routes.js";
 import carePlanRoutes from "@/contexts/clinical/routes/carePlan.routes.js";
+import dischargeRoutes from "@/contexts/clinical/routes/discharge.routes.js";
 import careTeamRoutes from "@/contexts/clinical/routes/careTeam.routes.js";
 import medicationRoutes from "@/contexts/clinical/routes/medication.routes.js";
 import myDashboardRoutes from "@/contexts/clinical/routes/my-dashboard.routes.js";
@@ -213,6 +214,7 @@ export async function buildApp() {
   await fastify.register(patientRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(assessmentRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(carePlanRoutes, { prefix: "/api/v1/patients" });
+  await fastify.register(dischargeRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(medicationRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(careTeamRoutes, { prefix: "/api/v1/patients" });
   await fastify.register(patientConditionsRoutes, { prefix: "/api/v1/patients" });

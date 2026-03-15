@@ -188,6 +188,8 @@ export const RecertifyBodySchema = Type.Object(
   {
     physicianId: Type.String({ format: "uuid" }),
     completedAt: Type.String({ format: "date" }),
+    /** Step 1 clinical narrative — eligibility rationale, functional decline, diagnoses progression */
+    clinicalNarrative: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 );
