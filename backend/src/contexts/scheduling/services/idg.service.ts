@@ -14,6 +14,7 @@
 import { logAudit } from "@/contexts/identity/services/audit.service.js";
 import { db } from "@/db/client.js";
 import { idgMeetings } from "@/db/schema/idg-meetings.table.js";
+import { patients } from "@/db/schema/patients.table.js";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { FastifyRequest } from "fastify";
 import {
@@ -311,11 +312,24 @@ export async function getIDGComplianceStatus(
     const meetingCompletedAt = meeting?.completedAt ?? null;
 
     if (!meeting || !meetingCompletedAt) {
+      // Grace period: newly admitted patients have 24 hours before the IDG block fires.
+      // This prevents the block from triggering the moment a patient is admitted.
+      const patientRow = await tx
+        .select({ admissionDate: patients.admissionDate })
+        .from(patients)
+        .where(eq(patients.id, patientId))
+        .limit(1);
+
+      const admissionDate = patientRow[0]?.admissionDate;
+      const withinGracePeriod =
+        admissionDate != null &&
+        Date.now() - new Date(admissionDate).getTime() < 24 * 60 * 60 * 1000;
+
       return {
         patientId,
-        compliant: false,
+        compliant: withinGracePeriod,
         daysSinceLastIdg: null,
-        daysOverdue: 0,
+        daysOverdue: withinGracePeriod ? 0 : 0,
         lastMeetingId: null,
         lastMeetingDate: null,
       };
