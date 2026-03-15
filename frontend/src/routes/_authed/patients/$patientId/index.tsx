@@ -1,592 +1,711 @@
 // routes/_authed/patients/$patientId/index.tsx
-// Patient Overview tab — trajectory sparklines, HOPE timeline, F2F, care plan, demographics
+// Patient Overview tab — matches "04 Patient Detail" pen file design
+// Left: Trajectory · Recent Notes · Active Diagnoses
+// Right: Care Team · Upcoming Visits · IDG Conference
 
-import { getCarePlanFn } from "@/functions/carePlan.functions.js";
-import { getPatientF2FFn } from "@/functions/f2f.functions.js";
-import {
-  getHOPEAssessmentsFn,
-  getHOPEPatientTimelineFn,
-  getHOPESubmissionsByAssessmentFn,
-} from "@/functions/hope.functions.js";
-import { getIDGComplianceFn } from "@/functions/idg.functions.js";
-import { getPatientFn } from "@/functions/patient.functions.js";
 import { getTrajectoryFn } from "@/functions/assessment.functions.js";
-import { patientKeys } from "@/lib/query/keys.js";
+import { getCareTeamFn } from "@/functions/care-team.functions.js";
+import { getConditionsFn } from "@/functions/conditions.functions.js";
+import { getIDGComplianceFn } from "@/functions/idg.functions.js";
+import { listEncountersFn } from "@/functions/vantage-chart.functions.js";
+import { getScheduledVisitsFn } from "@/functions/visitSchedule.functions.js";
 import type {
-  CarePlanResponse,
-  DisciplineType,
-  F2FEncounterListResponse,
-  HOPEAssessmentListResponse,
-  HOPEAssessmentStatus,
-  HOPEPatientTimeline,
-  HOPESubmissionListResponse,
-  HOPESubmissionRow,
-  PatientResponse,
-  PhysicianReview,
-  SmartGoal,
+  CareTeamDiscipline,
+  CareTeamListResponse,
+  ConditionListResponse,
+  EncounterListResponse,
+  IDGComplianceStatus,
+  ScheduledVisitListResponse,
   TrajectoryDataPoint,
   TrajectoryResponse,
 } from "@hospici/shared-types";
-import {
-  HOPE_ASSESSMENT_TYPE_LABELS,
-  HOPE_STATUS_LABELS,
-  IQIES_ERROR_GUIDANCE,
-} from "@hospici/shared-types";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/patients/$patientId/")({
   component: PatientOverviewPage,
 });
 
-// ── Sparkline ─────────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
-interface SparklineProps {
-  label: string;
-  points: (number | null)[];
-  color: string;
+function trendColor(vals: (number | null)[]): string {
+  const d = vals.filter((v): v is number => v !== null);
+  if (d.length < 2) return "#94A3B8";
+  const last = d[d.length - 1] ?? 0;
+  const prev = d[d.length - 2] ?? 0;
+  if (last > prev + 1) return "#EF4444";
+  if (last < prev - 1) return "#22C55E";
+  return "#F59E0B";
 }
 
-function Sparkline({ label, points, color }: SparklineProps) {
+function MiniSparkline({ points, color }: { points: (number | null)[]; color: string }) {
   const defined = points.filter((p): p is number => p !== null);
   if (defined.length < 2) {
     return (
-      <div className="text-center">
-        <div className="text-xs text-gray-500 mb-1">{label}</div>
-        <div className="text-xs text-gray-400 italic">no data</div>
+      <div className="w-16 h-5 flex items-center">
+        <span className="text-xs text-gray-300">—</span>
       </div>
     );
   }
-  const width = 80;
-  const height = 32;
+  const w = 64;
+  const h = 20;
   const max = 10;
-  const stepX = width / (points.length - 1);
-  const pathSegments: string[] = [];
-  let inSegment = false;
-  points.forEach((val, i) => {
-    if (val === null) { inSegment = false; return; }
+  const stepX = w / Math.max(points.length - 1, 1);
+  const segs: string[] = [];
+  let inSeg = false;
+  for (let i = 0; i < points.length; i++) {
+    const val = points[i];
+    if (val === null || val === undefined) {
+      inSeg = false;
+      continue;
+    }
     const x = i * stepX;
-    const y = height - (val / max) * height;
-    if (!inSegment) { pathSegments.push(`M${x.toFixed(1)},${y.toFixed(1)}`); inSegment = true; }
-    else { pathSegments.push(`L${x.toFixed(1)},${y.toFixed(1)}`); }
-  });
-  const lastDefined = defined[defined.length - 1] ?? 0;
-  const lastIdx = points.lastIndexOf(lastDefined);
-  const lastX = lastIdx * stepX;
-  const lastY = height - (lastDefined / max) * height;
-  return (
-    <div className="text-center">
-      <div className="text-xs text-gray-500 mb-1">{label}</div>
-      <svg width={width} height={height} className="mx-auto" role="img" aria-label={`${label} trend sparkline`}>
-        <title>{label}</title>
-        <path d={pathSegments.join(" ")} stroke={color} strokeWidth="1.5" fill="none" />
-        <circle cx={lastX} cy={lastY} r="2" fill={color} />
-      </svg>
-      <div className="text-xs font-medium mt-1" style={{ color }}>{lastDefined}/10</div>
-    </div>
-  );
-}
-
-// ── Trajectory panel ──────────────────────────────────────────────────────────
-
-function TrajectoryPanel({ patientId }: { patientId: string }) {
-  const { data: trajectory, isLoading } = useQuery<TrajectoryResponse>({
-    queryKey: ["trajectory", patientId],
-    queryFn: () => getTrajectoryFn({ data: { patientId } }) as Promise<TrajectoryResponse>,
-  });
-  if (isLoading) return <div className="text-xs text-gray-400 py-2">Loading trajectory…</div>;
-  const points: TrajectoryDataPoint[] = trajectory?.dataPoints ?? [];
-  if (points.length === 0)
-    return <div className="text-xs text-gray-400 italic py-2">No assessments recorded yet.</div>;
-  const pain = points.map((p) => p.pain);
-  const dyspnea = points.map((p) => p.dyspnea);
-  const nausea = points.map((p) => p.nausea);
-  const trendColor = (vals: (number | null)[]) => {
-    const d = vals.filter((v): v is number => v !== null);
-    if (d.length < 2) return "#6b7280";
-    const last = d[d.length - 1] ?? 0;
-    const prev = d[d.length - 2] ?? 0;
-    if (last > prev + 1) return "#ef4444";
-    if (last < prev - 1) return "#22c55e";
-    return "#f59e0b";
-  };
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Decline Trajectory</h2>
-        <span className="text-sm text-gray-500">{points.length} assessments</span>
-      </div>
-      <div className="flex gap-6 justify-around flex-wrap">
-        <Sparkline label="Pain"    points={pain}    color={trendColor(pain)}    />
-        <Sparkline label="Dyspnea" points={dyspnea} color={trendColor(dyspnea)} />
-        <Sparkline label="Nausea"  points={nausea}  color={trendColor(nausea)}  />
-      </div>
-      <p className="text-xs text-gray-400 mt-3 text-center">
-        Red = worsening · Amber = stable · Green = improving
-      </p>
-    </div>
-  );
-}
-
-// ── Care plan ─────────────────────────────────────────────────────────────────
-
-const DISCIPLINE_LABELS: Record<DisciplineType, string> = {
-  RN: "Nursing (RN)",
-  SW: "Social Work",
-  CHAPLAIN: "Chaplaincy",
-  THERAPY: "Therapy",
-  AIDE: "Aide",
-  VOLUNTEER: "Volunteer Services",
-  BEREAVEMENT: "Bereavement",
-  PHYSICIAN: "Physician / Medical Director",
-};
-
-function PhysicianReviewBanner({ review }: { review: PhysicianReview }) {
-  if (review.isInitialReviewOverdue) {
-    return (
-      <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200">
-        <p className="text-sm font-semibold text-red-800">⚠ Initial physician review overdue (42 CFR §418.56(b))</p>
-        <p className="text-xs text-red-600 mt-0.5">Required within 2 calendar days of admission. Deadline: {review.initialReviewDeadline ?? "—"}</p>
-      </div>
-    );
+    const y = h - (val / max) * h;
+    if (!inSeg) {
+      segs.push(`M${x.toFixed(1)},${y.toFixed(1)}`);
+      inSeg = true;
+    } else {
+      segs.push(`L${x.toFixed(1)},${y.toFixed(1)}`);
+    }
   }
-  if (review.isOngoingReviewOverdue) {
-    return (
-      <div className="mb-4 p-3 rounded-md bg-orange-50 border border-orange-200">
-        <p className="text-sm font-semibold text-orange-800">⚠ 14-day physician review overdue (42 CFR §418.56(b))</p>
-        <p className="text-xs text-orange-600 mt-0.5">Next review was due: {review.nextReviewDue ?? "—"}</p>
-      </div>
-    );
-  }
-  if (!review.initialReviewCompletedAt && review.initialReviewDeadline) {
-    return (
-      <div className="mb-4 p-3 rounded-md bg-yellow-50 border border-yellow-200">
-        <p className="text-sm font-semibold text-yellow-800">Pending initial physician review</p>
-        <p className="text-xs text-yellow-600 mt-0.5">Due by: {review.initialReviewDeadline}</p>
-      </div>
-    );
-  }
-  if (review.lastReviewAt) {
-    return (
-      <div className="mb-4 p-3 rounded-md bg-green-50 border border-green-200">
-        <p className="text-sm text-green-800">
-          ✓ Last physician review: {new Date(review.lastReviewAt).toLocaleDateString()} · Next due: {review.nextReviewDue ?? "—"}
-        </p>
-      </div>
-    );
-  }
-  return null;
-}
-
-function SmartGoalBadge({ goal }: { goal: SmartGoal }) {
-  const statusColors: Record<SmartGoal["status"], string> = {
-    active: "bg-blue-100 text-blue-800",
-    met: "bg-green-100 text-green-800",
-    revised: "bg-yellow-100 text-yellow-800",
-  };
   return (
-    <div className="border border-gray-200 rounded p-3 text-sm space-y-1">
-      <div className="flex items-start justify-between gap-2">
-        <p className="font-medium text-gray-900">{goal.goal}</p>
-        <span className={`shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${statusColors[goal.status]}`}>
-          {goal.status}
-        </span>
-      </div>
-      <p className="text-xs text-gray-500">Target: {goal.targetDate}</p>
-    </div>
-  );
-}
-
-function CarePlanPanel({ patientId }: { patientId: string }) {
-  const { data: carePlan, isLoading } = useQuery<CarePlanResponse | null>({
-    queryKey: ["care-plan", patientId],
-    queryFn: () => getCarePlanFn({ data: { patientId } }) as Promise<CarePlanResponse | null>,
-  });
-  if (isLoading) return <div className="text-xs text-gray-400 py-2">Loading care plan…</div>;
-  if (!carePlan) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Interdisciplinary Care Plan</h2>
-        <p className="text-sm text-gray-400 italic">No care plan on file for this patient.</p>
-      </div>
-    );
-  }
-  const ALL_DISCIPLINES: DisciplineType[] = ["RN", "SW", "CHAPLAIN", "THERAPY", "AIDE", "VOLUNTEER", "BEREAVEMENT", "PHYSICIAN"];
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Interdisciplinary Care Plan</h2>
-        <span className="text-xs text-gray-400">v{carePlan.version}</span>
-      </div>
-      <PhysicianReviewBanner review={carePlan.physicianReview} />
-      <div className="space-y-6">
-        {ALL_DISCIPLINES.map((disc) => {
-          const section = carePlan.disciplineSections[disc];
-          const hasContent = section && (section.notes || section.goals.length > 0);
-          return (
-            <div key={disc} className="border-l-2 border-gray-100 pl-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">{DISCIPLINE_LABELS[disc]}</h3>
-              {!section || !hasContent ? (
-                <p className="text-xs text-gray-400 italic">No documentation yet.</p>
-              ) : (
-                <>
-                  {section.notes && <p className="text-sm text-gray-600 mb-2">{section.notes}</p>}
-                  {section.goals.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">SMART Goals ({section.goals.length})</p>
-                      {section.goals.map((g) => <SmartGoalBadge key={g.id} goal={g} />)}
-                    </div>
-                  )}
-                  <p className="text-xs text-gray-400 mt-1">Updated {new Date(section.lastUpdatedAt).toLocaleDateString()}</p>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ── HOPE panel ────────────────────────────────────────────────────────────────
-
-function HOPEStatusBadge({ status }: { status: HOPEAssessmentStatus | null }) {
-  if (!status) return <span className="text-xs text-gray-400 italic">None</span>;
-  const colors: Record<HOPEAssessmentStatus, string> = {
-    draft: "bg-gray-100 text-gray-600",
-    in_progress: "bg-blue-100 text-blue-700",
-    ready_for_review: "bg-amber-100 text-amber-700",
-    approved_for_submission: "bg-purple-100 text-purple-700",
-    submitted: "bg-indigo-100 text-indigo-700",
-    accepted: "bg-green-100 text-green-700",
-    rejected: "bg-red-100 text-red-700",
-    needs_correction: "bg-orange-100 text-orange-700",
-  };
-  return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${colors[status]}`}>
-      {HOPE_STATUS_LABELS[status]}
-    </span>
-  );
-}
-
-function HOPECompletenessRing({ score }: { score: number }) {
-  const r = 14;
-  const circ = 2 * Math.PI * r;
-  const dash = (score / 100) * circ;
-  const color = score >= 80 ? "#22c55e" : score >= 50 ? "#f59e0b" : "#ef4444";
-  return (
-    <svg width={36} height={36} aria-label={`${score}% complete`} className="shrink-0">
-      <title>{score}% complete</title>
-      <circle cx={18} cy={18} r={r} fill="none" stroke="#e2e8f0" strokeWidth="3" />
-      <circle cx={18} cy={18} r={r} fill="none" stroke={color} strokeWidth="3"
-        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" transform="rotate(-90 18 18)" />
-      <text x={18} y={22} textAnchor="middle" fontSize={8} fontWeight="600" fill={color}>{score}%</text>
+    <svg width={w} height={h} role="img" aria-label="trend sparkline" className="mt-0.5">
+      <title>trend</title>
+      <path d={segs.join(" ")} stroke={color} strokeWidth="1.5" fill="none" />
     </svg>
   );
 }
 
-function HOPEPanel({ patientId }: { patientId: string }) {
-  const [showHistory, setShowHistory] = useState<string | null>(null);
-  const { data: timeline, isLoading: timelineLoading } = useQuery<HOPEPatientTimeline>({
-    queryKey: ["hope", "patient-timeline", patientId],
-    queryFn: () => getHOPEPatientTimelineFn({ data: { patientId } }) as Promise<HOPEPatientTimeline>,
-  });
-  const { data: assessmentList } = useQuery<HOPEAssessmentListResponse>({
-    queryKey: ["hope", "assessments", patientId],
-    queryFn: () => getHOPEAssessmentsFn({ data: { patientId } }) as Promise<HOPEAssessmentListResponse>,
-  });
-  const { data: submissions } = useQuery<HOPESubmissionListResponse>({
-    queryKey: ["hope", "submissions", showHistory],
-    queryFn: () => getHOPESubmissionsByAssessmentFn({ data: { assessmentId: showHistory ?? "" } }) as Promise<HOPESubmissionListResponse>,
-    enabled: showHistory !== null,
-  });
-  if (timelineLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">HOPE Assessment Timeline</h2>
-        <div className="text-xs text-gray-400">Loading HOPE timeline…</div>
-      </div>
-    );
-  }
-  const hopeAAssessment = assessmentList?.data.find((a) => a.assessmentType === "01");
-  const hopeDAssessment = assessmentList?.data.find((a) => a.assessmentType === "03");
+// ── Card shell ─────────────────────────────────────────────────────────────────
+
+function CardHeader({
+  icon,
+  title,
+  right,
+  bg = "white",
+  borderColor = "#E2E8F0",
+}: {
+  icon: React.ReactNode;
+  title: string;
+  right?: React.ReactNode;
+  bg?: string;
+  borderColor?: string;
+}) {
   return (
-    <div className="bg-white rounded-lg shadow p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">HOPE Assessment Timeline</h2>
-        <Link to="/hope/dashboard" className="text-xs text-blue-600 hover:underline">HOPE Command Center →</Link>
-      </div>
-      <div className="flex items-stretch gap-3">
-        {/* HOPE-A */}
-        <div className="flex-1 rounded-lg border border-gray-200 p-3">
-          <p className="text-xs font-semibold text-blue-700 mb-1">{HOPE_ASSESSMENT_TYPE_LABELS["01"]}</p>
-          <HOPEStatusBadge status={timeline?.hopeA.status ?? null} />
-          {timeline?.hopeA.windowDeadline && <p className="mt-1 text-xs text-gray-500">Deadline: {timeline.hopeA.windowDeadline}</p>}
-          {hopeAAssessment && (
-            <div className="mt-2 flex items-center gap-2">
-              <HOPECompletenessRing score={hopeAAssessment.completenessScore} />
-              <button type="button" className="text-xs text-blue-600 hover:underline"
-                onClick={() => setShowHistory((p) => p === hopeAAssessment.id ? null : hopeAAssessment.id)}>
-                {showHistory === hopeAAssessment.id ? "Hide" : "iQIES History"}
-              </button>
-            </div>
-          )}
-          {!timeline?.hopeA.assessmentId && (
-            <Link to="/hope/assessments/new" className="mt-2 block text-xs text-blue-600 hover:underline">+ Create HOPE-A</Link>
-          )}
-        </div>
-        <div className="flex items-center text-gray-400 text-sm font-bold">→</div>
-        {/* HOPE-UV */}
-        <div className="flex-1 rounded-lg border border-gray-200 p-3">
-          <p className="text-xs font-semibold text-indigo-700 mb-1">{HOPE_ASSESSMENT_TYPE_LABELS["02"]}</p>
-          <span className="text-lg font-bold text-gray-800">{timeline?.hopeUV.count ?? 0}</span>
-          <span className="text-xs text-gray-500 ml-1">filed</span>
-          {timeline?.hopeUV.lastFiledAt && <p className="mt-1 text-xs text-gray-500">Last: {timeline.hopeUV.lastFiledAt}</p>}
-          {timeline?.hopeUV.nextDue && <p className="text-xs text-gray-500">Next est.: {timeline.hopeUV.nextDue}</p>}
-          {timeline?.symptomFollowUp.required && !timeline.symptomFollowUp.completed && (
-            <div className="mt-2 flex items-center gap-1 text-xs font-medium text-amber-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-              Follow-up due {timeline.symptomFollowUp.dueAt ?? "ASAP"}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center text-gray-400 text-sm font-bold">→</div>
-        {/* HOPE-D */}
-        <div className="flex-1 rounded-lg border border-gray-200 p-3">
-          <p className="text-xs font-semibold text-purple-700 mb-1">{HOPE_ASSESSMENT_TYPE_LABELS["03"]}</p>
-          {timeline?.hopeD.required ? (
-            <>
-              <HOPEStatusBadge status={timeline.hopeD.status} />
-              {timeline.hopeD.windowDeadline && <p className="mt-1 text-xs text-gray-500">Deadline: {timeline.hopeD.windowDeadline}</p>}
-              {hopeDAssessment && (
-                <div className="mt-2 flex items-center gap-2">
-                  <HOPECompletenessRing score={hopeDAssessment.completenessScore} />
-                  <button type="button" className="text-xs text-blue-600 hover:underline"
-                    onClick={() => setShowHistory((p) => p === hopeDAssessment.id ? null : hopeDAssessment.id)}>
-                    {showHistory === hopeDAssessment.id ? "Hide" : "iQIES History"}
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <span className="text-xs text-gray-400 italic">Not yet required</span>
-          )}
-        </div>
-      </div>
-      {timeline?.penaltyExposure.atRisk && (
-        <div className="rounded-md bg-red-50 border border-red-200 p-3">
-          <p className="text-xs font-semibold text-red-700">
-            HQRP Penalty Risk — shortfalls on: {timeline.penaltyExposure.measureShortfalls.join(", ")}
-          </p>
-        </div>
-      )}
-      {showHistory && submissions && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            iQIES Submission History ({submissions.data.length} attempt{submissions.data.length !== 1 ? "s" : ""})
-          </h3>
-          {submissions.data.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">No submission attempts yet.</p>
-          ) : (
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-gray-500 border-b border-gray-200">
-                  <th className="text-left py-1 font-medium">#</th>
-                  <th className="text-left py-1 font-medium">Submitted</th>
-                  <th className="text-left py-1 font-medium">Status</th>
-                  <th className="text-left py-1 font-medium">Tracking ID</th>
-                  <th className="text-left py-1 font-medium">Rejection Codes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {submissions.data.map((sub: HOPESubmissionRow) => (
-                  <tr key={sub.id}>
-                    <td className="py-1.5 font-mono">{sub.attemptNumber}</td>
-                    <td className="py-1.5">{new Date(sub.submittedAt).toLocaleDateString()}</td>
-                    <td className="py-1.5">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        sub.submissionStatus === "accepted" ? "bg-green-100 text-green-700"
-                        : sub.submissionStatus === "rejected" ? "bg-red-100 text-red-700"
-                        : sub.submissionStatus === "pending" ? "bg-yellow-100 text-yellow-700"
-                        : "bg-orange-100 text-orange-700"
-                      }`}>{sub.submissionStatus}</span>
-                    </td>
-                    <td className="py-1.5 font-mono text-gray-600">{sub.trackingId ?? "—"}</td>
-                    <td className="py-1.5">
-                      {sub.rejectionCodes.length > 0
-                        ? sub.rejectionCodes.map((c) => (
-                            <div key={c}>
-                              <span className="text-red-600 font-mono">{c}</span>
-                              {IQIES_ERROR_GUIDANCE[c] && (
-                                <p className="text-gray-500 mt-0.5">{IQIES_ERROR_GUIDANCE[c]}</p>
-                              )}
-                            </div>
-                          ))
-                        : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
+    <div
+      className="flex items-center gap-2 h-11 px-4"
+      style={{ borderBottom: `1px solid ${borderColor}`, background: bg }}
+    >
+      {icon}
+      <span
+        className="text-sm font-semibold text-gray-900"
+        style={{ fontFamily: "Space Grotesk, Inter, sans-serif" }}
+      >
+        {title}
+      </span>
+      {right && <div className="ml-auto">{right}</div>}
     </div>
   );
 }
 
-// ── F2F panel ─────────────────────────────────────────────────────────────────
+// ── Trajectory Card ────────────────────────────────────────────────────────────
 
-function F2FPanel({ patientId }: { patientId: string }) {
-  const { data, isLoading } = useQuery<F2FEncounterListResponse>({
-    queryKey: ["f2f-encounters", patientId],
-    queryFn: () => getPatientF2FFn({ data: { patientId } }) as Promise<F2FEncounterListResponse>,
+function TrajectoryCard({ patientId }: { patientId: string }) {
+  const { data: trajectory, isLoading } = useQuery<TrajectoryResponse>({
+    queryKey: ["trajectory", patientId],
+    queryFn: () => getTrajectoryFn({ data: { patientId } }) as Promise<TrajectoryResponse>,
   });
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Face-to-Face Certification</h2>
-        <div className="text-xs text-gray-400">Loading F2F status…</div>
-      </div>
-    );
-  }
-  const encounters = data?.encounters ?? [];
-  const period3Encounters = encounters.filter((e) => e.periodNumber >= 3);
-  const latestPeriod3 = period3Encounters[0];
-  const maxPeriodNumber = encounters.reduce((max, e) => (e.periodNumber > max ? e.periodNumber : max), 0);
+
+  const points: TrajectoryDataPoint[] = trajectory?.dataPoints ?? [];
+  const last = points[points.length - 1];
+  const pain = points.map((p) => p.pain);
+  const dyspnea = points.map((p) => p.dyspnea);
+  const nausea = points.map((p) => p.nausea);
+  const functional = points.map((p) => p.functionalStatus);
+
+  const tiles = [
+    { label: "Pain", value: last?.pain ?? null, pts: pain },
+    { label: "Dyspnea", value: last?.dyspnea ?? null, pts: dyspnea },
+    { label: "Nausea", value: last?.nausea ?? null, pts: nausea },
+    {
+      label: "Functional",
+      value: last?.functionalStatus ?? null,
+      pts: functional,
+    },
+  ];
+
+  const activityIcon = (
+    <svg
+      className="w-4 h-4 text-gray-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <title>activity</title>
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  );
+
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Face-to-Face Certification</h2>
-        <span className="text-xs text-gray-400">42 CFR §418.22</span>
-      </div>
-      {maxPeriodNumber < 3 ? (
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Not Required</span>
-          <span className="text-xs text-gray-500">F2F certification required from benefit period 3 onwards</span>
-        </div>
-      ) : latestPeriod3?.isValidForRecert ? (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">F2F Valid</span>
-            <span className="text-xs text-gray-600">
-              {latestPeriod3.f2fDate} · Period {latestPeriod3.periodNumber} ({latestPeriod3.periodType})
-            </span>
-          </div>
-          {latestPeriod3.f2fProviderRole && (
-            <p className="text-xs text-gray-500 capitalize">Provider role: {latestPeriod3.f2fProviderRole} · {latestPeriod3.encounterSetting}</p>
-          )}
-        </div>
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <CardHeader
+        icon={activityIcon}
+        title="Decline Trajectory"
+        right={
+          !isLoading && points.length > 0 ? (
+            <span className="text-xs text-gray-400">{points.length} assessments</span>
+          ) : undefined
+        }
+      />
+      {isLoading ? (
+        <div className="p-4 text-xs text-gray-400">Loading…</div>
+      ) : points.length === 0 ? (
+        <div className="p-4 text-xs text-gray-400 italic">No assessments recorded yet.</div>
       ) : (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-              {latestPeriod3 && !latestPeriod3.isValidForRecert ? "F2F Invalid" : "F2F Required"}
-            </span>
-            {latestPeriod3?.invalidationReason && (
-              <span className="text-xs text-red-600 truncate max-w-xs">{latestPeriod3.invalidationReason}</span>
-            )}
-          </div>
-          <Link
-            to="/patients/$patientId/f2f/new"
-            params={{ patientId }}
-            search={{ periodId: undefined }}
-            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-          >
-            Document F2F Encounter
-          </Link>
+        <div className="flex divide-x divide-gray-100">
+          {tiles.map(({ label, value, pts }) => {
+            const color = trendColor(pts);
+            return (
+              <div key={label} className="flex-1 flex flex-col gap-1 px-4 py-3.5">
+                <span
+                  className="text-xl font-semibold text-gray-900"
+                  style={{ fontFamily: "Space Grotesk, Inter, sans-serif" }}
+                >
+                  {value !== null && value !== undefined ? `${value}/10` : "—"}
+                </span>
+                <span className="text-xs text-gray-500">{label}</span>
+                <MiniSparkline points={pts} color={color} />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Recent Visit Notes Card ────────────────────────────────────────────────────
+
+const VISIT_TYPE_STYLES: Record<string, { label: string; bg: string; color: string }> = {
+  routine_rn: { label: "RN Visit", bg: "#EFF6FF", color: "#1D4ED8" },
+  admission: { label: "Admission", bg: "#F0FDF4", color: "#166534" },
+  recertification: { label: "Recert", bg: "#FEF9C3", color: "#92400E" },
+  social_work: { label: "SW Visit", bg: "#F0FDF4", color: "#166534" },
+  chaplain: { label: "Chaplain", bg: "#FEF9C3", color: "#78350F" },
+  physician_attestation: { label: "Physician", bg: "#F5F3FF", color: "#5B21B6" },
+  supervisory: { label: "Supervisory", bg: "#E0F2FE", color: "#0369A1" },
+  prn: { label: "PRN", bg: "#FFF7ED", color: "#C2410C" },
+  discharge: { label: "Discharge", bg: "#FEE2E2", color: "#991B1B" },
+  progress_note: { label: "Progress", bg: "#F1F5F9", color: "#475569" },
+};
+
+function VisitNotesCard({ patientId }: { patientId: string }) {
+  const { data, isLoading } = useQuery<EncounterListResponse>({
+    queryKey: ["encounters", patientId],
+    queryFn: () => listEncountersFn({ data: { patientId } }) as Promise<EncounterListResponse>,
+  });
+
+  const encounters = (data?.encounters ?? []).slice(0, 2);
+
+  const fileTextIcon = (
+    <svg
+      className="w-4 h-4 text-gray-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <title>file-text</title>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  );
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <CardHeader
+        icon={fileTextIcon}
+        title="Recent Visit Notes"
+        right={
+          <Link
+            to="/patients/$patientId/clinical-notes"
+            params={{ patientId }}
+            className="text-xs text-blue-600 hover:underline"
+          >
+            View all →
+          </Link>
+        }
+      />
+      {isLoading ? (
+        <div className="p-4 text-xs text-gray-400">Loading…</div>
+      ) : encounters.length === 0 ? (
+        <div className="p-4 text-xs text-gray-400 italic">No visit notes recorded yet.</div>
+      ) : (
+        encounters.map((enc, i) => {
+          const style = VISIT_TYPE_STYLES[enc.visitType] ?? {
+            label: enc.visitType,
+            bg: "#F1F5F9",
+            color: "#475569",
+          };
+          const narrative = enc.vantageChartDraft ?? "";
+          const preview =
+            narrative.length > 130
+              ? `${narrative.slice(0, 130)}…`
+              : narrative || "No note content.";
+          const isLast = i === encounters.length - 1;
+          return (
+            <div
+              key={enc.id}
+              className={`flex flex-col gap-2 px-4 py-3${!isLast ? " border-b border-gray-50" : ""}`}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-xs font-semibold rounded px-1.5 py-0.5"
+                  style={{ background: style.bg, color: style.color }}
+                >
+                  {style.label}
+                </span>
+                <span className="text-xs text-gray-400 ml-auto shrink-0">
+                  {new Date(enc.visitedAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 leading-relaxed">{preview}</p>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+// ── Active Diagnoses Card ──────────────────────────────────────────────────────
+
+function DiagnosesCard({ patientId }: { patientId: string }) {
+  const { data, isLoading } = useQuery<ConditionListResponse>({
+    queryKey: ["conditions", patientId],
+    queryFn: () => getConditionsFn({ data: { patientId } }) as Promise<ConditionListResponse>,
+  });
+
+  const conditions = (data?.conditions ?? []).filter((c) => c.isActive).slice(0, 4);
+
+  const stethoscopeIcon = (
+    <svg
+      className="w-4 h-4 text-gray-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <title>stethoscope</title>
+      <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" />
+      <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
+      <circle cx="20" cy="10" r="2" />
+    </svg>
+  );
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <CardHeader icon={stethoscopeIcon} title="Active Diagnoses" />
+      {isLoading ? (
+        <div className="p-4 text-xs text-gray-400">Loading…</div>
+      ) : conditions.length === 0 ? (
+        <div className="p-4 text-xs text-gray-400 italic">No active diagnoses documented.</div>
+      ) : (
+        conditions.map((cond, i) => {
+          const dotColor = cond.isTerminal
+            ? "#DC2626"
+            : cond.severity === "SEVERE"
+              ? "#F59E0B"
+              : "#94A3B8";
+          const isLast = i === conditions.length - 1;
+          return (
+            <div
+              key={cond.id}
+              className={`flex items-start gap-3 px-4 py-2.5${!isLast ? " border-b border-gray-50" : ""}`}
+            >
+              <div
+                className="w-2 h-2 rounded-sm shrink-0 mt-1.5"
+                style={{ background: dotColor }}
+              />
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-sm font-medium text-gray-900">{cond.description}</span>
+                <span
+                  className="text-xs text-gray-500"
+                  style={{ fontFamily: "JetBrains Mono, monospace" }}
+                >
+                  ICD-10: {cond.icd10Code} ·{" "}
+                  {cond.isTerminal
+                    ? "Terminal / Principal Dx"
+                    : cond.isRelated
+                      ? "Related"
+                      : "Comorbidity"}
+                </span>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+// ── Care Team Card ─────────────────────────────────────────────────────────────
+
+const DISCIPLINE_COLORS: Record<CareTeamDiscipline, { bg: string; color: string }> = {
+  PHYSICIAN: { bg: "#F5F3FF", color: "#6D28D9" },
+  RN: { bg: "#EFF6FF", color: "#1D4ED8" },
+  SW: { bg: "#F0FDF4", color: "#166534" },
+  CHAPLAIN: { bg: "#FEF9C3", color: "#92400E" },
+  AIDE: { bg: "#FFF7ED", color: "#C2410C" },
+  VOLUNTEER: { bg: "#E0F2FE", color: "#0369A1" },
+  BEREAVEMENT: { bg: "#FDF4FF", color: "#7E22CE" },
+  THERAPIST: { bg: "#F0FDF4", color: "#065F46" },
+};
+
+function CareTeamCard({ patientId }: { patientId: string }) {
+  const { data, isLoading } = useQuery<CareTeamListResponse>({
+    queryKey: ["care-team", patientId],
+    queryFn: () => getCareTeamFn({ data: { patientId } }) as Promise<CareTeamListResponse>,
+  });
+
+  const members = (data?.members ?? []).filter((m) => !m.unassignedAt).slice(0, 4);
+
+  const usersIcon = (
+    <svg
+      className="w-4 h-4 text-gray-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <title>users</title>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <CardHeader
+        icon={usersIcon}
+        title="Care Team"
+        right={
+          <Link
+            to="/patients/$patientId/care-team"
+            params={{ patientId }}
+            className="text-xs text-blue-600 hover:underline"
+          >
+            Manage →
+          </Link>
+        }
+      />
+      {isLoading ? (
+        <div className="p-4 text-xs text-gray-400">Loading…</div>
+      ) : members.length === 0 ? (
+        <div className="p-4 text-xs text-gray-400 italic">No care team assigned.</div>
+      ) : (
+        members.map((m, i) => {
+          const colors = DISCIPLINE_COLORS[m.discipline] ?? {
+            bg: "#F1F5F9",
+            color: "#475569",
+          };
+          const initials = m.name
+            .split(" ")
+            .map((n) => n[0])
+            .filter(Boolean)
+            .slice(0, 2)
+            .join("")
+            .toUpperCase();
+          const isLast = i === members.length - 1;
+          return (
+            <div
+              key={m.id}
+              className={`flex items-center gap-2.5 px-4 py-2.5${!isLast ? " border-b border-gray-50" : ""}`}
+            >
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold"
+                style={{ background: colors.bg, color: colors.color }}
+              >
+                {initials}
+              </div>
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-sm font-medium text-gray-900 truncate">{m.name}</span>
+                <span className="text-xs text-gray-500 truncate">
+                  {m.discipline}
+                  {m.isPrimaryContact ? " · Primary" : ""}
+                </span>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+// ── Upcoming Visits Card ───────────────────────────────────────────────────────
+
+const DISCIPLINE_VISIT_LABELS: Record<string, string> = {
+  RN: "RN Visit",
+  SW: "SW Visit",
+  CHAPLAIN: "Chaplain Visit",
+  THERAPY: "Therapy Visit",
+  AIDE: "Aide Visit",
+};
+
+function UpcomingVisitsCard({ patientId }: { patientId: string }) {
+  const { data, isLoading } = useQuery<ScheduledVisitListResponse>({
+    queryKey: ["scheduled-visits", patientId],
+    queryFn: () =>
+      getScheduledVisitsFn({
+        data: { patientId },
+      }) as Promise<ScheduledVisitListResponse>,
+  });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = (data?.data ?? [])
+    .filter((v) => v.status === "scheduled" && v.scheduledDate >= today)
+    .slice(0, 2);
+
+  const calendarIcon = (
+    <svg
+      className="w-4 h-4 text-gray-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <title>calendar</title>
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <CardHeader icon={calendarIcon} title="Upcoming Visits" />
+      {isLoading ? (
+        <div className="p-4 text-xs text-gray-400">Loading…</div>
+      ) : upcoming.length === 0 ? (
+        <div className="p-4 text-xs text-gray-400 italic">No upcoming visits scheduled.</div>
+      ) : (
+        upcoming.map((v, i) => {
+          // Parse date as local to avoid timezone shifting
+          const parts = v.scheduledDate.split("-").map(Number);
+          const date = new Date(parts[0] ?? 2025, (parts[1] ?? 1) - 1, parts[2] ?? 1);
+          const monthLabel = date.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+          const dayNum = date.getDate();
+          const label = DISCIPLINE_VISIT_LABELS[v.discipline] ?? `${v.discipline} Visit`;
+          const isLast = i === upcoming.length - 1;
+          return (
+            <div
+              key={v.id}
+              className={`flex items-center gap-3 px-4 py-2.5${!isLast ? " border-b border-gray-50" : ""}`}
+            >
+              <div className="flex flex-col items-center w-10 shrink-0">
+                <span className="text-[10px] font-semibold text-blue-600">{monthLabel}</span>
+                <span
+                  className="text-xl font-semibold text-gray-900 leading-tight"
+                  style={{ fontFamily: "Space Grotesk, Inter, sans-serif" }}
+                >
+                  {dayNum}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-xs font-medium text-gray-900">{label}</span>
+                <span className="text-xs text-gray-500">{v.notes ?? "Home Visit"}</span>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+// ── IDG Card ───────────────────────────────────────────────────────────────────
+
+function IDGCard({ patientId }: { patientId: string }) {
+  const { data: idg, isLoading } = useQuery<IDGComplianceStatus>({
+    queryKey: ["idg-compliance", patientId],
+    queryFn: () =>
+      getIDGComplianceFn({
+        data: { patientId },
+      }) as Promise<IDGComplianceStatus>,
+  });
+
+  const isOverdue = Boolean(idg && !idg.compliant && idg.daysOverdue > 0);
+  const cardBg = isOverdue ? "#FFF7ED" : "#FFFFFF";
+  const borderColor = isOverdue ? "#FED7AA" : "#E2E8F0";
+  const titleColor = isOverdue ? "#7C2D12" : "#0F172A";
+  const iconColor = isOverdue ? "#EA580C" : "#374151";
+
+  const idgIcon = (
+    <svg
+      className="w-4 h-4"
+      style={{ color: iconColor }}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <title>calendar-clock</title>
+      <path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5" />
+      <path d="M16 2v4" />
+      <path d="M8 2v4" />
+      <path d="M3 10h5" />
+      <path d="M17.5 17.5 16 16.25V14" />
+      <path d="M22 16a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
+    </svg>
+  );
+
+  return (
+    <div className="rounded-lg border overflow-hidden" style={{ background: cardBg, borderColor }}>
+      <div
+        className="flex items-center gap-2 h-11 px-4"
+        style={{ borderBottom: `1px solid ${borderColor}` }}
+      >
+        {idgIcon}
+        <span
+          className="text-sm font-semibold"
+          style={{
+            fontFamily: "Space Grotesk, Inter, sans-serif",
+            color: titleColor,
+          }}
+        >
+          IDG Conference
+        </span>
+      </div>
+      {isLoading ? (
+        <div className="p-4 text-xs text-gray-400">Loading…</div>
+      ) : (
+        <div className="flex flex-col gap-2.5 p-4">
+          {isOverdue && idg ? (
+            <div className="flex items-center gap-1.5">
+              <svg
+                className="w-3.5 h-3.5 text-red-600 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <title>warning</title>
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <span className="text-sm font-semibold text-red-600">
+                {idg.daysOverdue} {idg.daysOverdue === 1 ? "day" : "days"} OVERDUE
+                {idg.lastMeetingDate
+                  ? ` — was due ${new Date(idg.lastMeetingDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                  : ""}
+              </span>
+            </div>
+          ) : idg?.compliant ? (
+            <div className="flex items-center gap-1.5">
+              <svg
+                className="w-3.5 h-3.5 text-green-600 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <title>check</title>
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span className="text-sm font-medium text-green-700">
+                Compliant
+                {idg.daysSinceLastIdg !== null
+                  ? ` · ${idg.daysSinceLastIdg} days since last IDG`
+                  : ""}
+              </span>
+            </div>
+          ) : null}
+          <p
+            className="text-xs leading-relaxed"
+            style={{ color: isOverdue ? "#92400E" : "#6B7280" }}
+          >
+            IDG conference required within 15 days of admission and every 30 days thereafter per CMS
+            §418.56.
+          </p>
+          {idg?.lastMeetingDate && !isOverdue && (
+            <p className="text-xs text-gray-500">
+              Last meeting:{" "}
+              {new Date(idg.lastMeetingDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </p>
+          )}
+          {isOverdue && (
+            <Link
+              to="/patients/$patientId/idg/schedule"
+              params={{ patientId }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-white self-start"
+              style={{ background: "#EA580C" }}
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <title>calendar-plus</title>
+                <path d="M8 2v4M16 2v4" />
+                <rect width="18" height="18" x="3" y="4" rx="2" />
+                <path d="M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" />
+              </svg>
+              Schedule IDG Now
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────────
 
 function PatientOverviewPage() {
   const { patientId } = Route.useParams();
 
-  const { data: patient, isLoading } = useQuery<PatientResponse>({
-    queryKey: patientKeys.detail(patientId),
-    queryFn: () => getPatientFn({ data: { patientId } }) as Promise<PatientResponse>,
-  });
-
-  if (isLoading) {
-    return <div className="text-gray-500 py-12 text-center text-sm">Loading…</div>;
-  }
-  if (!patient) return null;
-
-  const primaryAddress = patient.address?.[0];
-
   return (
-    <div className="p-6 space-y-6">
-      {/* ── Two-column summary ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Left: demographics + enrollment */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Demographics</h2>
-            <dl className="space-y-3">
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Birth</dt>
-                <dd className="mt-1 text-sm text-gray-900">{patient.birthDate}</dd>
-              </div>
-              {patient.gender && (
-                <div>
-                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</dt>
-                  <dd className="mt-1 text-sm text-gray-900 capitalize">{patient.gender}</dd>
-                </div>
-              )}
-              {primaryAddress && (
-                <div>
-                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Address</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
-                    {primaryAddress.line.join(", ")}, {primaryAddress.city}, {primaryAddress.state} {primaryAddress.postalCode}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Enrollment</h2>
-            <dl className="space-y-3">
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Admission Date</dt>
-                <dd className="mt-1 text-sm text-gray-900">{patient.admissionDate ?? "—"}</dd>
-              </div>
-              {patient.dischargeDate && (
-                <div>
-                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Discharge Date</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{patient.dischargeDate}</dd>
-                </div>
-              )}
-              {patient.identifier.length > 0 && (
-                <div>
-                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Identifiers</dt>
-                  <dd className="mt-1 text-sm text-gray-900 space-y-1">
-                    {patient.identifier.map((id) => (
-                      <div key={`${id.system}:${id.value}`}>
-                        <span className="text-gray-500">{id.system}:</span> {id.value}
-                      </div>
-                    ))}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </div>
-        </div>
-
-        {/* Right: HOPE status + F2F */}
-        <div className="space-y-6">
-          <HOPEPanel patientId={patientId} />
-          <F2FPanel patientId={patientId} />
-        </div>
+    <div className="flex gap-5 bg-gray-100 min-h-full" style={{ padding: "20px 32px" }}>
+      {/* Left column — main content */}
+      <div className="flex flex-col gap-4 flex-1 min-w-0">
+        <TrajectoryCard patientId={patientId} />
+        <VisitNotesCard patientId={patientId} />
+        <DiagnosesCard patientId={patientId} />
       </div>
 
-      {/* ── Full-width: care plan ────────────────────────────────────── */}
-      <CarePlanPanel patientId={patientId} />
+      {/* Right column — 320px sidebar */}
+      <div className="flex flex-col gap-4 shrink-0" style={{ width: 320 }}>
+        <CareTeamCard patientId={patientId} />
+        <UpcomingVisitsCard patientId={patientId} />
+        <IDGCard patientId={patientId} />
+      </div>
     </div>
   );
 }
